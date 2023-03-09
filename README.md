@@ -1,8 +1,9 @@
-# Vue 3 + Vite
-
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
 # webgl-demo
+
+[说明]  
+webgl demo 用于处理mapbox-gl 与 threejs camera 视角同步
+
+[问题]  
+1、three-box threejs 文件替换 版本 支持texImage3D 修复texImage2D问题  
+2、mapboxgl 2.13.0 支持WebGL2 shader simpler3D texture 获取纹理功能  
+3、修复threebox-plugin CSS2DRenderer autoUpdate 替换为 matrixWorldAutoUpdate 警告问题
