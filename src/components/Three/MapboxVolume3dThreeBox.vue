@@ -141,7 +141,7 @@ let renderer,
         geometry.translate( volume.xLength / 2 - 0.5, volume.yLength / 2 - 0.5, volume.zLength / 2 - 0.5 );
 
         mesh = new THREE.Mesh( geometry, material );
-        // mesh.scale.set(1, 1, 1)
+        mesh.scale.set(4, 4, 4)
         tb.add( mesh );
     }
 
