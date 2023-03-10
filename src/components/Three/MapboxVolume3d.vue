@@ -11,6 +11,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { mat4 } from 'gl-matrix'
 import { CameraSync } from '../../lib/mapbox/CameraSync';
+import { utils } from '../../lib/mapbox/utils/utils';
 import { VolumeRenderShader1 } from './VolumeShader';
 
 import * as turf from '@turf/turf'
@@ -40,6 +41,8 @@ const modelTransform = {
     scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
 };
 
+const mercator = utils.projectToWorld(modelOrigin)
+
 let renderer,
     scene,
     camera,
@@ -55,13 +58,14 @@ let renderer,
 
     console.log('modelAsMercatorCoordinate ==>', modelAsMercatorCoordinate)
     console.log('converted ==>', converted.geometry.coordinates)
+    console.log('mercator ==>', mercator)
 
 
     function init(map, glContext) {
 
         scene = new THREE.Scene();
-        // camera = new THREE.Camera()
-        camera = new THREE.OrthographicCamera
+        camera = new THREE.Camera()
+        // camera = new THREE.OrthographicCamera
 
         // Create renderer
         renderer = new THREE.WebGLRenderer({ alpha: true });
@@ -139,7 +143,7 @@ let renderer,
                     maxLongitude: maxLongitude / 360000,
                     maxLatitude: maxLatitude / 360000
                 };
-                console.log('result ==>', volume)
+                // console.log('result ==>', volume)
 
                 initVolume(volume);
             }, 
@@ -171,7 +175,7 @@ let renderer,
             rainbow: new THREE.TextureLoader().load( '/resource/rainbow.png', render )
         };
 
-        console.log('cmtextures ==>', cmtextures)
+        // console.log('cmtextures ==>', cmtextures)
 
         // Material
         const shader = VolumeRenderShader1;
@@ -185,7 +189,7 @@ let renderer,
         uniforms[ 'u_renderthreshold' ].value = volconfig.isothreshold; // For ISO renderstyle
         uniforms[ 'u_cmdata' ].value = cmtextures[ volconfig.colormap ];
 
-        console.log('uniforms ==>', uniforms)
+        // console.log('uniforms ==>', uniforms)
 
         material = new THREE.ShaderMaterial( {
             uniforms: uniforms,
@@ -213,9 +217,9 @@ let renderer,
 
         const xScale = distance / volume.xLength
         const yScale = distance1 / volume.xLength
-        mesh.scale.set(xScale, yScale, 1)
-        mesh.position.x -= distance * xScale / 2
-        mesh.position.y -= distance1 * yScale / 2
+        mesh.scale.set(1, 1, 1)
+        mesh.position.x =  mercator.x
+        mesh.position.y =  mercator.y
         world.add( mesh );
 
         render();
