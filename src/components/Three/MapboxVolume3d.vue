@@ -13,6 +13,32 @@ import { mat4 } from 'gl-matrix'
 import { CameraSync } from '../../lib/mapbox/CameraSync';
 import { VolumeRenderShader1 } from './VolumeShader';
 
+import * as turf from '@turf/turf'
+
+const modelOrigin = [148.9819, -35.39847];
+const centerOrigin = [0, 0];
+const modelAltitude = 0;
+const modelRotate = [Math.PI / 2, 0, 0];
+
+const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
+        modelOrigin,
+        modelAltitude
+);
+
+
+// transformation parameters to position, rotate and scale the 3D model onto the map
+const modelTransform = {
+    translateX: modelAsMercatorCoordinate.x,
+    translateY: modelAsMercatorCoordinate.y,
+    translateZ: modelAsMercatorCoordinate.z,
+    rotateX: modelRotate[0],
+    rotateY: modelRotate[1],
+    rotateZ: modelRotate[2],
+    /* Since the 3D model is in real world meters, a scale transform needs to be
+        * applied since the CustomLayerInterface expects units in MercatorCoordinates.
+        */
+    scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+};
 
 let renderer,
     scene,
@@ -24,56 +50,53 @@ let renderer,
     volconfig,
     cmtextures;
 
+    var pt = turf.point(modelOrigin);
+    var converted = turf.toMercator(pt);
 
-    function init(map) {
+    console.log('modelAsMercatorCoordinate ==>', modelAsMercatorCoordinate)
+    console.log('converted ==>', converted.geometry.coordinates)
+
+
+    function init(map, glContext) {
 
         scene = new THREE.Scene();
+        // camera = new THREE.Camera()
+        camera = new THREE.OrthographicCamera
 
         // Create renderer
         renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        document.body.appendChild( renderer.domElement );
+        // renderer.setPixelRatio( window.devicePixelRatio );
+        // renderer.setSize( window.innerWidth, window.innerHeight );
 
         if (map && renderer.domElement) {
             const mapCanvas = map.getCanvas();
             const width = mapCanvas.width;
             const height = mapCanvas.height;
 
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( width, height );
+
             renderer.domElement.style.width = mapCanvas.style.width;
             renderer.domElement.style.height = mapCanvas.style.height;
             renderer.domElement.style.position = "absolute";
             renderer.domElement.style.pointerEvents = "none";
             renderer.setDrawingBufferSize(width, height, 1);
-
-            // this.renderer.setSize( width, height );
             map.getCanvasContainer().appendChild(renderer.domElement);
         } else {
             renderer.setSize( canvas.innerWidth, canvas.innerHeight );
             document.body.appendChild( renderer.domElement );
         }
 
-        // Create camera (The volume renderer does not work very well with perspective yet)
-        // const h = 1512; // frustum height
-        // const aspect = window.innerWidth / window.innerHeight;
-        camera = new THREE.Camera()
-        // camera = new THREE.OrthographicCamera( - h * aspect / 2, h * aspect / 2, h / 2, - h / 2, 1, 1e5 );
-        // camera = new THREE.PerspectiveCamera( 45, aspect, 1, 10000 );
-        // camera.position.set( 1000, 1000, 1000 );
-        // camera.up.set( 0, 0, 1 ); // In our data, z is up
-
-        // Create controls
-        // controls = new OrbitControls( camera, renderer.domElement );
-        // controls.addEventListener( 'change', render );
-        // controls.target.set( 500, 500, 0 );
-        // controls.enablePan = true;
-        // controls.update();
-
         world = new THREE.Group();
         world.name = "world";
-		scene.add(world);
 
-        scene.add( new THREE.AxesHelper( 1000 ) );
+        const axes = new THREE.AxesHelper( 1e6 )
+
+        world.add( axes );
+
+        window.worldGroup = world
+
+        scene.add(world)
 
         // Lighting is baked into the shader a.t.m.
         let dirLight =  new THREE.AmbientLight( 0xffffff );
@@ -111,6 +134,10 @@ let renderer,
                     xLength: widDataCnt,
                     yLength: heiDataCnt,
                     zLength: layerCnt,
+                    minLongitude: minLongitude / 360000,
+                    minLatitude: minLatitude / 360000,
+                    maxLongitude: maxLongitude / 360000,
+                    maxLatitude: maxLatitude / 360000
                 };
                 console.log('result ==>', volume)
 
@@ -120,7 +147,7 @@ let renderer,
             (err) => { console.error( 'An error happened' ) }
         )
 
-        window.addEventListener( 'resize', onWindowResize );
+        // window.addEventListener( 'resize', onWindowResize );
 
     }
 
@@ -166,18 +193,30 @@ let renderer,
             fragmentShader: shader.fragmentShader,
             // side: THREE.BackSide, // The volume shader uses the backface as its "reference point"
             transparent: true,
-            depthTest: false,
-            depthWrite: false,
-            side: 1
+            side: 2
         } );
 
         // THREE.Mesh
         const geometry = new THREE.BoxGeometry( volume.xLength, volume.yLength, volume.zLength );
-        // geometry.translate( volume.xLength / 2, volume.yLength / 2, volume.zLength / 2 );
-        geometry.translate( volume.xLength / 2 - 0.5, volume.yLength / 2 - 0.5, volume.zLength / 2 - 0.5 );
+        geometry.translate( volume.xLength / 2, volume.yLength / 2, volume.zLength / 2 );
+        // geometry.translate( volume.xLength / 2 - 0.5, volume.yLength / 2 - 0.5, volume.zLength / 2 - 0.5 );
 
         mesh = new THREE.Mesh( geometry, material );
-        scene.add( mesh );
+
+        var from = turf.point([volume.maxLongitude, volume.minLatitude]);
+        var to = turf.point([volume.minLongitude, volume.minLatitude]);
+        var from1 = turf.point([volume.minLongitude, volume.minLatitude]);
+        var to1 = turf.point([volume.minLongitude, volume.maxLatitude]);
+        var options = {units: 'kilometers'};
+        var distance = turf.distance(from, to, options);
+        var distance1 = turf.distance(from1, to1, options);
+
+        const xScale = distance / volume.xLength
+        const yScale = distance1 / volume.xLength
+        mesh.scale.set(xScale, yScale, 1)
+        mesh.position.x -= distance * xScale / 2
+        mesh.position.y -= distance1 * yScale / 2
+        world.add( mesh );
 
         render();
     }
@@ -193,53 +232,12 @@ let renderer,
 
     }
 
-    function onWindowResize() {
-
-        renderer.setSize( window.innerWidth, window.innerHeight );
-
-        const aspect = window.innerWidth / window.innerHeight;
-
-        const frustumHeight = camera.top - camera.bottom;
-
-        camera.left = - frustumHeight * aspect / 2;
-        camera.right = frustumHeight * aspect / 2;
-
-        camera.updateProjectionMatrix();
-
-        render();
-
-    }
-
     function render() {
 
         renderer.render( scene, camera );
 
     }
 
-
-    // parameters to ensure the model is georeferenced correctly on the map
-    const modelOrigin = [148.9819, -35.39847];
-    const modelAltitude = 0;
-    const modelRotate = [Math.PI / 2, 0, 0];
-
-    const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
-        modelOrigin,
-        modelAltitude
-    );
-
-    // transformation parameters to position, rotate and scale the 3D model onto the map
-    const modelTransform = {
-        translateX: modelAsMercatorCoordinate.x,
-        translateY: modelAsMercatorCoordinate.y,
-        translateZ: modelAsMercatorCoordinate.z,
-        rotateX: modelRotate[0],
-        rotateY: modelRotate[1],
-        rotateZ: modelRotate[2],
-        /* Since the 3D model is in real world meters, a scale transform needs to be
-         * applied since the CustomLayerInterface expects units in MercatorCoordinates.
-         */
-        scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
-    };
 
     // reuse canvas
     const canvas = document.createElement("canvas");
@@ -289,7 +287,7 @@ let renderer,
             });
 
 
-            init(map)
+            init(map, gl)
 
             cameraSync = new CameraSync(map, camera, world)
 
@@ -335,44 +333,6 @@ let renderer,
 
             this.camera.projectionMatrix = m.multiply(l);
 
-            // const transform = this.map.transform;
-      
-            // const projectionMatrix = new Float64Array(16),
-            //       projectionMatrixI = new Float64Array(16),
-            //       viewMatrix = new Float64Array(16),
-            //       viewMatrixI = new Float64Array(16);
-            
-            // const halfFov = transform._fov / 2;
-            // const groundAngle = Math.PI / 2 + transform._pitch;
-            // const topHalfSurfaceDistance = Math.sin(halfFov) * transform.cameraToCenterDistance / Math.sin(Math.PI - groundAngle - halfFov);
-            // const furthestDistance = Math.cos(Math.PI / 2 - transform._pitch) * topHalfSurfaceDistance + transform.cameraToCenterDistance;
-            // const farZ = furthestDistance * 1.01;
-
-            // mat4.perspective(projectionMatrix, transform._fov, transform.width / transform.height, 1, farZ);
-            // mat4.invert(projectionMatrixI, projectionMatrix);
-            // mat4.multiply(viewMatrix, projectionMatrixI, matrix);
-            // mat4.invert(viewMatrixI, viewMatrix);
-            
-            // camera.projectionMatrix =  new THREE.Matrix4().fromArray(projectionMatrix);
-            // camera.matrix = new THREE.Matrix4().fromArray(viewMatrixI);
-            // camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
-
-            // if (renderer) {
-            //     renderer.resetState();
-            //     renderer.render(scene, camera);
-            // }
-
-            // if (cameraSync) {
-            //     if (scene) {
-            //         cameraSync.setupCamera() 
-            //         console.log('cameraSync.world.matrix ==>', cameraSync.world.matrix)
-            //     }
-
-            // }
-
-            this.map.on('CameraSynced', (data) => {
-                // console.log('CameraSynced ==>', data)
-            })
 
             if (renderer) {
                 renderer.resetState();
@@ -418,10 +378,11 @@ let renderer,
             container: 'map',
             // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
             style: 'mapbox://styles/mapbox/streets-v12',
-            zoom: 12,
-            center: [148.9819, -35.3981],
-            pitch: 60,
+            zoom: 6,
+            center: centerOrigin,
+            pitch: 0,
             projection: 'mercator',
+            useWebGL2: true,
             antialias: true // create the gl context with MSAA antialiasing, so custom layers are antialiased
         });
 

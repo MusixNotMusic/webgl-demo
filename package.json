@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@turf/projection": "^6.5.0",
+    "@turf/turf": "^6.5.0",
     "gl-matrix": "^3.4.3",
     "mapbox-gl": "^2.13.0",
     "three": "^0.150.1",

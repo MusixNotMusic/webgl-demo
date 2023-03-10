@@ -140,8 +140,8 @@ CameraSync.prototype = {
             .premultiply(scale)
             .premultiply(translateMap)
 
-        console.log('this.world.matrix.elements =>', this.world.matrix.elements)
-        utils.prettyPrintMatrix(this.world.matrix.elements)
+        // console.log('this.world.matrix.elements =>', this.world.matrix.elements)
+        // utils.prettyPrintMatrix(this.world.matrix.elements)
         // utils.prettyPrintMatrix(this.camera.projectionMatrix.elements);
         this.map.fire('CameraSynced', { detail: { nearZ: nearZ, farZ: farZ, pitch: t._pitch, angle: t.angle, furthestDistance: furthestDistance, cameraToCenterDistance: this.cameraToCenterDistance, t: this.map.transform, tbProjMatrix: this.camera.projectionMatrix.elements, tbWorldMatrix: this.world.matrix.elements, cameraSyn: CameraSync } });
 
