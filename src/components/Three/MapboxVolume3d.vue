@@ -17,7 +17,7 @@ import { VolumeRenderShader1 } from './VolumeShader';
 import * as turf from '@turf/turf'
 
 const modelOrigin = [148.9819, -35.39847];
-const centerOrigin = [0, 0];
+const centerOrigin = [148.9819, -35.39847] || [0, 0];
 const modelAltitude = 0;
 const modelRotate = [Math.PI / 2, 0, 0];
 
@@ -65,7 +65,7 @@ let renderer,
 
         scene = new THREE.Scene();
         camera = new THREE.Camera()
-        // camera = new THREE.OrthographicCamera
+        // camera = new THREE.OrthographicCamera()
 
         // Create renderer
         renderer = new THREE.WebGLRenderer({ alpha: true });
@@ -93,17 +93,12 @@ let renderer,
 
         world = new THREE.Group();
         world.name = "world";
-
-        const axes = new THREE.AxesHelper( 1e6 )
-
-        world.add( axes );
-
         window.worldGroup = world
 
         scene.add(world)
 
         // Lighting is baked into the shader a.t.m.
-        let dirLight =  new THREE.AmbientLight( 0xffffff );
+        let dirLight =  new THREE.AmbientLight( 0x0000ff );
 
         scene.add(dirLight)
 
@@ -115,8 +110,6 @@ let renderer,
         gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis', rainbow: 'rainbow' } ).onChange( updateUniforms );
         gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
         gui.add( volconfig, 'isothreshold', 0, 1, 0.01 ).onChange( updateUniforms );
-
-
 
         const loader = new THREE.FileLoader();
 
@@ -216,11 +209,16 @@ let renderer,
         var distance1 = turf.distance(from1, to1, options);
 
         const xScale = distance / volume.xLength
-        const yScale = distance1 / volume.xLength
+        const yScale = distance1 / volume.yLength
         mesh.scale.set(1, 1, 1)
-        mesh.position.x =  mercator.x
-        mesh.position.y =  mercator.y
+        mesh.position.x =  mercator.x - distance / 2
+        mesh.position.y =  mercator.y - distance1 / 2
         world.add( mesh );
+
+        // const axes = new THREE.AxesHelper( 1e5 )
+        // axes.position.x =  mercator.x
+        // axes.position.y =  mercator.y
+        // world.add( axes );
 
         render();
     }
@@ -382,7 +380,7 @@ let renderer,
             container: 'map',
             // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
             style: 'mapbox://styles/mapbox/streets-v12',
-            zoom: 6,
+            zoom: 10,
             center: centerOrigin,
             pitch: 0,
             projection: 'mercator',
