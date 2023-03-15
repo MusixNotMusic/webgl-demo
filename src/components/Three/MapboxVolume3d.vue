@@ -12,7 +12,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { mat4 } from 'gl-matrix'
 import { CameraSync } from '../../lib/mapbox/CameraSync';
 import { utils } from '../../lib/mapbox/utils/utils';
-import { VolumeRenderShader1 } from './VolumeShader';
+import { VolumeRenderShader1 } from '../shader/VolumeShader';
 
 import * as turf from '@turf/turf'
 

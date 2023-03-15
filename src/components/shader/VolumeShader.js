@@ -80,6 +80,7 @@ const VolumeRenderShader1 = {
 
 				void cast_mip(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);
 				void cast_iso(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);
+				void cast_iso1(float threshold, vec3 start_loc, vec3 step, int nsteps, vec3 view_ray);
 
 				float sample1(vec3 texcoords);
 				vec4 apply_colormap(float val);
@@ -111,7 +112,7 @@ const VolumeRenderShader1 = {
 						// Decide how many steps to take
 						int nsteps = int(-distance / relative_step_size + 0.5);
 						if ( nsteps < 1 )
-								discard;
+							discard;
 
 						// Get starting location and step vector in texture coordinates
 						vec3 step = ((v_position - front) / u_size) / float(nsteps);
@@ -122,14 +123,17 @@ const VolumeRenderShader1 = {
 						//'gl_FragColor = vec4(0.0, float(nsteps) / 1.0 / u_size.x, 1.0, 1.0);
 						//'return;
 
-						if (u_renderstyle == 0)
+						if (u_renderstyle == 0) {
 								cast_mip(start_loc, step, nsteps, view_ray);
-						else if (u_renderstyle == 1)
-								cast_iso(start_loc, step, nsteps, view_ray);
-
+						} else if (u_renderstyle == 1) {
+								// cast_iso(start_loc, step, nsteps, view_ray);
+								cast_iso1(u_renderthreshold, start_loc, step, nsteps, view_ray);
+								cast_iso1(u_renderthreshold + 0.1, start_loc, step, nsteps, view_ray);
+								cast_iso1(u_renderthreshold + 0.2, start_loc, step, nsteps, view_ray);
+								cast_iso1(u_renderthreshold + 0.3, start_loc, step, nsteps, view_ray);
+						}
 						if (gl_FragColor.a < 0.05)
 								discard;
-							// gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 				}
 
 
@@ -139,32 +143,33 @@ const VolumeRenderShader1 = {
 				}
 
 
-				vec4 apply_colormap(float val) {
-						val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);
-						return texture2D(u_cmdata, vec2(val, 0.5));
-				}
-
-				// vec4 apply_colormap(float val){
-				// 	vec4 c = vec4(0.0, 0.0 ,0.0, 0.0);
-				// 	float v = val * 64.0;
-				
-				//   // 值越高 越不透明
-				//   if(v>=0.00000&&v<5.00000)c=mix(vec4(0.000,0.000,0.000,0.000),vec4(0.220,0.000,0.439,0.078),smoothstep(0.00000,5.00000,v));
-				//   if(v>=5.00000&&v<10.00000)c=mix(vec4(0.220,0.000,0.439,0.078),vec4(0.024,0.000,0.941,0.157),smoothstep(5.00000,10.00000,v));
-				//   if(v>=10.00000&&v<15.00000)c=mix(vec4(0.024,0.000,0.941,0.157),vec4(0.000,0.424,0.753,0.235),smoothstep(10.00000,15.00000,v));
-				//   if(v>=15.00000&&v<20.00000)c=mix(vec4(0.000,0.424,0.753,0.235),vec4(0.000,0.627,0.000,0.314),smoothstep(15.00000,20.00000,v));
-				//   if(v>=20.00000&&v<25.00000)c=mix(vec4(0.000,0.627,0.000,0.314),vec4(0.000,0.745,0.000,0.431),smoothstep(20.00000,25.00000,v));
-				//   if(v>=25.00000&&v<30.00000)c=mix(vec4(0.000,0.745,0.000,0.431),vec4(0.196,0.847,0.000,0.510),smoothstep(25.00000,30.00000,v));
-				//   if(v>=30.00000&&v<35.00000)c=mix(vec4(0.196,0.847,0.000,0.510),vec4(0.863,0.863,0.000,0.588),smoothstep(30.00000,35.00000,v));
-				//   if(v>=35.00000&&v<40.00000)c=mix(vec4(0.863,0.863,0.000,0.588),vec4(1.000,0.690,0.000,0.667),smoothstep(35.00000,40.00000,v));
-				//   if(v>=40.00000&&v<45.00000)c=mix(vec4(1.000,0.690,0.000,0.667),vec4(1.000,0.518,0.000,0.745),smoothstep(40.00000,45.00000,v));
-				//   if(v>=45.00000&&v<50.00000)c=mix(vec4(1.000,0.518,0.000,0.745),vec4(1.000,0.196,0.000,0.824),smoothstep(45.00000,50.00000,v));
-				//   if(v>=50.00000&&v<55.00000)c=mix(vec4(1.000,0.196,0.000,0.824),vec4(0.667,0.000,0.000,0.941),smoothstep(50.00000,55.00000,v));
-				//   if(v>=55.00000&&v<60.00000)c=mix(vec4(0.667,0.000,0.000,0.941),vec4(1.000,1.000,1.000,1.000),smoothstep(55.00000,60.00000,v));
-				//   if(v>=60.00000)c=vec4(1.000,1.000,1.000,1.000);
-				 
-				//   return c;
+				// vec4 apply_colormap(float val) {
+				// 		val = (val - u_clim[0]) / (u_clim[1] - u_clim[0]);
+				// 		return texture2D(u_cmdata, vec2(val, 0.5));
 				// }
+
+				vec4 apply_colormap(float val){
+					vec4 c = vec4(0.0, 0.0 ,0.0, 0.0);
+					float v = val * 64.0;
+				
+				  // 值越高 越不透明
+				  if(v>=0.00000&&v<5.00000)c=mix(vec4(0.000,0.000,0.000,0.000),vec4(0.220,0.000,0.439,0.078),smoothstep(0.00000,5.00000,v));
+				  if(v>=5.00000&&v<10.00000)c=mix(vec4(0.220,0.000,0.439,0.078),vec4(0.024,0.000,0.941,0.157),smoothstep(5.00000,10.00000,v));
+				  if(v>=10.00000&&v<15.00000)c=mix(vec4(0.024,0.000,0.941,0.157),vec4(0.000,0.424,0.753,0.235),smoothstep(10.00000,15.00000,v));
+				  if(v>=15.00000&&v<20.00000)c=mix(vec4(0.000,0.424,0.753,0.235),vec4(0.000,0.627,0.000,0.314),smoothstep(15.00000,20.00000,v));
+				  if(v>=20.00000&&v<25.00000)c=mix(vec4(0.000,0.627,0.000,0.314),vec4(0.000,0.745,0.000,0.431),smoothstep(20.00000,25.00000,v));
+				  if(v>=25.00000&&v<30.00000)c=mix(vec4(0.000,0.745,0.000,0.431),vec4(0.196,0.847,0.000,0.510),smoothstep(25.00000,30.00000,v));
+				  if(v>=30.00000&&v<35.00000)c=mix(vec4(0.196,0.847,0.000,0.510),vec4(0.863,0.863,0.000,0.588),smoothstep(30.00000,35.00000,v));
+				  if(v>=35.00000&&v<40.00000)c=mix(vec4(0.863,0.863,0.000,0.588),vec4(1.000,0.690,0.000,0.667),smoothstep(35.00000,40.00000,v));
+				  if(v>=40.00000&&v<45.00000)c=mix(vec4(1.000,0.690,0.000,0.667),vec4(1.000,0.518,0.000,0.745),smoothstep(40.00000,45.00000,v));
+				  if(v>=45.00000&&v<50.00000)c=mix(vec4(1.000,0.518,0.000,0.745),vec4(1.000,0.196,0.000,0.824),smoothstep(45.00000,50.00000,v));
+				  if(v>=50.00000&&v<55.00000)c=mix(vec4(1.000,0.196,0.000,0.824),vec4(0.667,0.000,0.000,0.941),smoothstep(50.00000,55.00000,v));
+				  if(v>=55.00000&&v<60.00000)c=mix(vec4(0.667,0.000,0.000,0.941),vec4(1.000,1.000,1.000,1.000),smoothstep(55.00000,60.00000,v));
+				  if(v>=60.00000)c=vec4(1.000,1.000,1.000,1.000);
+				  c.a += 0.15;	
+
+				  return c;
+				}
 
 
 				void cast_mip(vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {
@@ -238,6 +243,44 @@ const VolumeRenderShader1 = {
 
 								// Advance location deeper into the volume
 								loc += step;
+						}
+				}
+
+				void cast_iso1(float threshold, vec3 start_loc, vec3 step, int nsteps, vec3 view_ray) {
+
+					gl_FragColor = vec4(0.0);	// init transparent
+					vec4 color3 = vec4(0.0);	// final color
+					vec3 dstep = 1.5 / u_size;	// step to sample derivative
+					vec3 loc = start_loc;
+
+					float low_threshold = threshold - 0.02 * (u_clim[1] - u_clim[0]);
+
+					// Enter the raycasting loop. In WebGL 1 the loop index cannot be compared with
+					// non-constant expression. So we use a hard-coded max, and an additional condition
+					// inside the loop.
+					for (int iter=0; iter<MAX_STEPS; iter++) {
+							if (iter >= nsteps)
+									break;
+
+							// Sample from the 3D texture
+							float val = sample1(loc);
+
+							if (val > low_threshold) {
+									// Take the last interval in smaller steps
+									vec3 iloc = loc - 0.5 * step;
+									vec3 istep = step / float(REFINEMENT_STEPS);
+									for (int i=0; i<REFINEMENT_STEPS; i++) {
+											val = sample1(iloc);
+											if (val > threshold) {
+													gl_FragColor = add_lighting(val, iloc, dstep, view_ray);
+													return;
+											}
+											iloc += istep;
+									}
+							}
+
+							// Advance location deeper into the volume
+							loc += step;
 						}
 				}
 

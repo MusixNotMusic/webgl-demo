@@ -16,6 +16,11 @@ const routes= [
         path: "/MapboxVolume3dThreeBox",
         name: "MapboxVolume3dThreeBox",
         component: () => import("../components/Three/MapboxVolume3dThreeBox.vue"),
+      },
+      {
+        path: "/VolumeRender2",
+        name: "VolumeRender2",
+        component: () => import("../components/Three/VolumeRender2.vue"),
       }
     ],
   },
