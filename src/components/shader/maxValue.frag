@@ -154,13 +154,11 @@ void main(){
 		}
 	}
 
-	pxColor = texture(colorMap, vec2(px, 0.0));
+	pxColor = texture(colorMap, vec2(px, 0.5));
 	
 	value = pxColor;
 
 	//background = texture(skybox, normalize(direction.xyz));
 	//color = mix(background, value, value.a);
-	// color = value*brightness;
-
-	color = vec4(1.0, 0.0, 0.0, 1.0);
+	color = value*brightness;
 }

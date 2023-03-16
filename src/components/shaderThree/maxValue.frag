@@ -22,7 +22,8 @@ uniform vec3 lightPosition;
 // z: lowNode
 // w: highNode
 
-in vec2 texCoord;
+// in vec2 texCoord;
+in vec3 texCoord;
 
 //in vec4 origin;
 //in vec4 direction;
@@ -90,13 +91,14 @@ void main(){
 	//transform = inverse(transform);
 	
 	vec4 origin = vec4(0.0, 0.0, 2.0, 1.0);
-	origin = transform * origin;
+	// origin = transform * origin;
 	origin = origin / origin.w;
 	origin.z = origin.z / zScale;
 	origin = origin + 0.5;
 
-	vec4 image = vec4(texCoord, 4.0, 1.0);
-	image = transform * image;
+	// vec4 image = vec4(texCoord, 10.0, 1.0);
+	vec4 image = vec4(texCoord, 1.0);
+	// image = transform * image;
 	//image = image / image.w;
 	image.z = image.z / zScale;
 	image = image + 0.5;
@@ -114,7 +116,10 @@ void main(){
 	//vec4 background = texture(skybox, direction.xyz);
 
 	if(tmin > tmax){
-		color = value;
+		/*color = value;
+		discard;*/
+
+		//color = background;
 		return;
 	}
 
@@ -142,21 +147,20 @@ void main(){
 
 		texCo = mix(start, end, float(count)/float(sampleCount));// - originOffset;
 
-		px = texture(tex, texCo).r;
+		px = max(px, texture(tex, texCo).r);
 		
-		pxColor = texture(colorMap, vec2(px, 0.0));
-		
-		px = px*px;
-		
-		value = value + pxColor - pxColor*value.a;
-		
-		if(value.a >= 0.95){
-			value.a = 1.0;
+		if(px >= 0.99){
 			break;
 		}
 	}
 
+	pxColor = texture(colorMap, vec2(px, 0.5));
+	
+	value = pxColor;
+
 	//background = texture(skybox, normalize(direction.xyz));
 	//color = mix(background, value, value.a);
 	color = value*brightness;
+
+	// color = vec4( 1.0, 0.0, 0.0, 1.0);
 }

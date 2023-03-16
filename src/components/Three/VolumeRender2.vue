@@ -7,11 +7,10 @@ import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-// import vertexShader from '../shader/vertex.vert';
-// import vertexShader from '../shaderThree/vertex2.vert';
+// import vertexShader from '../shaderThree/vertex.vert';
 // import fragmentShader  from '../shaderThree/maxValue.frag';
 
-import vertexShader from '../shaderThree/vertex1.vert';
+import vertexShader from '../shaderThree/demo.vert';
 import fragmentShader  from '../shaderThree/demo.frag';
 
 let renderer,
@@ -20,7 +19,7 @@ let renderer,
     controls,
     material,
     mesh,
-    volconfig,
+    parameters,
     cmtextures,
     normals,
     uniforms,
@@ -73,7 +72,7 @@ let renderer,
     function initCamera () {
         aspect = window.innerWidth / window.innerHeight;
         camera = new THREE.PerspectiveCamera( 45, aspect , 1, 1e5 );
-        camera.position.set( 10, 10, 10 );
+        camera.position.set( 1e2, 1e2, 1e2 );
         camera.up.set( 0, 0, 1 ); // In our data, z is up
     }
 
@@ -90,21 +89,52 @@ let renderer,
     }
 
     function initGui () {
-        volconfig = { colormap: 'rainbow' };
+        const colors = [
+            { name: 'colors1', path: '/color/colors1.png' },
+            { name: 'blue', path: '/color/blue.png'},
+            { name: 'rainbow1', path: '/color/rainbow.png'},
+            { name: 'rainbows', path: '/color/rainbows.png'},
+            { name: 'extreme', path: '/color/extreme.png'},
+            { name: 'horizon', path: '/color/horizon.png'},
+            { name: 'skyline', path: '/color/skyline.png'},
+            { name: 'smallrainbows', path: '/color/smallrainbows.png'},
+            { name: 'plasma', path: '/color/plasma.png'},
+            { name: 'natural', path: '/color/natural.png'},
+            { name: 'viridis', path: '/resource/cm_viridis.png'},
+            { name: 'gray', path: '/resource/cm_gray.png'},
+            { name: 'rainbow', path: '/resource/rainbow.png'},
+        ]
+        parameters = { 
+            colormap: 'rainbow',
+            threshold: 0.6, 
+            steps: 200,
+            brightness: 1.0
+        };
 
         // Colormap textures
         cmtextures = {
-            viridis: new THREE.TextureLoader().load( '/resource/cm_viridis.png', render ),
-            gray: new THREE.TextureLoader().load( '/resource/cm_gray.png', render ),
-            rainbow: new THREE.TextureLoader().load( '/resource/rainbow.png', render )
+            // colors1: new THREE.TextureLoader().load( '/color/colors1.png', render ),
+            // blue: new THREE.TextureLoader().load( '/color/blue.png', render ),
+            // rainbow1: new THREE.TextureLoader().load( '/color/rainbow.png', render ),
+            // rainbows: new THREE.TextureLoader().load( '/color/rainbows.png', render ),
+            // colors1: new THREE.TextureLoader().load( '/color/colors1.png', render ),
+            // viridis: new THREE.TextureLoader().load( '/resource/cm_viridis.png', render ),
+            // gray: new THREE.TextureLoader().load( '/resource/cm_gray.png', render ),
+            // rainbow: new THREE.TextureLoader().load( '/resource/rainbow.png', render )
         };
+        const colorNams = {}
+        colors.forEach(color => {
+            cmtextures[color.name] = new THREE.TextureLoader().load( color.path, render )
+            colorNams[color.name] = color.name
+        })
+       
 
         const gui = new GUI();
-        // gui.add( volconfig, 'clim1', 0, 1, 0.01 ).onChange( updateUniforms );
-        // gui.add( volconfig, 'clim2', 0, 1, 0.01 ).onChange( updateUniforms );
-        gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis', rainbow: 'rainbow' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'isothreshold', 0, 1, 0.01 ).onChange( updateUniforms );
+        gui.add( parameters, 'colormap', colorNams ).onChange( updateUniforms );
+
+        gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( updateUniforms );
+		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( updateUniforms );
+		gui.add( parameters, 'brightness', 0, 7, 0.1 ).onChange( updateUniforms );
     }
 
     function init() {
@@ -149,7 +179,7 @@ let renderer,
                 };
                 console.log('result ==>', volume)
 
-                calculateNormals(volume.data, volume.xLength, volume.yLength, volume.zLength);
+                // calculateNormals(volume.data, volume.xLength, volume.yLength, volume.zLength);
 
                 initVolume(volume);
             })
@@ -174,19 +204,21 @@ let renderer,
         uniforms = { 
             tex:              { value: texture },
             normals:          { value: normals },
-            colorMap:         { value: cmtextures[ volconfig.colormap ] },
+            colorMap:         { value: cmtextures[ parameters.colormap ] },
             skybox:           { value: null },
             transform:        { value: null },
             inverseTransform: { value: null },
-            depthSampleCount: { value: 512 },
-            zScale:           { value: 1.0 },
+            depthSampleCount: { value: 256 },
+            threshold:        { value: 0.1 },
+            zScale:           { value: 0.7 },
             brightness:       { value: 1.0 },
-            aspect:           { value: aspect }
+            aspect:           { value: aspect },
+            cameraPos:        { value: new THREE.Vector3() },
         }
 
 
-        // material = new THREE.RawShaderMaterial( {
-        material = new THREE.ShaderMaterial( {
+        material = new THREE.RawShaderMaterial( {
+        // material = new THREE.ShaderMaterial( {
             glslVersion: THREE.GLSL3,
             uniforms: uniforms,
             vertexShader: vertexShader,
@@ -196,10 +228,11 @@ let renderer,
         } );
 
         // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( volume.xLength, volume.yLength, volume.zLength );
+        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
         // geometry.translate( volume.xLength / 2, volume.yLength / 2, volume.zLength / 2 );
 
         mesh = new THREE.Mesh( geometry, material );
+        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
 
         scene.add( mesh );
 
@@ -212,10 +245,10 @@ let renderer,
 
     function updateUniforms() {
 
-        // material.uniforms[ 'u_clim' ].value.set( volconfig.clim1, volconfig.clim2 );
-        // material.uniforms[ 'u_renderstyle' ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        // material.uniforms[ 'u_renderthreshold' ].value = volconfig.isothreshold; // For ISO renderstyle
-        material.uniforms[ 'colorMap' ].value = cmtextures[ volconfig.colormap ];
+        material.uniforms[ 'colorMap' ].value = cmtextures[ parameters.colormap ];
+        material.uniforms.threshold.value = parameters.threshold;
+		material.uniforms.depthSampleCount.value = parameters.steps;
+		material.uniforms.brightness.value = parameters.brightness;
 
         render();
 
@@ -234,6 +267,7 @@ let renderer,
         if (material) {
             material.uniforms.transform.value = mesh.matrix.toArray();
             material.uniforms.inverseTransform.value = mesh.matrix.invert().toArray();
+            mesh.material.uniforms.cameraPos.value.copy( camera.position );
         }
         camera.updateProjectionMatrix();
         renderer.render( scene, camera );
