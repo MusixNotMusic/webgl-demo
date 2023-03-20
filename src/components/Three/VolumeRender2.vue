@@ -25,43 +25,6 @@ let renderer,
     uniforms,
     aspect;
 
-
-    function calculateNormals(textureData, width, height, depth){
-
-        normals = new Uint8ClampedArray(textureData.length*3);
-
-        var xn = 0;
-        var yn = 0;
-        var zn = 0;
-
-        for(var i = 0; i < textureData.length; i++){
-
-            xn = textureData[i-1] - textureData[i+1];
-            if(!isNaN(xn)){
-                normals[i*3  ] = xn + 128;
-            } else {
-                normals[i*3  ] = 128;
-            }
-
-            yn = textureData[i-width] - textureData[i+width];
-            if(!isNaN(yn)){
-                normals[i*3+1] = yn + 128;
-            } else {
-                normals[i*3+1] = 128;
-            }
-
-            zn = textureData[i-(width*height)] - textureData[i+(width*height)];
-            if(!isNaN(zn)){
-                normals[i*3+2] = zn + 128;
-            } else {
-                normals[i*3+2] = 128;
-            }
-            
-        }
-
-        normals = new Uint8Array(normals);
-    }
-
     function initRender () {
         renderer = new THREE.WebGLRenderer({});
         renderer.setPixelRatio( window.devicePixelRatio );
@@ -107,22 +70,14 @@ let renderer,
         parameters = { 
             colormap: 'rainbow',
             threshold: 0.6, 
-            steps: 200,
+            depthSampleCount: 256,
             brightness: 1.0
         };
 
         // Colormap textures
-        cmtextures = {
-            // colors1: new THREE.TextureLoader().load( '/color/colors1.png', render ),
-            // blue: new THREE.TextureLoader().load( '/color/blue.png', render ),
-            // rainbow1: new THREE.TextureLoader().load( '/color/rainbow.png', render ),
-            // rainbows: new THREE.TextureLoader().load( '/color/rainbows.png', render ),
-            // colors1: new THREE.TextureLoader().load( '/color/colors1.png', render ),
-            // viridis: new THREE.TextureLoader().load( '/resource/cm_viridis.png', render ),
-            // gray: new THREE.TextureLoader().load( '/resource/cm_gray.png', render ),
-            // rainbow: new THREE.TextureLoader().load( '/resource/rainbow.png', render )
-        };
+        cmtextures = {};
         const colorNams = {}
+
         colors.forEach(color => {
             cmtextures[color.name] = new THREE.TextureLoader().load( color.path, render )
             colorNams[color.name] = color.name
@@ -133,7 +88,7 @@ let renderer,
         gui.add( parameters, 'colormap', colorNams ).onChange( updateUniforms );
 
         gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( updateUniforms );
-		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( updateUniforms );
+		gui.add( parameters, 'depthSampleCount', 0, 1024, 1 ).onChange( updateUniforms );
 		gui.add( parameters, 'brightness', 0, 7, 0.1 ).onChange( updateUniforms );
     }
 
@@ -150,7 +105,6 @@ let renderer,
 
         initGui()
 
-      
 
         const loader = new THREE.FileLoader();
 
@@ -179,8 +133,6 @@ let renderer,
                 };
                 console.log('result ==>', volume)
 
-                // calculateNormals(volume.data, volume.xLength, volume.yLength, volume.zLength);
-
                 initVolume(volume);
             })
 
@@ -196,14 +148,8 @@ let renderer,
         texture.unpackAlignment = 1;
         texture.needsUpdate = true;
 
-
-        // Material
-        // const shader = VolumeRenderShader1;
-        // const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
         uniforms = { 
             tex:              { value: texture },
-            normals:          { value: normals },
             colorMap:         { value: cmtextures[ parameters.colormap ] },
             skybox:           { value: null },
             transform:        { value: null },
@@ -213,7 +159,7 @@ let renderer,
             zScale:           { value: 0.7 },
             brightness:       { value: 1.0 },
             aspect:           { value: aspect },
-            cameraPos:        { value: new THREE.Vector3() },
+            // cameraPos:        { value: new THREE.Vector3() },
         }
 
 
@@ -232,12 +178,9 @@ let renderer,
         // geometry.translate( volume.xLength / 2, volume.yLength / 2, volume.zLength / 2 );
 
         mesh = new THREE.Mesh( geometry, material );
-        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
+        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength + 50);
 
         scene.add( mesh );
-
-        // material.uniforms.transform.value = mesh.matrix.toArray();
-        // material.uniforms.inverseTransform.value = mesh.matrix.invert().toArray();
 
         scene.add( new THREE.AxesHelper( 1e2 ));
         render();
@@ -247,7 +190,7 @@ let renderer,
 
         material.uniforms[ 'colorMap' ].value = cmtextures[ parameters.colormap ];
         material.uniforms.threshold.value = parameters.threshold;
-		material.uniforms.depthSampleCount.value = parameters.steps;
+		material.uniforms.depthSampleCount.value = parameters.depthSampleCount;
 		material.uniforms.brightness.value = parameters.brightness;
 
         render();
@@ -267,7 +210,7 @@ let renderer,
         if (material) {
             material.uniforms.transform.value = mesh.matrix.toArray();
             material.uniforms.inverseTransform.value = mesh.matrix.invert().toArray();
-            mesh.material.uniforms.cameraPos.value.copy( camera.position );
+            // mesh.material.uniforms.cameraPos.value.copy( camera.position );
         }
         camera.updateProjectionMatrix();
         renderer.render( scene, camera );

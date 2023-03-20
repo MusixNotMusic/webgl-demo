@@ -76,9 +76,9 @@ void main(){
 			break;
 		}
 
-        // if ( px > threshold ) {
-        //     break;
-        // }
+        if ( px > threshold ) {
+            break;
+        }
         p += rayDir * delta;
     }
 
@@ -88,7 +88,7 @@ void main(){
 
     pxColor = texture(colorMap, vec2(px, 0.0));
 	
-    color.a = px;
+    color.a = smoothstep(0.1, 0.95, px);
     color = pxColor * brightness;
     
     if ( color.a == 0.0 ) discard;
@@ -112,7 +112,6 @@ void main(){
 
 //     for(int count = 0; count < sampleCount; count++){    
 //         texCo = mix(start, end, float(count)/float(sampleCount));// - originOffset;
-//         // px = max(px, texture(tex, texCo).r);
 //         px = max(px, sample1( texCo + 0.5 ));
 //         // px = max(px, sample1( p + 0.5 ));
 		
@@ -125,7 +124,7 @@ void main(){
 //         discard;
 //     }
 
-//     pxColor = texture(colorMap, vec2(px, 0.5));
+//     pxColor = texture(colorMap, vec2(px, 0.0));
 	
 //     color.a = px;
 //     color = pxColor * brightness;
