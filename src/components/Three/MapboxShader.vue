@@ -181,7 +181,7 @@ let renderer,
         const uniforms =  {
             map: { value: texture },
             cameraPos: { value: new THREE.Vector3() },
-            threshold: { value: 0.6 },
+            threshold: { value: 0 },
             steps: { value: 200 }
 		}
 
@@ -207,20 +207,22 @@ let renderer,
 
         mesh = new THREE.Mesh( geometry, material );
 
+        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
+
         scene.add(mesh)
 
         const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
         const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 20000)
 
-        // const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
+        const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
 
-        // scene.position.x = 0.5 + (boundScaleBox[0] + boundScaleBox[3]) / 2;
-        // scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2 - 0.5;
-        // scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
+        scene.position.x = 0.5 + (boundScaleBox[0] + boundScaleBox[3]) / 2;
+        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2 - 0.5;
+        scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
 
-        // scene.scale.x = boundScaleBox[3] - boundScaleBox[0];
-        // scene.scale.y = boundScaleBox[4] - boundScaleBox[1];
-        // scene.scale.z = boundScaleBox[5] - boundScaleBox[2];
+        scene.scale.x = boundScaleBox[3] - boundScaleBox[0];
+        scene.scale.y = boundScaleBox[4] - boundScaleBox[1];
+        scene.scale.z = boundScaleBox[5] - boundScaleBox[2];
 
         render();
     }
@@ -249,7 +251,7 @@ let renderer,
 
             const cameraPosition = camera._position
 
-            mesh.material.uniforms.cameraPos.value.copy( cameraPosition );
+            mesh.material.uniforms.cameraPos.value.copy( {x:cameraPosition.z, y: cameraPosition.y, z: cameraPosition.x } );
         }
 
         renderer.render( scene, camera );
