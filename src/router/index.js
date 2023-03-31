@@ -5,8 +5,14 @@ const routes= [
   {
     path: "/index",
     name: "index",
+    redirect: "/MapboxShader",
     component: () => import("../components/Index.vue"),
     children: [
+      {
+        path: "/MapboxShader",
+        name: "MapboxShader",
+        component: () => import("../components/Three/MapboxShader.vue"),
+      },
       {
         path: "/MapboxVolume3d",
         name: "MapboxVolume3d",
