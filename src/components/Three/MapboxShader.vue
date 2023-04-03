@@ -5,9 +5,10 @@
 <script setup>
 import { onMounted } from 'vue'
 import * as THREE from 'three'
+// import { globeTiltAtLngLat } from 'mapbox-gl/src/geo/projection/globe_util.js'
+import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
 import mapboxgl from 'mapbox-gl'
-import { MercatorCoordinate } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { utils } from '../../lib/mapbox/utils/utils';
 // import { VolumeRenderShader1 } from '../shader/VolumeShader';
@@ -17,10 +18,10 @@ import * as turf from '@turf/turf'
 
 const modelOrigin = [104, 30];
 const centerOrigin =  [104, 30] || [0, 0];
-const modelAltitude = 0;
-const modelRotate = [Math.PI / 2, 0, 0];
+const modelAltitude = 100;
+const modelRotate = [0, 0, 0];
 
-const parameters = { threshold: 0.6, steps: 200 };
+const parameters = { threshold: 0.8, steps: 200 };
 
 const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
         modelOrigin,
@@ -43,15 +44,12 @@ const modelTransform = {
 
 const mercator = utils.projectToWorld(modelOrigin)
 
+
 let renderer,
     scene,
     camera,
-    controls,
     material,
-    mesh,
-    world,
-    volconfig,
-    cmtextures;
+    mesh;
 
     var pt = turf.point(modelOrigin);
     var converted = turf.toMercator(pt);
@@ -61,7 +59,7 @@ let renderer,
     console.log('mercator ==>', mercator)
 
 
-    function init(map, glContext) {
+    function init(map) {
 
         scene = new THREE.Scene();
         camera = new THREE.Camera()
@@ -98,13 +96,8 @@ let renderer,
 
         // The gui for interaction
         const gui = new GUI();
-        // volconfig = { clim1: 0, clim2: 1, renderstyle: 'iso', isothreshold: 0.15, colormap: 'rainbow' };
-        // gui.add( volconfig, 'clim1', 0, 1, 0.01 ).onChange( updateUniforms );
-        // gui.add( volconfig, 'clim2', 0, 1, 0.01 ).onChange( updateUniforms );
-        // gui.add( volconfig, 'colormap', { gray: 'gray', viridis: 'viridis', rainbow: 'rainbow' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( updateUniforms );
-        // gui.add( volconfig, 'isothreshold', 0, 1, 0.01 ).onChange( updateUniforms );
-        gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
+      
+		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
 
         const loader = new THREE.FileLoader();
@@ -135,6 +128,7 @@ let renderer,
                 // console.log('result ==>', volume)
 
                 initVolume(volume);
+                // initNoiseVolume(volume);
             }, 
             (xhr) => { }, 
             (err) => { console.error( 'An error happened' ) }
@@ -142,6 +136,82 @@ let renderer,
 
         // window.addEventListener( 'resize', onWindowResize );
 
+    }
+
+    const initNoiseVolume = (volume) => {
+        const size = 128;
+        const data = new Uint8Array( size * size * size );
+
+        let i = 0;
+        const perlin = new ImprovedNoise();
+        const vector = new THREE.Vector3();
+
+        for ( let z = 0; z < size; z ++ ) {
+
+            for ( let y = 0; y < size; y ++ ) {
+
+                for ( let x = 0; x < size; x ++ ) {
+
+                    vector.set( x, y, z ).divideScalar( size );
+
+                    const d = perlin.noise( vector.x * 6.5, vector.y * 6.5, vector.z * 6.5 );
+
+                    data[ i ++ ] = d * 128 + 128;
+
+                }
+
+            }
+
+        }
+
+        const texture = new THREE.Data3DTexture( data, size, size, size );
+        texture.format = THREE.RedFormat;
+        texture.minFilter = texture.magFilter = THREE.LinearFilter;
+        texture.unpackAlignment = 1;
+        texture.needsUpdate = true;
+
+        // Material
+        const shader = VolumeRenderShader1;
+
+        const uniforms =  {
+            map: { value: texture },
+            cameraPosition: { value: new THREE.Vector3() },
+            threshold: { value: 0.8 },
+            steps: { value: 200 }
+		}
+
+        // console.log('uniforms ==>', uniforms)
+
+        material = new THREE.RawShaderMaterial( {
+            glslVersion: THREE.GLSL3,
+            uniforms: uniforms,
+            vertexShader: shader.vertexShader,
+            fragmentShader: shader.fragmentShader,
+            side: THREE.BackSide
+        } );
+
+
+        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+
+        mesh = new THREE.Mesh( geometry, material );
+
+        const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
+        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 120000)
+
+        // const min = {x: volume.minLongitude / 180, y: volume.minLatitude / 85, z: 500 }
+        // const max = {x: volume.maxLongitude / 180, y: volume.maxLatitude  / 85, z: 10000 }
+
+        const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
+
+        scene.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
+        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
+        scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
+
+        scene.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
+        scene.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
+        scene.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
+
+        scene.add(mesh)
     }
 
     const initVolume = (volume) => {
@@ -157,30 +227,12 @@ let renderer,
         texture.unpackAlignment = 1;
         texture.needsUpdate = true;
 
-        // Colormap textures
-        cmtextures = {
-            viridis: new THREE.TextureLoader().load( '/resource/cm_viridis.png', render ),
-            gray: new THREE.TextureLoader().load( '/resource/cm_gray.png', render ),
-            rainbow: new THREE.TextureLoader().load( '/resource/rainbow.png', render )
-        };
-
-        // console.log('cmtextures ==>', cmtextures)
-
         // Material
         const shader = VolumeRenderShader1;
 
-        // const uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-        // uniforms[ 'u_data' ].value = texture;
-        // uniforms[ 'u_size' ].value.set( volume.xLength, volume.yLength, volume.zLength );
-        // uniforms[ 'u_clim' ].value.set( volconfig.clim1, volconfig.clim2 );
-        // uniforms[ 'u_renderstyle' ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        // uniforms[ 'u_renderthreshold' ].value = volconfig.isothreshold; // For ISO renderstyle
-        // uniforms[ 'u_cmdata' ].value = cmtextures[ volconfig.colormap ];
-
         const uniforms =  {
             map: { value: texture },
-            cameraPos: { value: new THREE.Vector3() },
+            cameraPosition: { value: new THREE.Vector3() },
             threshold: { value: 0 },
             steps: { value: 200 }
 		}
@@ -196,46 +248,36 @@ let renderer,
             side: THREE.DoubleSide
         } );
 
-        // material = new THREE.MeshBasicMaterial( {
-        //     color: 'red',
-        //     transparent: true,
-        //     side: THREE.DoubleSide
-        // } );
-
         // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( 1e3, 1e3, 1e3 );
+        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
 
         mesh = new THREE.Mesh( geometry, material );
 
-        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
+        // mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
 
+
+        const axesMesh = new THREE.AxesHelper( 1e6 );
+
+        scene.add(axesMesh);
         scene.add(mesh)
 
         const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
         const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 20000)
 
+        // const min = {x: volume.minLongitude / 180, y: volume.minLatitude / 90, z: 0.00001 }
+        // const max = {x: volume.maxLongitude / 180, y: volume.maxLatitude  / 90, z: 0.0004 }
+
         const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
 
-        scene.position.x = 0.5 + (boundScaleBox[0] + boundScaleBox[3]) / 2;
-        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2 - 0.5;
+        scene.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
+        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
         scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
 
-        scene.scale.x = boundScaleBox[3] - boundScaleBox[0];
-        scene.scale.y = boundScaleBox[4] - boundScaleBox[1];
-        scene.scale.z = boundScaleBox[5] - boundScaleBox[2];
-
+        scene.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
+        scene.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
+        scene.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
         render();
-    }
-
-    function updateUniforms() {
-
-        material.uniforms[ 'u_clim' ].value.set( volconfig.clim1, volconfig.clim2 );
-        material.uniforms[ 'u_renderstyle' ].value = volconfig.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
-        material.uniforms[ 'u_renderthreshold' ].value = volconfig.isothreshold; // For ISO renderstyle
-        material.uniforms[ 'u_cmdata' ].value = cmtextures[ volconfig.colormap ];
-
-        render();
-
+        // animate();
     }
 
     function update() {
@@ -246,12 +288,21 @@ let renderer,
     }
 
     function render() {
+        renderer.render( scene, camera );
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
         if (mapIns) {
             const camera = mapIns.getFreeCameraOptions();
 
             const cameraPosition = camera._position
 
-            mesh.material.uniforms.cameraPos.value.copy( {x:cameraPosition.z, y: cameraPosition.y, z: cameraPosition.x } );
+            console.log('render ==>', cameraPosition)
+
+            mesh.material.uniforms.cameraPos.value.copy( cameraPosition );
         }
 
         renderer.render( scene, camera );
@@ -346,14 +397,21 @@ let renderer,
                 .multiply(rotationY)
                 .multiply(rotationZ);
 
-            this.camera.projectionMatrix = m.multiply(l);
+            m.multiply(l);
 
-            const translateScaleMatrix = new THREE.Matrix4()
-                .makeTranslation(0, 0, 0)
-                .scale(new THREE.Vector3(1, -1, 1));
-            camera.projectionMatrix = m.multiply(translateScaleMatrix);
+            this.camera.projectionMatrix = m;
 
-            // camera.projectionMatrix = m;
+            camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+
+            if (mapIns && mesh && mesh.material ) {
+                const camera = mapIns.getFreeCameraOptions();
+
+                const cameraPosition = camera._position
+
+                // console.log('render ==>', cameraPosition)
+
+                mesh.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
+            }
 
             if (renderer) {
                 renderer.resetState();
@@ -399,10 +457,11 @@ let renderer,
             container: 'map',
             // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
             style: 'mapbox://styles/mapbox/streets-v12',
-            zoom: 14,
+            zoom: 5,
             center: centerOrigin,
-            pitch: 85,
-            projection: 'mercator',
+            pitch: 45,
+            // projection: 'mercator',
+            projection: 'globe',
             useWebGL2: true,
             antialias: true // create the gl context with MSAA antialiasing, so custom layers are antialiased
         });

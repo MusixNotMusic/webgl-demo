@@ -159,7 +159,6 @@ let renderer,
             zScale:           { value: 0.7 },
             brightness:       { value: 1.0 },
             aspect:           { value: aspect },
-            // cameraPos:        { value: new THREE.Vector3() },
         }
 
 

@@ -4,12 +4,12 @@ export const VolumeRenderShader1 = {
         uniform mat4 modelMatrix;
         uniform mat4 modelViewMatrix;
         uniform mat4 projectionMatrix;
-        uniform vec3 cameraPos;
+        uniform vec3 cameraPosition;
         out vec3 vOrigin;
         out vec3 vDirection;
         void main() {
             vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-            vOrigin = vec3( inverse( modelMatrix ) * vec4( cameraPos, 1.0 ) ).xyz;
+            vOrigin = vec3( inverse( modelMatrix ) * vec4( cameraPosition, 1.0 ) ).xyz;
             vDirection = position - vOrigin;
             gl_Position = projectionMatrix * mvPosition;
         }
@@ -66,6 +66,7 @@ export const VolumeRenderShader1 = {
             for ( float t = bounds.x; t < bounds.y; t += delta ) {
                 float d = sample1( p + 0.5 );
                 if ( d > threshold ) {
+                    // color.rgb = normal( p + 0.5 ) * 0.5 + ( p * 1.5 + 0.25 );
                     color.rgb = normal( p + 0.5 ) * 0.5 + ( p * 1.5 + 0.25 );
                     color.a = 1.;
                     break;
