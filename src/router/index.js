@@ -27,6 +27,11 @@ const routes= [
         path: "/VolumeRender2",
         name: "VolumeRender2",
         component: () => import("../components/Three/VolumeRender2.vue"),
+      },
+      {
+        path: "/CAPPI",
+        name: "CAPPI",
+        component: () => import("../components/Three/CAPPI.vue"),
       }
     ],
   },

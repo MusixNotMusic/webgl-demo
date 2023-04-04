@@ -105,7 +105,6 @@ let renderer,
 
         initGui()
 
-
         const loader = new THREE.FileLoader();
 
         loader.setResponseType('arraybuffer').load('/resource/rtdpz3d', 

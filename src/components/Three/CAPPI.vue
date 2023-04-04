@@ -5,23 +5,25 @@
 <script setup>
 import { onMounted } from 'vue'
 import * as THREE from 'three'
-// import { globeTiltAtLngLat } from 'mapbox-gl/src/geo/projection/globe_util.js'
-import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { utils } from '../../lib/mapbox/utils/utils';
-// import { VolumeRenderShader1 } from '../shader/VolumeShader';
-import { VolumeRenderShader1 } from '../shader/volumn2';
 
-import * as turf from '@turf/turf'
+import CappiFragment from '../shaderThree/cappi.frag'
+import CappiVertex from '../shaderThree/cappi.vert'
+
 
 const modelOrigin = [104, 30];
 const centerOrigin =  [104, 30] || [0, 0];
 const modelAltitude = 100;
 const modelRotate = [0, 0, 0];
 
-const parameters = { threshold: 0.8, steps: 200 };
+const parameters = { 
+    colormap: 'Z',
+    threshold: 0, 
+    steps: 40, 
+    verticalExaggeration: 5 
+};
 
 const modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
         modelOrigin,
@@ -42,33 +44,22 @@ const modelTransform = {
     scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
 };
 
-const mercator = utils.projectToWorld(modelOrigin)
-
 
 let renderer,
     scene,
     camera,
     material,
     mesh;
-
-    var pt = turf.point(modelOrigin);
-    var converted = turf.toMercator(pt);
-
-    console.log('modelAsMercatorCoordinate ==>', modelAsMercatorCoordinate)
-    console.log('converted ==>', converted.geometry.coordinates)
-    console.log('mercator ==>', mercator)
-
+ 
+ let cmtextures = {}; 
 
     function init(map) {
 
         scene = new THREE.Scene();
         camera = new THREE.Camera()
-        // camera = new THREE.OrthographicCamera()
 
         // Create renderer
         renderer = new THREE.WebGLRenderer({ alpha: true });
-        // renderer.setPixelRatio( window.devicePixelRatio );
-        // renderer.setSize( window.innerWidth, window.innerHeight );
 
         if (map && renderer.domElement) {
             const mapCanvas = map.getCanvas();
@@ -94,11 +85,39 @@ let renderer,
 
         scene.add(dirLight)
 
+        const colors = [
+            { name: 'Z', path: '/color/Z.png' },
+            { name: 'colors1', path: '/color/colors1.png' },
+            { name: 'blue', path: '/color/blue.png'},
+            { name: 'rainbow1', path: '/color/rainbow.png'},
+            { name: 'rainbows', path: '/color/rainbows.png'},
+            { name: 'extreme', path: '/color/extreme.png'},
+            { name: 'horizon', path: '/color/horizon.png'},
+            { name: 'skyline', path: '/color/skyline.png'},
+            { name: 'smallrainbows', path: '/color/smallrainbows.png'},
+            { name: 'plasma', path: '/color/plasma.png'},
+            { name: 'natural', path: '/color/natural.png'},
+            { name: 'viridis', path: '/resource/cm_viridis.png'},
+            { name: 'gray', path: '/resource/cm_gray.png'},
+            { name: 'rainbow', path: '/resource/rainbow.png'},
+        ]
+
+        // Colormap textures
+        cmtextures = {};
+        const colorNams = {}
+
+        colors.forEach(color => {
+            cmtextures[color.name] = new THREE.TextureLoader().load( color.path, render )
+            colorNams[color.name] = color.name
+        })
+
         // The gui for interaction
         const gui = new GUI();
       
+        gui.add( parameters, 'colormap', colorNams ).onChange( update );
 		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
+		gui.add( parameters, 'verticalExaggeration', 1, 10, 1 );
 
         const loader = new THREE.FileLoader();
 
@@ -138,82 +157,6 @@ let renderer,
 
     }
 
-    const initNoiseVolume = (volume) => {
-        const size = 128;
-        const data = new Uint8Array( size * size * size );
-
-        let i = 0;
-        const perlin = new ImprovedNoise();
-        const vector = new THREE.Vector3();
-
-        for ( let z = 0; z < size; z ++ ) {
-
-            for ( let y = 0; y < size; y ++ ) {
-
-                for ( let x = 0; x < size; x ++ ) {
-
-                    vector.set( x, y, z ).divideScalar( size );
-
-                    const d = perlin.noise( vector.x * 6.5, vector.y * 6.5, vector.z * 6.5 );
-
-                    data[ i ++ ] = d * 128 + 128;
-
-                }
-
-            }
-
-        }
-
-        const texture = new THREE.Data3DTexture( data, size, size, size );
-        texture.format = THREE.RedFormat;
-        texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        texture.unpackAlignment = 1;
-        texture.needsUpdate = true;
-
-        // Material
-        const shader = VolumeRenderShader1;
-
-        const uniforms =  {
-            map: { value: texture },
-            cameraPosition: { value: new THREE.Vector3() },
-            threshold: { value: 0.8 },
-            steps: { value: 200 }
-		}
-
-        // console.log('uniforms ==>', uniforms)
-
-        material = new THREE.RawShaderMaterial( {
-            glslVersion: THREE.GLSL3,
-            uniforms: uniforms,
-            vertexShader: shader.vertexShader,
-            fragmentShader: shader.fragmentShader,
-            side: THREE.BackSide
-        } );
-
-
-        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-
-        mesh = new THREE.Mesh( geometry, material );
-
-        const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
-        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 120000)
-
-        // const min = {x: volume.minLongitude / 180, y: volume.minLatitude / 85, z: 500 }
-        // const max = {x: volume.maxLongitude / 180, y: volume.maxLatitude  / 85, z: 10000 }
-
-        const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
-
-        scene.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
-        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
-        scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
-
-        scene.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
-        scene.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
-        scene.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
-
-        scene.add(mesh)
-    }
-
     const initVolume = (volume) => {
         // Texture to hold the volume. We have scalars, so we put our data in the red channel.
         // THREEJS will select R32F (33326) based on the THREE.RedFormat and THREE.FloatType.
@@ -221,29 +164,25 @@ let renderer,
         // TODO: look the dtype up in the volume metadata
         const texture = new THREE.Data3DTexture( volume.data, volume.xLength, volume.yLength, volume.zLength );
         texture.format = THREE.RedFormat;
-        // texture.type = THREE.FloatType;
         texture.type = THREE.UnsignedByteType;
         texture.minFilter = texture.magFilter = THREE.LinearFilter;
         texture.unpackAlignment = 1;
         texture.needsUpdate = true;
 
         // Material
-        const shader = VolumeRenderShader1;
-
         const uniforms =  {
             map: { value: texture },
             cameraPosition: { value: new THREE.Vector3() },
-            threshold: { value: 0 },
-            steps: { value: 200 }
+            threshold: { value: parameters.threshold },
+            steps:     { value: parameters.steps },
+            colorMap:  { value: cmtextures[ parameters.colormap ] },
 		}
-
-        // console.log('uniforms ==>', uniforms)
 
         material = new THREE.RawShaderMaterial( {
             glslVersion: THREE.GLSL3,
             uniforms: uniforms,
-            vertexShader: shader.vertexShader,
-            fragmentShader: shader.fragmentShader,
+            vertexShader: CappiVertex,
+            fragmentShader: CappiFragment,
             transparent: true,
             side: THREE.DoubleSide
         } );
@@ -253,9 +192,6 @@ let renderer,
 
         mesh = new THREE.Mesh( geometry, material );
 
-        // mesh.scale.set(volume.xLength, volume.yLength, volume.zLength);
-
-
         const axesMesh = new THREE.AxesHelper( 1e6 );
 
         scene.add(axesMesh);
@@ -263,9 +199,6 @@ let renderer,
 
         const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
         const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 20000)
-
-        // const min = {x: volume.minLongitude / 180, y: volume.minLatitude / 90, z: 0.00001 }
-        // const max = {x: volume.maxLongitude / 180, y: volume.maxLatitude  / 90, z: 0.0004 }
 
         const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
 
@@ -276,12 +209,12 @@ let renderer,
         scene.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
         scene.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
         scene.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
+        
         render();
-        // animate();
     }
 
     function update() {
-
+        material.uniforms.colorMap.value = cmtextures[ parameters.colormap ];
         material.uniforms.threshold.value = parameters.threshold;
         material.uniforms.steps.value = parameters.steps;
         render();
@@ -289,24 +222,6 @@ let renderer,
 
     function render() {
         renderer.render( scene, camera );
-    }
-
-    function animate() {
-
-        requestAnimationFrame( animate );
-
-        if (mapIns) {
-            const camera = mapIns.getFreeCameraOptions();
-
-            const cameraPosition = camera._position
-
-            console.log('render ==>', cameraPosition)
-
-            mesh.material.uniforms.cameraPos.value.copy( cameraPosition );
-        }
-
-        renderer.render( scene, camera );
-
     }
 
 
@@ -401,14 +316,19 @@ let renderer,
 
             this.camera.projectionMatrix = m;
 
-            camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+            // const translateScaleMatrix = new THREE.Matrix4().scale(new THREE.Vector3(1, 1, Number(parameters.verticalExaggeration)));
+
+            // const projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+
+            // camera.projectionMatrix = projectionMatrix.multiply(translateScaleMatrix)
+            camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix)
 
             if (mapIns && mesh && mesh.material ) {
+                mesh.scale.z = Number(parameters.verticalExaggeration)
+
                 const camera = mapIns.getFreeCameraOptions();
 
                 const cameraPosition = camera._position
-
-                // console.log('render ==>', cameraPosition)
 
                 mesh.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
             }
