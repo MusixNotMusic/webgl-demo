@@ -21,6 +21,7 @@ const modelRotate = [0, 0, 0];
 const parameters = { 
     colormap: 'Z',
     threshold: 0, 
+    threshold1: 1.0, 
     steps: 40, 
     verticalExaggeration: 5 
 };
@@ -116,8 +117,9 @@ let renderer,
       
         gui.add( parameters, 'colormap', colorNams ).onChange( update );
 		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
+		gui.add( parameters, 'threshold1', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
-		gui.add( parameters, 'verticalExaggeration', 1, 10, 1 );
+		gui.add( parameters, 'verticalExaggeration', 1, 20, 1 );
 
         const loader = new THREE.FileLoader();
 
@@ -174,6 +176,7 @@ let renderer,
             map: { value: texture },
             cameraPosition: { value: new THREE.Vector3() },
             threshold: { value: parameters.threshold },
+            threshold1: { value: parameters.threshold1 },
             steps:     { value: parameters.steps },
             colorMap:  { value: cmtextures[ parameters.colormap ] },
 		}
@@ -216,6 +219,7 @@ let renderer,
     function update() {
         material.uniforms.colorMap.value = cmtextures[ parameters.colormap ];
         material.uniforms.threshold.value = parameters.threshold;
+        material.uniforms.threshold1.value = parameters.threshold1;
         material.uniforms.steps.value = parameters.steps;
         render();
     }

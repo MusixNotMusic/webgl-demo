@@ -6,6 +6,7 @@ out vec4 color;
 uniform sampler3D map;
 uniform sampler2D colorMap;
 uniform float threshold;
+uniform float threshold1;
 uniform float steps;
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
@@ -65,28 +66,24 @@ vec3 normal( vec3 coord ) {
 void main(){
     vec3 rayDir = normalize( vDirection );
     vec2 bounds = hitBox( vOrigin, rayDir );
-    if ( bounds.x > bounds.y ) discard;
+    // if ( bounds.x > bounds.y ) discard;
     bounds.x = max( bounds.x, 0.0 );
     vec3 p = vOrigin + bounds.x * rayDir;
     vec3 inc = 1.0 / abs( rayDir );
-    // vec3 inc = 1.0 / rayDir;
     float delta = min( inc.x, min( inc.y, inc.z ) );
+    float d = 0.0;
     delta /= steps;
+    // if (abs(bounds.x - bounds.y) < 1.0) discard;
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
-        float d = sample1( p + 0.5 );
-        if (d > 0.0) {
-            color.rgb = normal( p + 0.5 ) * 0.5 + ( p * 1.5 + 0.25 );
-            color.a = 1.;
-            break;
-        }
-        if ( d > threshold ) {
-            color.rgb = normal( p + 0.5 ) * 0.5 + ( p * 1.5 + 0.25 );
+        d = sample1( p + 0.5 );
+        if (d > threshold && d < threshold1) {
+            // color.rgb = normal( p + 0.5 ) * 0.5 + texture(colorMap, vec2(d, 0.0)).rgb;
+            color.rgb = texture(colorMap, vec2(d, 0.0)).rgb;
             color.a = 1.;
             break;
         }
         p += rayDir * delta;
     }
 
-    // color = vec4(0.0, 0.0, 0.0, 1.0); 
     if ( color.a == 0.0 ) discard;
 }
