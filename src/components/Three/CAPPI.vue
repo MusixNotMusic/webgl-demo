@@ -22,6 +22,7 @@ const parameters = {
     colormap: 'Z',
     threshold: 0, 
     threshold1: 1.0, 
+    thresholdZ: 0.0, 
     steps: 40, 
     verticalExaggeration: 5 
 };
@@ -118,6 +119,7 @@ let renderer,
         gui.add( parameters, 'colormap', colorNams ).onChange( update );
 		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'threshold1', 0, 1, 0.01 ).onChange( update );
+		gui.add( parameters, 'thresholdZ', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
 		gui.add( parameters, 'verticalExaggeration', 1, 20, 1 );
 
@@ -177,6 +179,7 @@ let renderer,
             cameraPosition: { value: new THREE.Vector3() },
             threshold: { value: parameters.threshold },
             threshold1: { value: parameters.threshold1 },
+            thresholdZ: { value: parameters.thresholdZ },
             steps:     { value: parameters.steps },
             colorMap:  { value: cmtextures[ parameters.colormap ] },
 		}
@@ -191,9 +194,12 @@ let renderer,
         } );
 
         // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+        const geometry = new THREE.BoxGeometry( 1, 1, 1, 40, 40, 40 );
 
         mesh = new THREE.Mesh( geometry, material );
+
+        // mesh.material.wireframe = true
+        window.mesh = mesh
 
         const axesMesh = new THREE.AxesHelper( 1e6 );
 
@@ -220,6 +226,7 @@ let renderer,
         material.uniforms.colorMap.value = cmtextures[ parameters.colormap ];
         material.uniforms.threshold.value = parameters.threshold;
         material.uniforms.threshold1.value = parameters.threshold1;
+        material.uniforms.thresholdZ.value = parameters.thresholdZ;
         material.uniforms.steps.value = parameters.steps;
         render();
     }
@@ -328,7 +335,14 @@ let renderer,
             camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix)
 
             if (mapIns && mesh && mesh.material ) {
+
+                if( ! mesh.geometry.boundingBox ) mesh.geometry.computeBoundingBox();
+                var height = mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y;
+                //height is here the native height of the geometry
+                //that does not change with scaling. 
+                //So we need to multiply with scale again
                 mesh.scale.z = Number(parameters.verticalExaggeration)
+                mesh.position.z = height *  mesh.scale.z / 2 ;
 
                 const camera = mapIns.getFreeCameraOptions();
 
