@@ -9,19 +9,17 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-import CappiFragment from '../shaderThree/cappi.frag'
-import CappiVertex from '../shaderThree/cappi.vert'
+import FragmentShader from '../shaderThree/iso.frag'
+import VertexShader from '../shaderThree/iso.vert'
 
 const centerOrigin =  [104, 30] || [0, 0];
 
 const parameters = { 
-    colormap: 'Z',
-    threshold: 0.2, 
-    threshold1: 1.0, 
-    thresholdZ: 0.0, 
-    steps: 40, 
-    showMax: false,
-    verticalExaggeration: 5 
+    colorMap: 'Z',
+    clim1: 0, 
+    clim2: 1, 
+    renderstyle: 'iso', 
+    isothreshold: 0.15
 };
 
 let renderer,
@@ -93,12 +91,13 @@ let renderer,
         // The gui for interaction
         const gui = new GUI();
       
-        gui.add( parameters, 'colormap', colorNams ).onChange( update );
-		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
-		gui.add( parameters, 'threshold1', 0, 1, 0.01 ).onChange( update );
-		gui.add( parameters, 'showMax' ).onChange( update );
-		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
-		gui.add( parameters, 'verticalExaggeration', 1, 20, 1 );
+
+        gui.add( parameters, 'clim1', 0, 1, 0.01 ).onChange( update );
+        gui.add( parameters, 'clim2', 0, 1, 0.01 ).onChange( update );
+        gui.add( parameters, 'colorMap', colorNams ).onChange( update );
+        gui.add( parameters, 'renderstyle', { mip: 'mip', iso: 'iso' } ).onChange( update );
+        gui.add( parameters, 'isothreshold', 0, 1, 0.01 ).onChange( update );
+        
 
         const loader = new THREE.FileLoader();
 
@@ -154,38 +153,46 @@ let renderer,
         const uniforms =  {
             map: { value: texture },
             cameraPosition: { value: new THREE.Vector3() },
-            threshold: { value: parameters.threshold },
-            threshold1: { value: parameters.threshold1 },
-            thresholdZ: { value: parameters.thresholdZ },
-            showMax: { value: parameters.showMax },
-            steps:     { value: parameters.steps },
-            colorMap:  { value: cmtextures[ parameters.colormap ] },
+            u_size: { value: [ volume.xLength, volume.yLength,  volume.zLength ] },
+            u_clim: { value: [ parameters.clim1, parameters.clim2 ] },
+            u_renderstyle: { value: parameters.renderstyle == 'mip' ? 0 : 1 },
+            u_renderthreshold:     { value: parameters.isothreshold },
+            colorMap:  { value: cmtextures[ parameters.colorMap ] },
+            cameraPosition: { value: new THREE.Vector3() }
 		}
 
         material = new THREE.RawShaderMaterial( {
             glslVersion: THREE.GLSL3,
             uniforms: uniforms,
-            vertexShader: CappiVertex,
-            fragmentShader: CappiFragment,
+            vertexShader: VertexShader,
+            fragmentShader: FragmentShader,
+            depthTest: false,
+            depthWrite: false,
             transparent: true,
             side: THREE.DoubleSide
         } );
 
+        // material = new THREE.MeshBasicMaterial( {
+        //     color: 'red',
+        //     transparent: true,
+        //     side: THREE.DoubleSide
+        // } );
+
         // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( 1, 1, 1, 100, 100, 100 );
+        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
 
         mesh = new THREE.Mesh( geometry, material );
 
         // mesh.material.wireframe = true
         window.mesh = mesh
 
-        const axesMesh = new THREE.AxesHelper( 1e6 );
+        const axesMesh = new THREE.AxesHelper( 1e3 );
 
         scene.add(axesMesh);
         scene.add(mesh)
 
-        const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 500)
-        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 20000)
+        const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 1e4)
+        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 1e4)
 
         const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
 
@@ -201,12 +208,12 @@ let renderer,
     }
 
     function update() {
-        material.uniforms.colorMap.value = cmtextures[ parameters.colormap ];
-        material.uniforms.threshold.value = parameters.threshold;
-        material.uniforms.threshold1.value = parameters.threshold1;
-        material.uniforms.thresholdZ.value = parameters.thresholdZ;
-        material.uniforms.showMax.value = parameters.showMax;
-        material.uniforms.steps.value = parameters.steps;
+
+        material.uniforms[ 'u_clim' ].value = [ parameters.clim1, parameters.clim2 ];
+        material.uniforms[ 'u_renderstyle' ].value = parameters.renderstyle == 'mip' ? 0 : 1; // 0: MIP, 1: ISO
+        material.uniforms[ 'u_renderthreshold' ].value = parameters.isothreshold; // For ISO renderstyle
+        material.uniforms.colorMap.value = cmtextures[ parameters.colorMap ];
+
         render();
     }
 
@@ -235,22 +242,23 @@ let renderer,
             // camera.projectionMatrix = projectionMatrix.multiply(translateScaleMatrix)
             camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix)
 
-            if (mapIns && mesh && mesh.material ) {
+            // if (mapIns && mesh && mesh.material ) {
 
-                if( ! mesh.geometry.boundingBox ) mesh.geometry.computeBoundingBox();
-                var height = mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y;
-                //height is here the native height of the geometry
-                //that does not change with scaling. 
-                //So we need to multiply with scale again
-                mesh.scale.z = Number(parameters.verticalExaggeration)
-                mesh.position.z = height *  mesh.scale.z / 2 ;
+            //     if( ! mesh.geometry.boundingBox ) mesh.geometry.computeBoundingBox();
+            //     var height = mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y;
+            //     //height is here the native height of the geometry
+            //     //that does not change with scaling. 
+            //     //So we need to multiply with scale again
+            //     mesh.scale.z = Number(parameters.verticalExaggeration)
+            //     mesh.position.z = height *  mesh.scale.z / 2 ;
 
-                const camera = mapIns.getFreeCameraOptions();
+            //     const camera = mapIns.getFreeCameraOptions();
 
-                const cameraPosition = camera._position
+            //     const cameraPosition = camera._position
 
-                mesh.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
-            }
+            //     // if (mesh.material.uniforms)
+            //         mesh.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
+            // }
 
             if (renderer) {
                 renderer.resetState();
@@ -282,7 +290,6 @@ let renderer,
             center: centerOrigin,
             pitch: 45,
             projection: 'mercator',
-            // projection: 'globe',
             useWebGL2: true,
             antialias: true // create the gl context with MSAA antialiasing, so custom layers are antialiased
         });

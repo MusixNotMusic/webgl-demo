@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/MapboxShader",
+    redirect: "/demo2",
     component: () => import("../components/Index.vue"),
     children: [
       {
@@ -32,6 +32,11 @@ const routes= [
         path: "/CAPPI",
         name: "CAPPI",
         component: () => import("../components/Three/CAPPI.vue"),
+      },
+      {
+        path: "/demo2",
+        name: "demo2",
+        component: () => import("../components/Three/demo2.vue"),
       }
     ],
   },

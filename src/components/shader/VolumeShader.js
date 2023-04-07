@@ -132,6 +132,9 @@ const VolumeRenderShader1 = {
 								cast_iso1(u_renderthreshold + 0.2, start_loc, step, nsteps, view_ray);
 								cast_iso1(u_renderthreshold + 0.3, start_loc, step, nsteps, view_ray);
 						}
+						
+						gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+						
 						if (gl_FragColor.a < 0.05)
 								discard;
 				}
