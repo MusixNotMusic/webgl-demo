@@ -20,10 +20,11 @@ const modelRotate = [0, 0, 0];
 
 const parameters = { 
     colormap: 'Z',
-    threshold: 0, 
+    threshold: 0.2, 
     threshold1: 1.0, 
     thresholdZ: 0.0, 
     steps: 40, 
+    showMax: false,
     verticalExaggeration: 5 
 };
 
@@ -119,7 +120,7 @@ let renderer,
         gui.add( parameters, 'colormap', colorNams ).onChange( update );
 		gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( update );
 		gui.add( parameters, 'threshold1', 0, 1, 0.01 ).onChange( update );
-		gui.add( parameters, 'thresholdZ', 0, 1, 0.01 ).onChange( update );
+		gui.add( parameters, 'showMax' ).onChange( update );
 		gui.add( parameters, 'steps', 0, 300, 1 ).onChange( update );
 		gui.add( parameters, 'verticalExaggeration', 1, 20, 1 );
 
@@ -172,6 +173,10 @@ let renderer,
         texture.minFilter = texture.magFilter = THREE.LinearFilter;
         texture.unpackAlignment = 1;
         texture.needsUpdate = true;
+        // texture.wrapS = texture.wrapT = THREE.MirroredRepeatWrapping;
+        texture.generateMipmaps = true;
+        texture.mapping = THREE.CubeUVReflectionMapping
+        texture.encoding = THREE.BasicDepthPacking;
 
         // Material
         const uniforms =  {
@@ -180,6 +185,7 @@ let renderer,
             threshold: { value: parameters.threshold },
             threshold1: { value: parameters.threshold1 },
             thresholdZ: { value: parameters.thresholdZ },
+            showMax: { value: parameters.showMax },
             steps:     { value: parameters.steps },
             colorMap:  { value: cmtextures[ parameters.colormap ] },
 		}
@@ -194,7 +200,7 @@ let renderer,
         } );
 
         // THREE.Mesh
-        const geometry = new THREE.BoxGeometry( 1, 1, 1, 40, 40, 40 );
+        const geometry = new THREE.BoxGeometry( 1, 1, 1, 100, 100, 100 );
 
         mesh = new THREE.Mesh( geometry, material );
 
@@ -227,6 +233,7 @@ let renderer,
         material.uniforms.threshold.value = parameters.threshold;
         material.uniforms.threshold1.value = parameters.threshold1;
         material.uniforms.thresholdZ.value = parameters.thresholdZ;
+        material.uniforms.showMax.value = parameters.showMax;
         material.uniforms.steps.value = parameters.steps;
         render();
     }

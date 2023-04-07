@@ -11,7 +11,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { mat4 } from 'gl-matrix'
 import { CameraSync } from '../../lib/mapbox/CameraSync';
-import { VolumeRenderShader1 } from './VolumeShader';
+import { VolumeRenderShader1 } from '../shader/VolumeShader';
 
 import { Threebox } from 'threebox-plugin'; 
 

@@ -11,6 +11,7 @@ uniform float threshold;
 uniform float threshold1;
 uniform float thresholdZ;
 uniform float steps;
+uniform bool showMax;
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
     const vec3 box_min = vec3( - 0.5 );
@@ -81,9 +82,11 @@ void main(){
         d = sample1( p + 0.5 );
         if (d > threshold && d < threshold1) {
             // color.rgb = normal( p + 0.5 ) * 0.5 + texture(colorMap, vec2(d, 0.0)).rgb;
-            color.rgb = smoothstep(0.0, 1.0, texture(colorMap, vec2(d, 0.0)).rgb);
+            color.rgb = texture(colorMap, vec2(d, 0.0)).rgb;
             color.a = 1.;
-            break;
+            if (!showMax) {
+                break;
+            }
         }
         p += rayDir * delta;
     }
