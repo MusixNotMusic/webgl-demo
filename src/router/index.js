@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/demo2",
+    redirect: "/VolumeRender2",
     component: () => import("../components/Index.vue"),
     children: [
       {

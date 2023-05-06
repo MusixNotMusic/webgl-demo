@@ -19,7 +19,15 @@ let renderer,
     controls,
     material,
     mesh,
-    parameters,
+    parameters = {
+        colormap: 'Z',
+        threshold: 1, 
+        depthSampleCount: 128,
+        brightness: 1.0,
+        alpha: 0.5,
+        maxAlpha: 0.9,
+        minAlpha: 0.3,
+    },
     cmtextures,
     normals,
     uniforms,
@@ -35,7 +43,7 @@ let renderer,
     function initCamera () {
         aspect = window.innerWidth / window.innerHeight;
         camera = new THREE.PerspectiveCamera( 45, aspect , 1, 1e5 );
-        camera.position.set( 1e2, 1e2, 1e2 );
+        camera.position.set( 50, 50, 50 );
         camera.up.set( 0, 0, 1 ); // In our data, z is up
     }
 
@@ -45,14 +53,12 @@ let renderer,
         controls = new OrbitControls( camera, renderer.domElement );
         controls.addEventListener( 'change', render );
         controls.target.set( 0, 0, 0 );
-        // controls.minZoom = 0.5;
-        // controls.maxZoom = 4;
-        // controls.enablePan = false;
         controls.update();
     }
 
     function initGui () {
         const colors = [
+            { name: 'Z', path: '/color/Z.png' },
             { name: 'colors1', path: '/color/colors1.png' },
             { name: 'blue', path: '/color/blue.png'},
             { name: 'rainbow1', path: '/color/rainbow.png'},
@@ -67,12 +73,6 @@ let renderer,
             { name: 'gray', path: '/resource/cm_gray.png'},
             { name: 'rainbow', path: '/resource/rainbow.png'},
         ]
-        parameters = { 
-            colormap: 'rainbow',
-            threshold: 0.6, 
-            depthSampleCount: 256,
-            brightness: 1.0
-        };
 
         // Colormap textures
         cmtextures = {};
@@ -90,6 +90,9 @@ let renderer,
         gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( updateUniforms );
 		gui.add( parameters, 'depthSampleCount', 0, 1024, 1 ).onChange( updateUniforms );
 		gui.add( parameters, 'brightness', 0, 7, 0.1 ).onChange( updateUniforms );
+		gui.add( parameters, 'alpha', 0, 1, 0.01 ).onChange( updateUniforms );
+		gui.add( parameters, 'maxAlpha', 0, 1, 0.01 ).onChange( updateUniforms );
+		gui.add( parameters, 'minAlpha', 0, 1, 0.01 ).onChange( updateUniforms );
     }
 
     function init() {
@@ -153,11 +156,14 @@ let renderer,
             skybox:           { value: null },
             transform:        { value: null },
             inverseTransform: { value: null },
-            depthSampleCount: { value: 256 },
-            threshold:        { value: 0.1 },
+            depthSampleCount: { value: parameters.depthSampleCount },
+            threshold:        { value: parameters.threshold },
             zScale:           { value: 0.7 },
             brightness:       { value: 1.0 },
             aspect:           { value: aspect },
+            alpha:            { value: parameters.alpha },
+            maxAlpha:         { value: parameters.maxAlpha },
+            minAlpha:         { value: parameters.minAlpha },
         }
 
 
@@ -173,10 +179,8 @@ let renderer,
 
         // THREE.Mesh
         const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-        // geometry.translate( volume.xLength / 2, volume.yLength / 2, volume.zLength / 2 );
-
         mesh = new THREE.Mesh( geometry, material );
-        mesh.scale.set(volume.xLength, volume.yLength, volume.zLength + 50);
+        mesh.scale.set(volume.xLength / 10, volume.yLength / 10, volume.zLength / 10);
 
         scene.add( mesh );
 
@@ -190,6 +194,9 @@ let renderer,
         material.uniforms.threshold.value = parameters.threshold;
 		material.uniforms.depthSampleCount.value = parameters.depthSampleCount;
 		material.uniforms.brightness.value = parameters.brightness;
+		material.uniforms.alpha.value = parameters.alpha;
+		material.uniforms.maxAlpha.value = parameters.maxAlpha;
+		material.uniforms.minAlpha.value = parameters.minAlpha;
 
         render();
 

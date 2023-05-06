@@ -1,7 +1,5 @@
 precision highp float;
 precision highp sampler3D;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
 in vec3 vOrigin;
 in vec3 vDirection;
 out vec4 color;
@@ -10,17 +8,13 @@ uniform float threshold;
 uniform float depthSampleCount;
 
 uniform sampler3D tex;
-uniform sampler3D normals;
 uniform sampler2D colorMap;
-uniform samplerCube skybox;
-
-uniform mat4 transform;
-uniform mat4 inverseTransform;
-uniform float zScale;
 
 uniform float brightness;
 
-uniform vec3 lightPosition;
+uniform float alpha;
+uniform float maxAlpha;
+uniform float minAlpha;
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
     const vec3 box_min = vec3( - 0.5 );
@@ -55,6 +49,45 @@ vec3 normal( vec3 coord ) {
     return normalize( vec3( x, y, z ) );
 }
 
+// void main(){
+//     vec3 rayDir = normalize( vDirection );
+//     vec2 bounds = hitBox( vOrigin, rayDir );
+//     if ( bounds.x > bounds.y ) discard;
+//     bounds.x = max( bounds.x, 0.0 );
+//     vec3 p = vOrigin + bounds.x * rayDir;
+//     vec3 inc = 1.0 / abs( rayDir );
+//     vec4 pxColor = vec4(0.0);
+//     float delta = min( inc.x, min( inc.y, inc.z ) );
+//     delta /= depthSampleCount;
+//     // float d = 0.0;
+//     float maxVal = 0.0;
+//     for ( float t = bounds.x; t < bounds.y; t += delta ) {
+//         // d = sample1( p + 0.5 );
+
+//         maxVal = max(maxVal, sample1( p + 0.5 ));
+		
+// 		if(maxVal >= 0.99){
+// 			break;
+// 		}
+
+//         if ( maxVal > threshold ) {
+//             break;
+//         }
+//         p += rayDir * delta;
+//     }
+
+//     if (maxVal < 0.1) {
+//         discard;
+//     }
+
+//     pxColor = texture(colorMap, vec2(maxVal, 0.0));
+	
+//     // color.a = smoothstep(0.1, 0.95, maxVal);
+//     color = pxColor * brightness;
+    
+//     if ( color.a == 0.0 ) discard;
+// }
+
 void main(){
     vec3 rayDir = normalize( vDirection );
     vec2 bounds = hitBox( vOrigin, rayDir );
@@ -65,69 +98,58 @@ void main(){
     vec4 pxColor = vec4(0.0);
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= depthSampleCount;
-    // float d = 0.0;
-    float px = 0.0;
+    float val = 0.0;
+    float maxVal = 0.0;
+    float minVal = 1.0;
+    vec4 dist = vec4(1.0, 1.0, 1.0, 0.8);
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
-        // d = sample1( p + 0.5 );
 
-        px = max(px, sample1( p + 0.5 ));
+        val = sample1( p + 0.5 );
+
+        maxVal = max(maxVal, val);
+
+        if (val > 0.2) {
+            minVal = min(minVal, val);
+        }
 		
-		if(px >= 0.99){
+		if(maxVal >= 0.99){
 			break;
 		}
 
-        if ( px > threshold ) {
+        if ( maxVal > threshold ) {
             break;
         }
         p += rayDir * delta;
     }
 
-    if (px < 0.1) {
+    if (maxVal < 0.3) {
         discard;
     }
 
-    pxColor = texture(colorMap, vec2(px, 0.0));
+    // dist = alpha * dist + (1.0-alpha) * texture(colorMap, vec2(maxVal, 0.0));
+    vec4 colorMax = texture(colorMap, vec2(maxVal, 0.0));
+    vec4 colorMid = texture(colorMap, vec2((maxVal + minVal) * 0.5, 0.0));
+    vec4 colorMin = texture(colorMap, vec2(minVal, 0.0));
+
+    // dist.rgb = alpha * colorMin.rgb + (1.0 - alpha) * colorMax.a * colorMax.rgb;
+    // dist.a = colorMin.a + colorMax.a - colorMin.a * colorMax.a;
+
+    // dist = (1.0 - alpha) * colorMax + (1.0 - alpha) * 0.5 * colorMid + alpha * colorMin;
+
+    // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMid.rgb;
+    // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMin.rgb;
+
+    dist.rgb = minAlpha * colorMin.rgb + (1.0 - minAlpha) * maxAlpha * colorMax.rgb;
+
+    dist.a = maxAlpha + minAlpha - maxAlpha * minAlpha;
+    // dist.a = (1.0 - alpha) * maxAlpha +  alpha * minAlpha;
+    // dist.a = 1.0 - minVal;
+    pxColor = dist;
 	
-    color.a = smoothstep(0.1, 0.95, px);
+    // pxColor = texture(colorMap, vec2(maxVal, 0.0));
+
+    // color.a = smoothstep(0.1, 0.95, maxVal);
     color = pxColor * brightness;
     
     if ( color.a == 0.0 ) discard;
 }
-
-
-// void main(){
-//     vec3 rayDir = normalize( vDirection );
-//     vec2 bounds = hitBox( vOrigin, rayDir );
-//     if ( bounds.x > bounds.y ) discard;
-
-//     vec3 start = vOrigin.xyz + bounds.x * vDirection.xyz;
-//     vec3 end = vOrigin.xyz + bounds.y * vDirection.xyz;
-
-//     float len = distance(end, start);
-// 	int sampleCount = int(float(depthSampleCount) * len);
-
-//     vec3 texCo = vec3(0.0, 0.0, 0.0);
-//     vec4 pxColor = vec4(0.0);
-//     float px = 0.0;
-
-//     for(int count = 0; count < sampleCount; count++){    
-//         texCo = mix(start, end, float(count)/float(sampleCount));// - originOffset;
-//         px = max(px, sample1( texCo + 0.5 ));
-//         // px = max(px, sample1( p + 0.5 ));
-		
-// 		if(px >= 0.99){
-// 			break;
-// 		}
-//     }
-
-//     if (px < 0.1) {
-//         discard;
-//     }
-
-//     pxColor = texture(colorMap, vec2(px, 0.0));
-	
-//     color.a = px;
-//     color = pxColor * brightness;
-    
-//     if ( color.a == 0.0 ) discard;
-// }
