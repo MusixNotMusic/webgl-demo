@@ -102,11 +102,18 @@ void main(){
     float maxVal = 0.0;
     float minVal = 1.0;
     vec4 dist = vec4(1.0, 1.0, 1.0, 0.8);
+
+    vec4 sumColor = vec4(0.0);
+    float sumA = 0.0;
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
         val = sample1( p + 0.5 );
 
         maxVal = max(maxVal, val);
+
+        sumA += val;
+
+        sumColor = val * sumColor + texture(colorMap, vec2(val, 0.0));
 
         if (val > 0.2) {
             minVal = min(minVal, val);
@@ -139,12 +146,19 @@ void main(){
     // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMid.rgb;
     // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMin.rgb;
 
-    dist.rgb = minAlpha * colorMin.rgb + (1.0 - minAlpha) * maxAlpha * colorMax.rgb;
+    // dist.rgb = minAlpha * colorMin.rgb + (1.0 - minAlpha) * maxAlpha * colorMax.rgb;
 
-    dist.a = maxAlpha + minAlpha - maxAlpha * minAlpha;
+    // dist.a = maxAlpha + minAlpha - maxAlpha * minAlpha;
     // dist.a = (1.0 - alpha) * maxAlpha +  alpha * minAlpha;
     // dist.a = 1.0 - minVal;
-    pxColor = dist;
+
+    vec3 colorW = sumColor.rgb / sumA;
+    float avgA = sumA / depthSampleCount;
+    float u = pow(1.0 - avgA, depthSampleCount);
+
+    pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+    pxColor.a = 1.0;
+    // pxColor = dist;
 	
     // pxColor = texture(colorMap, vec2(maxVal, 0.0));
 
