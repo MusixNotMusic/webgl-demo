@@ -21,6 +21,7 @@ let renderer,
     mesh,
     parameters = {
         colormap: 'Z',
+        threshold0: 0,
         threshold: 1, 
         depthSampleCount: 128,
         brightness: 1.0,
@@ -88,6 +89,7 @@ let renderer,
         gui.add( parameters, 'colormap', colorNams ).onChange( updateUniforms );
 
         gui.add( parameters, 'threshold', 0, 1, 0.01 ).onChange( updateUniforms );
+        gui.add( parameters, 'threshold0', 0, 1, 0.01 ).onChange( updateUniforms );
 		gui.add( parameters, 'depthSampleCount', 0, 1024, 1 ).onChange( updateUniforms );
 		gui.add( parameters, 'brightness', 0, 7, 0.1 ).onChange( updateUniforms );
 		gui.add( parameters, 'alpha', 0, 1, 0.01 ).onChange( updateUniforms );
@@ -157,6 +159,7 @@ let renderer,
             transform:        { value: null },
             inverseTransform: { value: null },
             depthSampleCount: { value: parameters.depthSampleCount },
+            threshold0:       { value: parameters.threshold0 },
             threshold:        { value: parameters.threshold },
             zScale:           { value: 0.7 },
             brightness:       { value: 1.0 },
@@ -192,6 +195,7 @@ let renderer,
 
         material.uniforms[ 'colorMap' ].value = cmtextures[ parameters.colormap ];
         material.uniforms.threshold.value = parameters.threshold;
+        material.uniforms.threshold0.value = parameters.threshold0;
 		material.uniforms.depthSampleCount.value = parameters.depthSampleCount;
 		material.uniforms.brightness.value = parameters.brightness;
 		material.uniforms.alpha.value = parameters.alpha;

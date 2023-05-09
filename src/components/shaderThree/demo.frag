@@ -4,6 +4,7 @@ in vec3 vOrigin;
 in vec3 vDirection;
 out vec4 color;
 
+uniform float threshold0;
 uniform float threshold;
 uniform float depthSampleCount;
 
@@ -98,72 +99,49 @@ void main(){
     vec4 pxColor = vec4(0.0);
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= depthSampleCount;
+
     float val = 0.0;
     float maxVal = 0.0;
-    float minVal = 1.0;
-    vec4 dist = vec4(1.0, 1.0, 1.0, 0.8);
 
-    vec4 sumColor = vec4(0.0);
+    vec4 sumColor = vec4(1.0);
     float sumA = 0.0;
+    float n = 0.0;
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
         val = sample1( p + 0.5 );
 
-        maxVal = max(maxVal, val);
+        if (val > threshold0 && val < threshold) {
+            maxVal = max(maxVal, val);
 
-        sumA += val;
+            sumA += val;
 
-        sumColor = val * sumColor + texture(colorMap, vec2(val, 0.0));
+            sumColor = sumColor + val * texture(colorMap, vec2(val, 0.0));
 
-        if (val > 0.2) {
-            minVal = min(minVal, val);
+            n = n + 1.0;
         }
 		
-		if(maxVal >= 0.99){
-			break;
-		}
-
-        if ( maxVal > threshold ) {
-            break;
-        }
         p += rayDir * delta;
     }
 
-    if (maxVal < 0.3) {
-        discard;
-    }
+    // if(maxVal < 0.38) discard;
+    if(maxVal < 0.35 || maxVal > 0.99) discard;
 
-    // dist = alpha * dist + (1.0-alpha) * texture(colorMap, vec2(maxVal, 0.0));
     vec4 colorMax = texture(colorMap, vec2(maxVal, 0.0));
-    vec4 colorMid = texture(colorMap, vec2((maxVal + minVal) * 0.5, 0.0));
-    vec4 colorMin = texture(colorMap, vec2(minVal, 0.0));
-
-    // dist.rgb = alpha * colorMin.rgb + (1.0 - alpha) * colorMax.a * colorMax.rgb;
-    // dist.a = colorMin.a + colorMax.a - colorMin.a * colorMax.a;
-
-    // dist = (1.0 - alpha) * colorMax + (1.0 - alpha) * 0.5 * colorMid + alpha * colorMin;
-
-    // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMid.rgb;
-    // dist.rgb = (1.0 - alpha) * colorMax.rgb +  alpha * colorMin.rgb;
-
-    // dist.rgb = minAlpha * colorMin.rgb + (1.0 - minAlpha) * maxAlpha * colorMax.rgb;
-
-    // dist.a = maxAlpha + minAlpha - maxAlpha * minAlpha;
-    // dist.a = (1.0 - alpha) * maxAlpha +  alpha * minAlpha;
-    // dist.a = 1.0 - minVal;
 
     vec3 colorW = sumColor.rgb / sumA;
-    float avgA = sumA / depthSampleCount;
-    float u = pow(1.0 - avgA, depthSampleCount);
+    float avgA = sumA / n;
+    float u = pow(1.0 - avgA, n);
 
-    pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
-    pxColor.a = 1.0;
-    // pxColor = dist;
-	
-    // pxColor = texture(colorMap, vec2(maxVal, 0.0));
-
-    // color.a = smoothstep(0.1, 0.95, maxVal);
+    if (maxVal > 0.5) {
+        pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+    } else {
+        pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+    }
+    // pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+    // pxColor.a = pow( avgA, 1.0/ 2.2 );
+    // pxColor.a = (1.0 - u) * avgA + u * colorMax.a;
+    pxColor.a = pow( avgA, 1.0/ 2.2 );
     color = pxColor * brightness;
-    
+
     if ( color.a == 0.0 ) discard;
 }
