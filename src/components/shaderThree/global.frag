@@ -101,7 +101,7 @@ void main(){
 
     if (maxVal > 0.1) {
         pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
-        pxColor.a = pow( avgA, 1.0/ 2.2 );
+        pxColor.a = pow( avgA, 1.0/ 3.3 );
     } else {
         pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
         pxColor.a = pow( avgA, 1.0/ 2.5 );
