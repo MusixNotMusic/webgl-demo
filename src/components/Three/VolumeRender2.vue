@@ -112,7 +112,8 @@ let renderer,
 
         const loader = new THREE.FileLoader();
 
-        loader.setResponseType('arraybuffer').load('/resource/rtdpz3d', 
+        // loader.setResponseType('arraybuffer').load('/resource/rtdpz3d', 
+        loader.setResponseType('arraybuffer').load('/resource/data1', 
             (data) => { 
                 const dv = new DataView(data, 0, 32);
                 const body = new DataView(data, 32);
@@ -146,6 +147,8 @@ let renderer,
 
     const initVolume = (volume) => {
         const texture = new THREE.Data3DTexture( volume.data, volume.xLength, volume.yLength, volume.zLength );
+        // const planeSize = volume.xLength * volume.yLength;
+        // const texture = new THREE.Data3DTexture( volume.data.slice(volume.xLength * volume.yLength * 24, volume.xLength * volume.yLength * volume.zLength), volume.xLength, volume.yLength, 8 );
         texture.format = THREE.RedFormat;
         texture.type = THREE.UnsignedByteType;
         texture.minFilter = texture.magFilter = THREE.LinearFilter;

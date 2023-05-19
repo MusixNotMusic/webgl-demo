@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/VolumeRender2",
+    redirect: "/global",
     component: () => import("../components/Index.vue"),
     children: [
       {
@@ -37,7 +37,17 @@ const routes= [
         path: "/demo2",
         name: "demo2",
         component: () => import("../components/Three/demo2.vue"),
-      }
+      },
+      {
+        path: "/global",
+        name: "global",
+        component: () => import("../components/Three/GlobalRadar3D.vue"),
+      },
+      {
+        path: "/center",
+        name: "center",
+        component: () => import("../components/Three/BoundsCenter.vue"),
+      },
     ],
   },
 ];

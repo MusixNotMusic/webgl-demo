@@ -11,6 +11,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 
 import FragmentShader from '../shaderThree/iso.frag'
 import VertexShader from '../shaderThree/iso.vert'
+import { accessToken } from './token'
 
 const centerOrigin =  [104, 30] || [0, 0];
 
@@ -279,7 +280,7 @@ let renderer,
     };
 
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xiYWZybGowMGFlYTN2bzFtaWRrcmR5OCJ9.Qvl9IQUEuWq2eD3GvkJ5AQ';
+    mapboxgl.accessToken = accessToken;
 
     const initMapbox = () => {
         const map = new mapboxgl.Map({

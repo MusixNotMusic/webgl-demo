@@ -1,166 +1,90 @@
 precision highp float;
-precision highp int;
 precision highp sampler3D;
+in vec3 vOrigin;
+in vec3 vDirection;
+out vec4 color;
+
+uniform float threshold0;
+uniform float threshold;
+uniform float depthSampleCount;
 
 uniform sampler3D tex;
-uniform sampler3D normals;
 uniform sampler2D colorMap;
-uniform samplerCube skybox;
-
-uniform mat4 transform;
-uniform mat4 inverseTransform;
-uniform int depthSampleCount;
-uniform float zScale;
 
 uniform float brightness;
 
-uniform vec3 lightPosition;
+uniform float alpha;
+uniform float maxAlpha;
+uniform float minAlpha;
 
-//uniform vec4 opacitySettings;
-// x: minLevel
-// y: maxLevel
-// z: lowNode
-// w: highNode
-
-// in vec2 texCoord;
-in vec3 texCoord;
-
-//in vec4 origin;
-//in vec4 direction;
-
-out vec4 color;
-
-const vec3 ambientLight = vec3(0.34, 0.32, 0.32);
-//const vec3 ambientLight = vec3(0.0, 0.0, 0.0);
-const vec3 directionalLight = vec3(0.5, 0.5, 0.5);
-const vec3 lightVector = normalize(vec3(-1.0, 0.0, 0.0));
-const vec3 specularColor = vec3(0.5, 0.5, 0.5);
-
-const float specularIntensity = 0.2;
-const float shinyness = 5.0;
-const float scatterFactor = 2.0;
-const float reflectScattering = 1.0;
-
-vec3 aabb[2] = vec3[2](
-	vec3(0.0, 0.0, 0.0),
-	vec3(1.0, 1.0, 1.0)
-);
-
-struct Ray {
-    vec3 origin;
-    vec3 direction;
-    vec3 inv_direction;
-    int sign[3];
-};
-
-Ray makeRay(vec3 origin, vec3 direction) {
-    vec3 inv_direction = vec3(1.0) / direction;
-    
-    return Ray(
-        origin,
-        direction,
-        inv_direction,
-        int[3](
-			((inv_direction.x < 0.0) ? 1 : 0),
-			((inv_direction.y < 0.0) ? 1 : 0),
-			((inv_direction.z < 0.0) ? 1 : 0)
-		)
-    );
+vec2 hitBox( vec3 orig, vec3 dir ) {
+    const vec3 box_min = vec3( - 0.5 );
+    const vec3 box_max = vec3( 0.5 );
+    vec3 inv_dir = 1.0 / dir;
+    vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
+    vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
+    vec3 tmin = min( tmin_tmp, tmax_tmp );
+    vec3 tmax = max( tmin_tmp, tmax_tmp );
+    float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
+    float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
+    return vec2( t0, t1 );
 }
 
-/*
-	From: https://github.com/hpicgs/cgsee/wiki/Ray-Box-Intersection-on-the-GPU
-*/
-void intersect(
-    in Ray ray, in vec3 aabb[2],
-    out float tmin, out float tmax
-){
-    float tymin, tymax, tzmin, tzmax;
-    tmin = (aabb[ray.sign[0]].x - ray.origin.x) * ray.inv_direction.x;
-    tmax = (aabb[1-ray.sign[0]].x - ray.origin.x) * ray.inv_direction.x;
-    tymin = (aabb[ray.sign[1]].y - ray.origin.y) * ray.inv_direction.y;
-    tymax = (aabb[1-ray.sign[1]].y - ray.origin.y) * ray.inv_direction.y;
-    tzmin = (aabb[ray.sign[2]].z - ray.origin.z) * ray.inv_direction.z;
-    tzmax = (aabb[1-ray.sign[2]].z - ray.origin.z) * ray.inv_direction.z;
-    tmin = max(max(tmin, tymin), tzmin);
-    tmax = min(min(tmax, tymax), tzmax);
+float sample1( vec3 p ) {
+    return texture( tex, p ).r;
+}
+
+#define epsilon .0001
+
+vec3 normal( vec3 coord ) {
+    if ( coord.x < epsilon ) return vec3( 1.0, 0.0, 0.0 );
+    if ( coord.y < epsilon ) return vec3( 0.0, 1.0, 0.0 );
+    if ( coord.z < epsilon ) return vec3( 0.0, 0.0, 1.0 );
+    if ( coord.x > 1.0 - epsilon ) return vec3( - 1.0, 0.0, 0.0 );
+    if ( coord.y > 1.0 - epsilon ) return vec3( 0.0, - 1.0, 0.0 );
+    if ( coord.z > 1.0 - epsilon ) return vec3( 0.0, 0.0, - 1.0 );
+    float step = 0.01;
+    float x = sample1( coord + vec3( - step, 0.0, 0.0 ) ) - sample1( coord + vec3( step, 0.0, 0.0 ) );
+    float y = sample1( coord + vec3( 0.0, - step, 0.0 ) ) - sample1( coord + vec3( 0.0, step, 0.0 ) );
+    float z = sample1( coord + vec3( 0.0, 0.0, - step ) ) - sample1( coord + vec3( 0.0, 0.0, step ) );
+    return normalize( vec3( x, y, z ) );
 }
 
 void main(){
-	
-	//transform = inverse(transform);
-	
-	vec4 origin = vec4(0.0, 0.0, 2.0, 1.0);
-	// origin = transform * origin;
-	origin = origin / origin.w;
-	origin.z = origin.z / zScale;
-	origin = origin + 0.5;
+    vec3 rayDir = normalize( vDirection );
+    vec2 bounds = hitBox( vOrigin, rayDir );
+    if ( bounds.x > bounds.y ) discard;
+    bounds.x = max( bounds.x, 0.0 );
+    vec3 p = vOrigin + bounds.x * rayDir;
+    vec3 inc = 1.0 / abs( rayDir );
+    vec4 pxColor = vec4(0.0);
+    float delta = min( inc.x, min( inc.y, inc.z ) );
+    delta /= depthSampleCount;
+    // float d = 0.0;
+    float maxVal = 0.0;
+    for ( float t = bounds.x; t < bounds.y; t += delta ) {
+        // d = sample1( p + 0.5 );
 
-	// vec4 image = vec4(texCoord, 10.0, 1.0);
-	vec4 image = vec4(texCoord, 1.0);
-	// image = transform * image;
-	//image = image / image.w;
-	image.z = image.z / zScale;
-	image = image + 0.5;
-	//vec4 direction = vec4(0.0, 0.0, 1.0, 0.0);
-	vec4 direction = normalize(origin-image);
-	//direction = transform * direction;
-
-	Ray ray = makeRay(origin.xyz, direction.xyz);
-	float tmin = 0.0;
-	float tmax = 0.0;
-	intersect(ray, aabb, tmin, tmax);
-
-	vec4 value = vec4(0.0, 0.0, 0.0, 0.0);
-
-	//vec4 background = texture(skybox, direction.xyz);
-
-	if(tmin > tmax){
-		/*color = value;
-		discard;*/
-
-		//color = background;
-		return;
-	}
-
-	vec3 start = origin.xyz + tmin*direction.xyz;
-	vec3 end = origin.xyz + tmax*direction.xyz;
-	
-	float len = distance(end, start);
-	int sampleCount = int(float(depthSampleCount)*len);
-	vec3 increment = (end-start)/float(sampleCount);
-	float incLength = length(increment);
-	increment = normalize(increment);
-	vec3 pos = start;
-	//vec3 originOffset = mod((start-origin.xyz), increment);
-
-	float s = 0.0;
-	float px = 0.0;
-	vec4 pxColor = vec4(0.0, 0.0, 0.0, 0.0);
-	vec3 texCo = vec3(0.0, 0.0, 0.0);
-	vec3 normal = vec3(0.0, 0.0, 0.0);
-	vec4 zero = vec4(0.0);
-
-	float last = 0.0;
-	
-	for(int count = 0; count < sampleCount; count++){
-
-		texCo = mix(start, end, float(count)/float(sampleCount));// - originOffset;
-
-		px = max(px, texture(tex, texCo).r);
+        maxVal = max(maxVal, sample1( p + 0.5 ));
 		
-		if(px >= 0.99){
+		if(maxVal >= 0.99){
 			break;
 		}
-	}
 
-	pxColor = texture(colorMap, vec2(px, 0.5));
+        if ( maxVal > threshold ) {
+            break;
+        }
+        p += rayDir * delta;
+    }
+
+    if (maxVal < 0.1) {
+        discard;
+    }
+
+    pxColor = texture(colorMap, vec2(maxVal, 0.0));
 	
-	value = pxColor;
-
-	//background = texture(skybox, normalize(direction.xyz));
-	//color = mix(background, value, value.a);
-	color = value*brightness;
-
-	// color = vec4( 1.0, 0.0, 0.0, 1.0);
+    // color.a = smoothstep(0.1, 0.95, maxVal);
+    color = pxColor * brightness;
+    
+    if ( color.a == 0.0 ) discard;
 }
