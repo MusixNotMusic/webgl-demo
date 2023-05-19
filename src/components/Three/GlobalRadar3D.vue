@@ -10,6 +10,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 import fragmentShader from '../shaderThree/global.frag'
+// import fragmentShader from '../shaderThree/normalMax.frag'
 import vertexShader from '../shaderThree/demo.vert'
 
 const centerOrigin =  [104, 30] || [0, 0];
@@ -183,7 +184,7 @@ function init(map) {
         scene.add(mesh)
 
         const min = mapboxgl.MercatorCoordinate.fromLngLat([volume.minLongitude, volume.minLatitude], 0)
-        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 50000)
+        const max =  mapboxgl.MercatorCoordinate.fromLngLat([volume.maxLongitude, volume.maxLatitude], 80000)
 
         const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ]
 

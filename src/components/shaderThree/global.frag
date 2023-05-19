@@ -99,7 +99,7 @@ void main(){
     float avgA = sumA / n;
     float u = pow(1.0 - avgA, n);
 
-    if (maxVal > 0.2) {
+    if (maxVal > 0.1) {
         pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
         pxColor.a = pow( avgA, 1.0/ 2.2 );
     } else {
