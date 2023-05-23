@@ -68,7 +68,6 @@ void main(){
     bounds.x = max( bounds.x, 0.0 );
     vec3 p = vOrigin + bounds.x * rayDir;
     vec3 inc = 1.0 / abs( rayDir );
-    vec4 pxColor = vec4(0.0);
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= depthSampleCount;
 

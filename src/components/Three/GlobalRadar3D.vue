@@ -122,7 +122,8 @@ function init(map) {
                 minLongitude: minLongitude / 360000,
                 minLatitude: minLatitude / 360000,
                 maxLongitude: maxLongitude / 360000,
-                maxLatitude: maxLatitude / 360000
+                maxLatitude: maxLatitude / 360000,
+                cutHeight: cutHeight
             };
             console.log('result ==>', volume)
 

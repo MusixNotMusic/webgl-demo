@@ -48,6 +48,11 @@ const routes= [
         name: "center",
         component: () => import("../components/Three/BoundsCenter.vue"),
       },
+      {
+        path: "/VolumeDataTest",
+        name: "VolumeDataTest",
+        component: () => import("../components/Three/VolumeDataTest.vue"),
+      },
     ],
   },
 ];
