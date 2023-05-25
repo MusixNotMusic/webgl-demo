@@ -93,8 +93,6 @@ void main(){
 
     if(maxVal < 0.01 || maxVal > 0.99) discard;
 
-    // if(maxVal > 0.01 && maxVal < 0.2) discard;
-
     vec4 colorMax = texture(colorMap, vec2(maxVal, 0.0));
 
     vec3 norm = normal(maxP + 0.5);

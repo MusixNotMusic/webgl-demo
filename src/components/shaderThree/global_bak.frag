@@ -49,7 +49,7 @@ float sample1( vec3 p ) {
 
 vec3 normal( in vec3 p ) // for function f(p)
 {
-    const float eps = 0.005; // or some other value
+    const float eps = 0.0001; // or some other value
     const vec2 h = vec2(eps,0);
     return normalize( vec3(sample1(p+h.xyy) - sample1(p-h.xyy),
                            sample1(p+h.yxy) - sample1(p-h.yxy),
@@ -71,20 +71,21 @@ void main(){
     float val = 0.0;
     float maxVal = 0.0;
 
-    vec3 maxP = vec3(1.0);
+    vec4 sumColor = vec4(1.0);
+    float sumA = 0.0;
+    float n = 0.0;
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
-        val = sample1( p + 0.5 ) * 255.0;
-
-        if(val > 0.0) val = 0.6;
+        val = sample1( p + 0.5 );
 
         if (val > threshold0 && val < threshold) {
+            maxVal = max(maxVal, val);
 
-            if (maxVal < val) {
-                maxVal = val;
-                maxP = p;
-            }
+            sumA += val;
 
+            sumColor = sumColor + val * texture(colorMap, vec2(val, 0.0));
+
+            n = n + 1.0;
         }
 		
         p += rayDir * delta;
@@ -92,35 +93,45 @@ void main(){
 
     if(maxVal < 0.01 || maxVal > 0.99) discard;
 
-    // if(maxVal > 0.01 && maxVal < 0.2) discard;
-
     vec4 colorMax = texture(colorMap, vec2(maxVal, 0.0));
 
-    vec3 norm = normal(maxP + 0.5);
+    vec3 colorW = sumColor.rgb / sumA;
+    float avgA = sumA / n;
+    float u = pow(1.0 - avgA, n);
 
-    // if (dot(norm, norm) < 0.001) discard;
+    if (maxVal > 0.2) {
+        pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+        pxColor.a = pow( avgA, 1.0/ 3.3 );
+    } 
+    // else if (maxVal <= 0.2 && maxVal > 0.1) {
+    //     pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+    //     pxColor.a = 1.0;
+    // }
+     else {
+        pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+        pxColor.a = pow( avgA, 1.0/ 2.5 );
+    } 
+   
+    // pxColor.a = pow( avgA, 1.0/ 2.2 );
+    color = pxColor * brightness;
 
-    vec3 v = normalize(cameraPosition);
+    // vec3 norm = normal(p);
+    // vec3 v = normalize(cameraPosition);
     
-    vec3 l = normalize(vec3(1.0, 1.0, 1.0));
-    vec3 highlight = vec3(1.0, 1.0, 1.0);
+    // vec3 l = normalize(vec3(0.0, 0.0, 1.0));
+    // vec3 highlight = vec3(1.0, 0.0, 0.0);
 
-    vec3 cool = vec3(0.0, 0.0, 0.5) + 0.25 * colorMax.rgb;
-    vec3 warm = vec3(0.3, 0.3, 0.0) + colorMax.rgb;
-    float d = dot(norm, l);
-    float t = (d + 1.0) * 0.5;
-    vec3 r = 2.0 * d * norm - l;
-    float s = clamp((100.0 * dot(r, v) - 97.0), 0.0, 1.0);
+    // vec3 cool = vec3(0.0, 0.0, 0.55) + 0.25 * pxColor.rgb;
+    // vec3 warm = vec3(0.3, 0.3, 0.0) + 0.25 * pxColor.rgb;
+    // float d = dot(norm, l);
+    // float t = (d + 1.0) * 0.5;
+    // vec3 r = 2.0 * d * norm - l;
+    // float s = clamp((100.0 * dot(r, v) - 97.0), 0.0, 1.0);
 
-    vec3 shaded = s * highlight + (1.0 - s)*(t * warm + (1.0 - t) * cool);
-    // vec3 shaded = s * highlight + (1.0 - s)* colorMax.rgb;
-
+    // vec3 shaded = s * highlight + (1.0 - s)*(t * warm + (1.0 - t) * cool);
 
     // color.rgb = shaded;
-    color.rgb = pow(shaded, vec3(1.0 / 2.2));
-
-    // color.a = clamp(maxVal, 0.5, 0.9);
-    color.a = 1.0;
+    // color.a = pow( avgA, 1.0/ 2.2 );
 
     if ( color.a == 0.0 ) discard;
 }

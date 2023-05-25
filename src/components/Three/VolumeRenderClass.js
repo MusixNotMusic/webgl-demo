@@ -32,6 +32,8 @@ export default class VolumeRenderClass{
 
         this.altitude = altitude;
 
+        this.volume = null;
+
         this.renderer = new THREE.WebGLRenderer({ alpha: true });
         this.scene = new THREE.Scene();
         this.camera = new THREE.Camera();
@@ -130,6 +132,8 @@ export default class VolumeRenderClass{
     
                 // 清除场景
                 this.clearScene();
+
+                this.volume = volume;
     
                 if (isEmpty(this.colorMapTexture)) {
                     this.initGui()
@@ -183,6 +187,8 @@ export default class VolumeRenderClass{
 
     initVolume(volume) {
         console.log('initVolume ==>', volume)
+        const faceSize = volume.width * volume.height;
+        // const texture = new THREE.Data3DTexture( volume.data.slice(10 * faceSize, 11 * faceSize), volume.width, volume.height, 1 );
         const texture = new THREE.Data3DTexture( volume.data, volume.width, volume.height, volume.depth );
         texture.format = THREE.RedFormat;
         texture.type = THREE.UnsignedByteType;
@@ -212,6 +218,7 @@ export default class VolumeRenderClass{
         const mesh = new THREE.Mesh( geometry, material );
 
         mesh.rotation.z = -Math.PI / 2;
+        // mesh.rotation.z = Math.PI;
 
         this.geometry = geometry;
         this.material = material;
@@ -226,7 +233,7 @@ export default class VolumeRenderClass{
 
         this.meshHL = meshHL;
 
-        // this.scene.add(meshHL)
+        this.scene.add(meshHL)
 
         const bounds = {
             minX: volume.minLongitude,
