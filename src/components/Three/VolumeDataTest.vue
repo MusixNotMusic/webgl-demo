@@ -5,6 +5,7 @@
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
+import * as THREE from 'three'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -39,13 +40,13 @@ const initMapbox = () => {
 
 
     map.on('style.load', () => {
-        // volumeRender = new VolumeRenderClass('volume-test', map, '/resource/6200/testUU', vertexShader, fragmentGobalBakShader, 20000)
-        // volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/6200/testUD', vertexShader, fragmentGobalBakShader, 20000)
+        volumeRender = new VolumeRenderClass('volume-test', map, '/resource/data1(6)', vertexShader, fragmentGobalBakShader, 60000, true)
+        // volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/2', vertexShader, fragmentGobalBakShader, 20000)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
         // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
-        // volumeRender.drawLayer();
         // volumeRender1.drawLayer();
         volumeRenderGlobal.drawLayer();
+        volumeRender.drawLayer();
     });
 
     map.on('click', (e) => {
@@ -55,7 +56,7 @@ const initMapbox = () => {
 
         console.log('mercatorCoord ==>', mercatorCoord);
 
-        // const result = cutOneRadarData(volumeRenderGlobal.volume, e.lngLat)
+        const result = cutOneRadarData(volumeRenderGlobal.volume, e.lngLat)
         // console.log('result', result)
     })
 }
@@ -66,46 +67,47 @@ const cutOneRadarData = (volume, center) => {
     // const yIndex = Math.ceil((maxLongitude - lng) / (maxLongitude - minLongitude) * width);
     // const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * height);
 
-    const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * width);
-    const xIndex = Math.ceil((lat - minLatitude) / (maxLatitude - minLatitude) * height);
+    const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
+    const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * width);
     const faceSize = width * height;
 
     let vec2_x = [1, 0, 0]
     let vec2_y = [0, 1, 0]
 
     const getVal = (volume, z, y, x) => {
-        console.log('offset ==>', y * width + x)
-        return volume.data[faceSize * z +  y * width + x]
+        // console.log('offset ==>', faceSize * z +  y * width + x, volume.data[faceSize * z +  y * width + x])
+        return volume.data[faceSize * z +  (y - 1) * width + x]
     }
 
     if (center) {
-        const slice = volume.data.slice(10 * faceSize, 11 * faceSize)
-        const index = slice.findIndex(i => i > 45)
-        console.log(slice)
-        console.log(index, index / width | 0, index % width)
-        console.log('yIndex, xIndex', yIndex, xIndex,  getVal(volume, 10, yIndex, xIndex))
+        // const slice = volume.data.slice(10 * faceSize, 11 * faceSize)
+        // const index = slice.findIndex(i => i > 45)
+        // console.log(slice)
+        // console.log(index, index / width | 0, index % width)
+        // console.log('yIndex, xIndex', yIndex, xIndex,  getVal(volume, 10, yIndex, xIndex))
+        console.log('xIndex, yIndex', xIndex, yIndex)
 
-        for (let d = 0; d < depth; d++) {
-            for (let i = 0; true; i++) {
-                const x = xIndex + vec2_x[0] * i;
-                const y = xIndex + vec2_x[1] * i;
-                const index = faceSize * d + width * (y - 1) + x;
-                if (!volume.data[index]) {
-                    vec2_x[2] = Math.max(vec2_x[2], i);
-                    break;
-                }
-            }
+        // for (let d = 0; d < depth; d++) {
+        //     for (let i = 0; true; i++) {
+        //         const x = xIndex + vec2_x[0] * i;
+        //         const y = xIndex + vec2_x[1] * i;
+        //         const index = faceSize * d + width * (y - 1) + x;
+        //         if (!volume.data[index]) {
+        //             vec2_x[2] = Math.max(vec2_x[2], i);
+        //             break;
+        //         }
+        //     }
 
-            for (let i = 0; true; i++) {
-                const x = xIndex + vec2_y[0] * i;
-                const y = xIndex + vec2_y[1] * i;
-                const index = faceSize * d + width * (y - 1) + x;
-                if (!volume.data[index]) {
-                    vec2_y[2] = Math.max(vec2_y[2], i);
-                    break;
-                }
-            }
-        }
+        //     for (let i = 0; true; i++) {
+        //         const x = xIndex + vec2_y[0] * i;
+        //         const y = xIndex + vec2_y[1] * i;
+        //         const index = faceSize * d + width * (y - 1) + x;
+        //         if (!volume.data[index]) {
+        //             vec2_y[2] = Math.max(vec2_y[2], i);
+        //             break;
+        //         }
+        //     }
+        // }
 
         let maxVal = 0;
         for (let d = 0; d < depth; d++) {
@@ -122,14 +124,85 @@ const cutOneRadarData = (volume, center) => {
     }
 }
 
+const readFile = (path) => {
+    const loader = new THREE.FileLoader();
+    loader.setResponseType('arraybuffer').load(path, 
+            (data) => { 
+                const dv = new DataView(data, 0, 32);
+                const body = new DataView(data, 32);
+                const minLongitude = dv.getUint32(0, true);
+                const minLatitude = dv.getUint32(4, true);
+                const maxLongitude = dv.getUint32(8, true);
+                const maxLatitude = dv.getUint32(12, true);
+                const widDataCnt = dv.getUint32(16, true);
+                const heiDataCnt = dv.getUint32(20, true);
+                const layerCnt = dv.getUint32(24, true);
+                const cutHeight = dv.getFloat32(28, true);
+    
+                const volume = {
+                    data: new Uint8Array(body.buffer.slice(32)),
+                    width: widDataCnt,
+                    height: heiDataCnt,
+                    depth: layerCnt,
+                    minLongitude: minLongitude / 360000,
+                    minLatitude: minLatitude / 360000,
+                    maxLongitude: maxLongitude / 360000,
+                    maxLatitude: maxLatitude / 360000,
+                    cutHeight: cutHeight
+                };
+                console.log('readFile ===>',  volume)
+
+                const { width, height, depth } = volume;
+
+                const faceSize = width * height;
+               
+                const length = (v1) => {
+                    return Math.sqrt(v1[0] ** 2 + v1[1] ** 2 + v1[2] ** 2);
+                }
+
+                const dot = (v1, v2) => {
+                    return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
+                }
+
+                const cosine = (v1, v2) => {
+                    return dot(v1, v2) / (length(v1) * length(v2))
+                }
+
+                const radius = Math.min(width / 2 | 0, height / 2 | 0);
+                const center = [width / 2 | 0, height / 2 | 0, 0]
+                const vx = [1, 0, 0];
+
+                for(let z = 0; z < depth; z++) {
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const vector = [x - center[0], y - center[1], z - center[2] ];
+                            if (length(vector) <= radius) {
+                                const cos = cosine(vector, vx);
+                                if (cos < 0.8) {
+                                    volume.data[z * faceSize + width * y + x] = 0;
+                                }
+                            } else {
+                                volume.data[z * faceSize + width * y + x] = 0;
+                            }
+                        }
+                    }
+                }
+               
+            }, 
+            (xhr) => { }, 
+            (err) => { console.error( 'An error happened' ) }
+        )
+}
+
 onMounted(() => {
     initMapbox()
+
+    readFile('/resource/data1(6)');
 })
 
 onUnmounted(() => {
-    // volumeRender.dispose();
-    // volumeRender1.dispose();
     if (volumeRender1) volumeRender1.dispose()
+    if (volumeRender) volumeRender.dispose()
     if (volumeRenderGlobal) volumeRenderGlobal.dispose()
 })
     
