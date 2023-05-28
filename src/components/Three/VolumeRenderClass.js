@@ -21,7 +21,7 @@ const colors = [
 ]
 
 export default class VolumeRenderClass{
-    constructor(id, map, path, vertexShader, fragmentShader, altitude) {
+    constructor(id, map, path, vertexShader, fragmentShader, altitude, other) {
         this.id = id;
         this.map = map;
 
@@ -31,6 +31,8 @@ export default class VolumeRenderClass{
         this.path = path;
 
         this.altitude = altitude;
+
+        this.other = other;
 
         this.volume = null;
 
@@ -102,6 +104,53 @@ export default class VolumeRenderClass{
         this.material.uniforms.brightness.value = this.parameters.brightness;
     }
 
+    otherOperation (volume) {
+        const { width, height, depth } = volume;
+
+        const faceSize = width * height;
+        
+        const length2 = (v1) => {
+            return Math.sqrt(v1[0] ** 2 + v1[1] ** 2);
+        }
+        
+        const length = (v1) => {
+            return Math.sqrt(v1[0] ** 2 + v1[1] ** 2 + v1[2] ** 2);
+        }
+
+        const dot = (v1, v2) => {
+            return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
+        }
+
+        const cosine = (v1, v2) => {
+            return dot(v1, v2) / (length(v1) * length(v2))
+        }
+
+        const radius = Math.min(width / 2 | 0, height / 2 | 0);
+        const center = [width / 2 | 0, height / 2 | 0, 0]
+        const vx = [0, 0, 1];
+
+        for(let z = 0; z < depth; z++) {
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const vector = [x - center[0], y - center[1], z - center[2] ];
+                    const vector1 = [x - center[0], y - center[1] ];
+                    if (length2(vector1) <= radius) {
+                        const cos = Math.abs(cosine(vector, vx));
+                        if (cos < 0.5 || cos > 0.6) {
+                            volume.data[z * faceSize + width * y + x] = 0;
+                        }
+                    } else {
+                        volume.data[z * faceSize + width * y + x] = 0;
+                    }
+                }
+            }
+        }
+        volume.minLongitude = 111.64374340131893
+        volume.minLatitude = 32.2670560540258
+        volume.maxLongitude = 112.90954306845631
+        volume.maxLatitude = 33.5884722189723
+    }
+
     init() {
         const loader = new THREE.FileLoader();
     
@@ -129,6 +178,10 @@ export default class VolumeRenderClass{
                     maxLatitude: maxLatitude / 360000,
                     cutHeight: cutHeight
                 };
+
+                if (this.other) {
+                    this.otherOperation(volume)
+                }
     
                 // 清除场景
                 this.clearScene();

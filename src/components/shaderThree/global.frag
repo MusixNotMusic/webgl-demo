@@ -5,6 +5,8 @@ in vec3 vDirection;
 in vec4 vRadarOrigin;
 in vec3 horizon;
 
+in vec3 normal;
+
 out vec4 color;
 
 uniform float threshold0;
@@ -16,7 +18,7 @@ uniform sampler2D colorMap;
 uniform vec3 cameraPosition;
 uniform float brightness;
 
-vec4 pos = vec4(0.1, 0.1, 0.00, 0.03);
+vec4 pos = vec4(0.2, 0.2, -0.45, 0.03);
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
     const vec3 box_min = vec3( - 0.5 );
@@ -39,32 +41,11 @@ vec4 colorSimple( float val ) {
     return texture(colorMap, vec2(val, 0.0));
 }
 
-// vec3 normal( vec3 coord ) {
-//     if ( coord.x < epsilon ) return vec3( 1.0, 0.0, 0.0 );
-//     if ( coord.y < epsilon ) return vec3( 0.0, 1.0, 0.0 );
-//     if ( coord.z < epsilon ) return vec3( 0.0, 0.0, 1.0 );
-//     if ( coord.x > 1.0 - epsilon ) return vec3( - 1.0, 0.0, 0.0 );
-//     if ( coord.y > 1.0 - epsilon ) return vec3( 0.0, - 1.0, 0.0 );
-//     if ( coord.z > 1.0 - epsilon ) return vec3( 0.0, 0.0, - 1.0 );
-//     // float step = 0.0005;
-//     // float step1 = 0.0007;
-//     float step = 0.001;
-//     float step1 = 0.001;
-//     float x = sample1( coord + vec3( - step, 0.0, 0.0 ) ) - sample1( coord + vec3( step, 0.0, 0.0 ) );
-//     float y = sample1( coord + vec3( 0.0, - step1, 0.0 ) ) - sample1( coord + vec3( 0.0, step1, 0.0 ) );
-//     float z = sample1( coord + vec3( 0.0, 0.0, - step ) ) - sample1( coord + vec3( 0.0, 0.0, step ) );
-//     return normalize( vec3( x, y, z ) );
-// }
-
-// vec3 normal( in vec3 p ) // for function f(p)
-// {
-//     const float eps = 0.0001; // or some other value
-//     const vec2 h = vec2(eps,0);
-//     return normalize( vec3(sample1(p+h.xyy) - sample1(p-h.xyy),
-//                            sample1(p+h.yxy) - sample1(p-h.yxy),
-//                            sample1(p+h.yyx) - sample1(p-h.yyx) ) );
-// }
-
+float sdCone( vec3 p, vec2 c, float h )
+{
+  float q = length(p.xz);
+  return max(dot(c.xy,vec2(q,p.y)),-h-p.y);
+}
 
 void main(){
     vec3 rayDir = normalize( vDirection );
@@ -91,74 +72,82 @@ void main(){
 
         val = sample1( p + 0.5 );
 
-        if (val > threshold0 && val < threshold) {
-            // if (length(p.xyz - vRadarOrigin.xyz) < vRadarOrigin.w) {
-            //     vec3 horizonX = normalize(horizon);
-            //     vec3 rayDir = normalize(p.xyz - vRadarOrigin.xyz);
-            //     float deg = abs(dot(horizonX, rayDir));
-            //     if (deg > 0.1 && deg < 0.999) {
-            //         // maxVal = val;
-            //         maxVal = val;
-            //         targetP = p;
-            //         break;
-            //     } else {
-            //         maxVal = 0.0;
-            //     }
-            // } else {
-            //     maxVal = max(maxVal, val);
+        // if (val > threshold0 && val < threshold) {
 
-            //     if (maxVal < val) {
-            //         maxVal = val;
-            //     }
-            //     sumA += val;
+        //     if (maxVal < val) {
+        //         maxVal = val;
+        //         maxP = p;
+        //     }
+        //     sumA += val;
 
-            //     sumColor = sumColor + val * texture(colorMap, vec2(val, 0.0));
+        //     sumColor = sumColor + val * colorSimple(val);
 
-            //     n = n + 1.0;
-            // }
+        //     n = n + 1.0;
+        // }
 
-            if (maxVal < val) {
-                maxVal = val;
-                maxP = p;
-            }
-            sumA += val;
-
-            sumColor = sumColor + val * colorSimple(val);
-
-            n = n + 1.0;
-        }
+        if (length(p.xy - pos.xy) < pos.w) {
+                // vec3 horizonZ = horizon;
+                // vec3 dir = p - pos.xyz;
+                // // vec3 dir = normalize(vec3(p.x - pos.x, p.y - pos.y, p.z - pos.z));
+                // vec3 dx = (vec3(1.0, 0.0, 1.0));
+                // vec3 dy = normalize(vec3(0.0, 1.0, 0.0));
+                // float deg = abs(dot(dir, dx) / (length(dir) * length(dx)));
+                // if (deg > 0.05 && deg < 0.1 ) {
+                //     maxVal = clamp(val, 0.7, 1.0);
+                //     // maxVal = 0.9;
+                //     // break;
+                // }  else{
+                    // maxVal = 0.4;
+                // }
+                // maxVal = val;
+                if (maxVal < val) {
+                    maxVal = val;
+                } 
+                // break;
+         }
 		
         p += rayDir * delta;
     }
 
     if(maxVal < 0.01 || maxVal > 0.99) discard;
 
-    pxColor = vec4(normalize(maxP), 1.0);
-    
-    if (length(maxP.xy - vRadarOrigin.xy) < vRadarOrigin.w) {
-        vec3 horizonX = normalize(horizon);
-        vec3 rayDir = normalize(maxP.xyz - vRadarOrigin.xyz);
-        float deg = abs(dot(vec3(0.0, 0.0, 1.0), rayDir));
-        if (deg > 0.3 && deg < 0.4) {
-            pxColor = colorSimple(maxVal);
-        } else {
-            discard;
-        }
-    } else {
-        // vec4 colorMax = colorSimple(maxVal);
-        // vec3 colorW = sumColor.rgb / sumA;
-        // float avgA = sumA / n;
-        // float u = pow(1.0 - avgA, n);
-        //  if (maxVal > 0.2) {
-        //     pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
-        //     pxColor.a = pow( avgA, 1.0/ 3.3 );
-        // } else {
-        //     pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
-        //     pxColor.a = pow( avgA, 1.0/ 2.5 );
-        // } 
-    }
+    // pxColor = vec4(normalize(maxP), 1.0);
 
-    // if (length(p.xy - vRadarOrigin.xy) < 0.001) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+    pxColor = colorSimple(maxVal);
+    
+    // if (length(p.xy - vRadarOrigin.xy) < vRadarOrigin.w) {
+    //     pxColor = colorSimple(maxVal);
+    // } else {
+    //     vec4 colorMax = colorSimple(maxVal);
+    //     vec3 colorW = sumColor.rgb / sumA;
+    //     float avgA = sumA / n;
+    //     float u = pow(1.0 - avgA, n);
+    //      if (maxVal > 0.2) {
+    //         pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+    //         pxColor.a = pow( avgA, 1.0/ 3.3 );
+    //     } else {
+    //         pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+    //         pxColor.a = pow( avgA, 1.0/ 2.5 );
+    //     } 
+    // }
+
+    // vec4 colorMax = colorSimple(maxVal);
+    // vec3 colorW = sumColor.rgb / sumA;
+    // float avgA = sumA / n;
+    // float u = pow(1.0 - avgA, n);
+    //     if (maxVal > 0.2) {
+    //     pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+    //     pxColor.a = pow( avgA, 1.0/ 3.3 );
+    // } else {
+    //     pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+    //     pxColor.a = pow( avgA, 1.0/ 2.5 );
+    // } 
+
+    // if (length(p.xy - vRadarOrigin.xy) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+
+    if (length(p.xy - vec2(-0.5)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+    if (length(p.xy - vec2(-0.5, -0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+    if (length(p.xy - vec2(-0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     color = pxColor * brightness;
 
