@@ -18,7 +18,7 @@ uniform sampler2D colorMap;
 uniform vec3 cameraPosition;
 uniform float brightness;
 
-vec4 pos = vec4(0.2, 0.2, -0.45, 0.03);
+vec4 pos = vec4(0.2, 0.1, -0.5, 0.03);
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
     const vec3 box_min = vec3( - 0.5 );
@@ -72,37 +72,35 @@ void main(){
 
         val = sample1( p + 0.5 );
 
-        // if (val > threshold0 && val < threshold) {
+        if (val > threshold0 && val < threshold) {
 
-        //     if (maxVal < val) {
-        //         maxVal = val;
-        //         maxP = p;
-        //     }
-        //     sumA += val;
+            if (maxVal < val) {
+                maxVal = val;
+                maxP = p;
+            }
+            sumA += val;
 
-        //     sumColor = sumColor + val * colorSimple(val);
+            sumColor = sumColor + val * colorSimple(val);
 
-        //     n = n + 1.0;
-        // }
+            n = n + 1.0;
+        }
 
         if (length(p.xy - pos.xy) < pos.w) {
-                // vec3 horizonZ = horizon;
-                // vec3 dir = p - pos.xyz;
+                vec3 horizonZ = normalize(horizon);
+                vec3 dir = normalize(pos.xyz - p);
                 // // vec3 dir = normalize(vec3(p.x - pos.x, p.y - pos.y, p.z - pos.z));
-                // vec3 dx = (vec3(1.0, 0.0, 1.0));
+                vec3 dx = normalize(vec3(1.0, 0.0, 0.0));
                 // vec3 dy = normalize(vec3(0.0, 1.0, 0.0));
-                // float deg = abs(dot(dir, dx) / (length(dir) * length(dx)));
-                // if (deg > 0.05 && deg < 0.1 ) {
-                //     maxVal = clamp(val, 0.7, 1.0);
-                //     // maxVal = 0.9;
-                //     // break;
-                // }  else{
-                    // maxVal = 0.4;
-                // }
-                // maxVal = val;
-                if (maxVal < val) {
+                float deg = abs(dot(dir, dx));
+                if (deg > 0.2 && deg < 0.5) {
+                    // maxVal = clamp(val, 0.7, 1.0);
                     maxVal = val;
-                } 
+                    // break;
+                }
+                // maxVal = val;
+                // if (maxVal < val) {
+                //     maxVal = val;
+                // } 
                 // break;
          }
 		
@@ -131,17 +129,17 @@ void main(){
     //     } 
     // }
 
-    // vec4 colorMax = colorSimple(maxVal);
-    // vec3 colorW = sumColor.rgb / sumA;
-    // float avgA = sumA / n;
-    // float u = pow(1.0 - avgA, n);
-    //     if (maxVal > 0.2) {
-    //     pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
-    //     pxColor.a = pow( avgA, 1.0/ 3.3 );
-    // } else {
-    //     pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
-    //     pxColor.a = pow( avgA, 1.0/ 2.5 );
-    // } 
+    vec4 colorMax = colorSimple(maxVal);
+    vec3 colorW = sumColor.rgb / sumA;
+    float avgA = sumA / n;
+    float u = pow(1.0 - avgA, n);
+        if (maxVal > 0.2) {
+        pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
+        pxColor.a = pow( avgA, 1.0/ 3.3 );
+    } else {
+        pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
+        pxColor.a = pow( avgA, 1.0/ 2.5 );
+    } 
 
     // if (length(p.xy - vRadarOrigin.xy) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 

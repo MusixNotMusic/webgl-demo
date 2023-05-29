@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/global",
+    redirect: "/NortheastChinaColdVortex",
     component: () => import("../components/Index.vue"),
     children: [
       {
@@ -44,14 +44,14 @@ const routes= [
         component: () => import("../components/Three/GlobalRadar3D.vue"),
       },
       {
-        path: "/center",
-        name: "center",
+        path: "/BoundsCenter",
+        name: "BoundsCenter",
         component: () => import("../components/Three/BoundsCenter.vue"),
       },
       {
-        path: "/VolumeDataTest",
-        name: "VolumeDataTest",
-        component: () => import("../components/Three/VolumeDataTest.vue"),
+        path: "/NortheastChinaColdVortex",
+        name: "NortheastChinaColdVortex",
+        component: () => import("../components/Three/NortheastChinaColdVortex.vue"),
       },
     ],
   },
