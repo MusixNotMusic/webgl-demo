@@ -145,10 +145,6 @@ export default class VolumeRenderClass{
                 }
             }
         }
-        volume.minLongitude = 111.64374340131893
-        volume.minLatitude = 32.2670560540258
-        volume.maxLongitude = 112.90954306845631
-        volume.maxLatitude = 33.5884722189723
     }
 
     init() {
@@ -214,6 +210,9 @@ export default class VolumeRenderClass{
 
     reset(volume) {
         this.clearScene();
+        if (this.other) {
+            this.otherOperation(volume)
+        }
         this.render(volume)
     }
 

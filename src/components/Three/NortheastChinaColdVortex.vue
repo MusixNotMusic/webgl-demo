@@ -40,13 +40,14 @@ const initMapbox = () => {
 
 
     map.on('style.load', () => {
-        volumeRender = new VolumeRenderClass('volume-test', map, '/resource/data1(6)', vertexShader, fragmentGobalBakShader, 60000, true)
-        volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/cutData', vertexShader, fragmentGobalBakShader, 60000)
+        // volumeRender = new VolumeRenderClass('volume-test', map, '/resource/data1(6)', vertexShader, fragmentGobalBakShader, 60000, true)
+        volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/cutData', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
         // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
-        volumeRender1.drawLayer();
+        // volumeRender1.drawLayer();
         volumeRenderGlobal.drawLayer();
-        volumeRender.drawLayer();
+        volumeRender1.drawLayer();
+        // volumeRender.drawLayer();
     });
 
     map.on('click', (e) => {
@@ -61,7 +62,7 @@ const initMapbox = () => {
         // console.log('result', result)
         // console.log('arraybuffer', arraybuffer)
 
-        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 40, 50, 32)
+        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 50, 60, 32)
     })
 }
 
@@ -311,11 +312,11 @@ const renderVolume = (volume, centerOffset, width, height, depth) => {
 
     const faceSize = width * height;
 
-    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (top + y) + (left + x)]
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (bottom - y) + (right - x)]
 
     for(let z = 0; z < depth; z++) {
         for (let y = 0; y < height; y++) {
-            for (let x = width - 1; x >= 0; x--) {
+            for (let x = 0; x < width; x++) {
                 data[z * faceSize + y * width + x] = apply(x, y, z);
             }
         }
