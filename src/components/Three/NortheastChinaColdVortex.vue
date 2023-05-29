@@ -62,7 +62,7 @@ const initMapbox = () => {
         // console.log('result', result)
         // console.log('arraybuffer', arraybuffer)
 
-        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 50, 60, 32)
+        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 60, 60, 32)
     })
 }
 
