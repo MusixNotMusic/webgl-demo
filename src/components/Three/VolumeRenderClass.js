@@ -206,12 +206,16 @@ export default class VolumeRenderClass{
     }
     
     render (volume) {
+
         this.initVolume(volume);
         this.setColorMap(this.parameters.colorMap);
         this.drawLayer()
     }
 
-
+    reset(volume) {
+        this.clearScene();
+        this.render(volume)
+    }
 
 
     initCanvas(map, gl) {

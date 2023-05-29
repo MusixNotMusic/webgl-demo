@@ -41,10 +41,10 @@ const initMapbox = () => {
 
     map.on('style.load', () => {
         volumeRender = new VolumeRenderClass('volume-test', map, '/resource/data1(6)', vertexShader, fragmentGobalBakShader, 60000, true)
-        // volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/2', vertexShader, fragmentGobalBakShader, 20000)
+        volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/cutData', vertexShader, fragmentGobalBakShader, 60000)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
         // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
-        // volumeRender1.drawLayer();
+        volumeRender1.drawLayer();
         volumeRenderGlobal.drawLayer();
         volumeRender.drawLayer();
     });
@@ -57,7 +57,11 @@ const initMapbox = () => {
         console.log('mercatorCoord ==>', mercatorCoord);
 
         const result = cutOneRadarData(volumeRenderGlobal.volume, e.lngLat)
+        // const arraybuffer = cutCenterData(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 40, 50, 32)
         // console.log('result', result)
+        // console.log('arraybuffer', arraybuffer)
+
+        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 40, 50, 32)
     })
 }
 
@@ -67,8 +71,19 @@ const cutOneRadarData = (volume, center) => {
     // const yIndex = Math.ceil((maxLongitude - lng) / (maxLongitude - minLongitude) * width);
     // const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * height);
 
+    const tan = Math.tan;
+
     const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
     const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * width);
+
+    const radian2deg = (radian) => radian / 180 * Math.PI;
+    const h1 = tan(radian2deg(minLatitude));
+    const h2 = tan(radian2deg(maxLatitude));
+    const dh = (h2 - h1) / width;
+    const yIndex1 = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
+    const xIndex1 = Math.ceil((h2 - tan(radian2deg(lat))) / dh);
+    // const xIndex1 = width - Math.ceil((tan(radian2deg(lat)) - h1) / dh);
+
     const faceSize = width * height;
 
     let vec2_x = [1, 0, 0]
@@ -79,6 +94,7 @@ const cutOneRadarData = (volume, center) => {
         return volume.data[faceSize * z +  (y - 1) * width + x]
     }
 
+
     if (center) {
         // const slice = volume.data.slice(10 * faceSize, 11 * faceSize)
         // const index = slice.findIndex(i => i > 45)
@@ -86,6 +102,7 @@ const cutOneRadarData = (volume, center) => {
         // console.log(index, index / width | 0, index % width)
         // console.log('yIndex, xIndex', yIndex, xIndex,  getVal(volume, 10, yIndex, xIndex))
         console.log('xIndex, yIndex', xIndex, yIndex)
+        // console.log('xIndex1, yIndex1', xIndex1, yIndex1)
 
         // for (let d = 0; d < depth; d++) {
         //     for (let i = 0; true; i++) {
@@ -110,11 +127,16 @@ const cutOneRadarData = (volume, center) => {
         // }
 
         let maxVal = 0;
+        // let maxVal1 = 0;
         for (let d = 0; d < depth; d++) {
            const val = getVal(volume, d, yIndex, xIndex)
            maxVal = Math.max(maxVal, val);
+
+        //    const val1 = getVal(volume, d, yIndex1, xIndex1)
+        //    maxVal1 = Math.max(maxVal1, val1);
         }
         console.log('maxVal', maxVal);
+        // console.log('maxVal1', maxVal1);
     }
     return {
         xIndex,
@@ -192,6 +214,117 @@ const readFile = (path) => {
             (xhr) => { }, 
             (err) => { console.error( 'An error happened' ) }
         )
+}
+
+/**
+ *  const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
+ *  const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * width);
+ * @param {*} volume 
+ * @param {*} x 
+ * @param {*} y 
+ */
+const index2Lnglat = (volume, x, y) => {
+    const {maxLatitude, maxLongitude, minLatitude, minLongitude, height, width} = volume;
+    return {
+        lng: minLongitude + y * (maxLongitude - minLongitude) / height,
+        lat: maxLatitude - x * (maxLatitude - minLatitude) / width,
+    }
+}
+
+const cutCenterData = (volume, centerOffset, width, height, depth) => {
+    const data = new Uint8Array(width * height * depth + 32);
+    const dv = new DataView(data.buffer);
+
+    const { offsetX, offsetY } = centerOffset;
+    const top = Math.ceil(offsetY - height / 2);
+    const bottom = Math.ceil(offsetY + height / 2);
+    const left = Math.ceil(offsetX - width / 2);
+    const right = Math.ceil(offsetX + width / 2);
+    /**
+     *      const minLongitude = dv.getUint32(0, true);
+            const minLatitude = dv.getUint32(4, true);
+            const maxLongitude = dv.getUint32(8, true);
+            const maxLatitude = dv.getUint32(12, true);
+            const widDataCnt = dv.getUint32(16, true);
+            const heiDataCnt = dv.getUint32(20, true);
+            const layerCnt = dv.getUint32(24, true);
+            const cutHeight = dv.getFloat32(28, true);
+     */
+    const min = index2Lnglat(volume, left, bottom);
+    const max = index2Lnglat(volume, right, top);
+
+    dv.setUint32(0,  min.lng * 360000 | 0, true)
+    dv.setUint32(4,  min.lat * 360000 | 0, true)
+    dv.setUint32(8,  max.lng * 360000 | 0, true)
+    dv.setUint32(12, max.lat * 360000 | 0, true)
+
+    dv.setUint32(16, width, true)
+    dv.setUint32(20, height, true)
+    dv.setUint32(24, depth, true)
+    dv.setFloat32(28, 500.0, true)
+
+    const faceSize = width * height;
+
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (top + y) + (left + x)]
+    for(let z = 0; z < depth; z++) {
+        for (let y = 0; y < height; y++) {
+            for (let x = width - 1; x >= 0; x--) {
+                data[z * faceSize + y * width + x + 32] = apply(x, y, z);
+            }
+        }
+    }
+
+
+    const elem = window.document.createElement('a');
+    elem.href = window.URL.createObjectURL(new Blob([data], {type: "application/octet-stream"}));
+    elem.download = 'cutData';        
+    document.body.appendChild(elem);
+    elem.click();        
+    document.body.removeChild(elem);
+
+    return new File([new Blob([data])], 'data1');
+}
+
+
+const renderVolume = (volume, centerOffset, width, height, depth) => {
+    let volumeData = {};
+    const data = new Uint8Array(width * height * depth);
+
+    const { offsetX, offsetY } = centerOffset;
+    const top = Math.ceil(offsetY - height / 2);
+    const bottom = Math.ceil(offsetY + height / 2);
+    const left = Math.ceil(offsetX - width / 2);
+    const right = Math.ceil(offsetX + width / 2);
+    const min = index2Lnglat(volume, left, bottom);
+    const max = index2Lnglat(volume, right, top);
+
+    volumeData = {
+        minLongitude: min.lng,
+        minLatitude:  min.lat,
+        maxLongitude: max.lng,
+        maxLatitude:  max.lat,
+        width:        width,
+        height:       height,
+        depth:        depth,
+        cutHeight:    500
+    }
+
+    const faceSize = width * height;
+
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (top + y) + (left + x)]
+
+    for(let z = 0; z < depth; z++) {
+        for (let y = 0; y < height; y++) {
+            for (let x = width - 1; x >= 0; x--) {
+                data[z * faceSize + y * width + x] = apply(x, y, z);
+            }
+        }
+    }
+
+    volumeData.data = data;
+
+    volumeRender1.reset(volumeData)
+
 }
 
 onMounted(() => {

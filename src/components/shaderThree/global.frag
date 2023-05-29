@@ -18,7 +18,7 @@ uniform sampler2D colorMap;
 uniform vec3 cameraPosition;
 uniform float brightness;
 
-vec4 pos = vec4(0.2, 0.1, -0.5, 0.03);
+vec4 pos = vec4(0.0, 0.1, -0.5, 0.03);
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
     const vec3 box_min = vec3( - 0.5 );
@@ -85,24 +85,27 @@ void main(){
             n = n + 1.0;
         }
 
-        if (length(p.xy - pos.xy) < pos.w) {
-                vec3 horizonZ = normalize(horizon);
-                vec3 dir = normalize(pos.xyz - p);
-                // // vec3 dir = normalize(vec3(p.x - pos.x, p.y - pos.y, p.z - pos.z));
-                vec3 dx = normalize(vec3(1.0, 0.0, 0.0));
-                // vec3 dy = normalize(vec3(0.0, 1.0, 0.0));
-                float deg = abs(dot(dir, dx));
-                if (deg > 0.2 && deg < 0.5) {
-                    // maxVal = clamp(val, 0.7, 1.0);
-                    maxVal = val;
-                    // break;
-                }
-                // maxVal = val;
-                // if (maxVal < val) {
-                //     maxVal = val;
-                // } 
-                // break;
-         }
+        // if (length(p.xy - pos.xy) < pos.w) {
+        //         vec3 horizonZ = normalize(horizon);
+        //         vec3 dir = normalize(pos.xyz - p);
+        //         // // vec3 dir = normalize(vec3(p.x - pos.x, p.y - pos.y, p.z - pos.z));
+        //         vec3 dx = (vec3(1.0, 0.0, 0.0));
+        //         // vec3 dy = normalize(vec3(0.0, 1.0, 0.0));
+        //         float deg = abs(dot(dir, dx));
+        //         if (deg < 0.5) {
+        //             // maxVal = clamp(val, 0.7, 1.0);
+        //             maxVal = val;
+        //             break;
+        //         }
+        //         // else {
+        //         //     maxVal = 0.4;
+        //         // }
+
+        //         // maxVal = val;
+        //         // if (maxVal < val) {
+        //         //     maxVal = val;
+        //         // } 
+        //  }
 		
         p += rayDir * delta;
     }
