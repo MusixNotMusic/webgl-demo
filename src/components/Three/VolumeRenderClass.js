@@ -136,7 +136,19 @@ export default class VolumeRenderClass{
                     const vector1 = [x - center[0], y - center[1] ];
                     if (length2(vector1) <= radius) {
                         const cos = Math.abs(cosine(vector, vx));
-                        if (cos < 0.4 || cos > 0.6) {
+                        // if (cos < 0.3 || cos > 0.4) {
+                        //     volume.data[z * faceSize + width * y + x] = 0;
+                        // }
+
+                        if (
+                            (cos > 0.01 && cos < 0.1) ||
+                            // (cos > 0.12 && cos < 0.18) ||
+                            (cos > 0.2 && cos < 0.3) ||
+                            // (cos > 0.32 && cos < 0.38) ||
+                            (cos > 0.4 && cos < 0.5) 
+                            ) {
+                            continue;
+                        } else {
                             volume.data[z * faceSize + width * y + x] = 0;
                         }
                     } else {

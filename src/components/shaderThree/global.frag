@@ -150,6 +150,9 @@ void main(){
     if (length(p.xy - vec2(-0.5, -0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
     if (length(p.xy - vec2(-0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 
+    // if (mod(p.x, 0.0005) < 0.0001) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+    // if (mod(p.y, 0.0007) < 0.0001) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
+
     color = pxColor * brightness;
 
     if ( color.a == 0.0 ) discard;

@@ -40,33 +40,33 @@ const initMapbox = () => {
 
 
     map.on('style.load', () => {
-        // volumeRender = new VolumeRenderClass('volume-test', map, '/resource/data1(6)', vertexShader, fragmentGobalBakShader, 60000, true)
-        volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/cutData', vertexShader, fragmentGobalBakShader, 60000, true)
+        volumeRender = new VolumeRenderClass('volume-test', map, '/resource/eastnorth75', vertexShader, fragmentGobalBakShader, 60000, true)
+        volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/eastnorth150', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
         // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
-        // volumeRender1.drawLayer();
         volumeRenderGlobal.drawLayer();
         volumeRender1.drawLayer();
-        // volumeRender.drawLayer();
+        volumeRender.drawLayer();
     });
 
     map.on('click', (e) => {
         console.log(e.lngLat.lng, e.lngLat.lat)
 
-        const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat([e.lngLat.lng, e.lngLat.lat], 1000);
+        // const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat([e.lngLat.lng, e.lngLat.lat], 1000);
+        // console.log('mercatorCoord ==>', mercatorCoord);
 
-        console.log('mercatorCoord ==>', mercatorCoord);
+        pickupVolumeData(volumeRenderGlobal.volume, e.lngLat)
 
-        const result = cutOneRadarData(volumeRenderGlobal.volume, e.lngLat)
-        // const arraybuffer = cutCenterData(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 40, 50, 32)
-        // console.log('result', result)
-        // console.log('arraybuffer', arraybuffer)
+        // cutCenterData(volumeRenderGlobal.volume, {offsetX: 277, offsetY: 1800}, 150, 150, 32)
 
-        renderVolume(volumeRenderGlobal.volume, {offsetX: 176, offsetY: 1727}, 60, 60, 32)
+        // renderVolume(volumeRenderGlobal.volume, {offsetX: 277, offsetY: 1800}, 150, 150, 32)
     })
 }
 
-const cutOneRadarData = (volume, center) => {
+const deg2radian = (deg) => deg / 180 * Math.PI;
+const radian2deg = (radian) => radian / Math.PI * 180;
+
+const pickupVolumeData = (volume, center) => {
     const { maxLatitude, maxLongitude, minLatitude, minLongitude, width, height, depth } = volume;
     const { lng, lat } = center;
     // const yIndex = Math.ceil((maxLongitude - lng) / (maxLongitude - minLongitude) * width);
@@ -77,73 +77,42 @@ const cutOneRadarData = (volume, center) => {
     const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
     const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * width);
 
-    const radian2deg = (radian) => radian / 180 * Math.PI;
-    const h1 = tan(radian2deg(minLatitude));
-    const h2 = tan(radian2deg(maxLatitude));
+    const h1 = tan(deg2radian(minLatitude));
+    const h2 = tan(deg2radian(maxLatitude));
     const dh = (h2 - h1) / width;
     const yIndex1 = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
-    const xIndex1 = Math.ceil((h2 - tan(radian2deg(lat))) / dh);
-    // const xIndex1 = width - Math.ceil((tan(radian2deg(lat)) - h1) / dh);
+    const xIndex1 = Math.ceil((h2 - tan(deg2radian(lat))) / dh);
+    // const xIndex1 = width - Math.ceil((tan(deg2radian(lat)) - h1) / dh);
 
     const faceSize = width * height;
 
-    let vec2_x = [1, 0, 0]
-    let vec2_y = [0, 1, 0]
-
     const getVal = (volume, z, y, x) => {
-        // console.log('offset ==>', faceSize * z +  y * width + x, volume.data[faceSize * z +  y * width + x])
         return volume.data[faceSize * z +  (y - 1) * width + x]
     }
 
 
     if (center) {
-        // const slice = volume.data.slice(10 * faceSize, 11 * faceSize)
-        // const index = slice.findIndex(i => i > 45)
-        // console.log(slice)
-        // console.log(index, index / width | 0, index % width)
-        // console.log('yIndex, xIndex', yIndex, xIndex,  getVal(volume, 10, yIndex, xIndex))
         console.log('xIndex, yIndex', xIndex, yIndex)
-        // console.log('xIndex1, yIndex1', xIndex1, yIndex1)
-
-        // for (let d = 0; d < depth; d++) {
-        //     for (let i = 0; true; i++) {
-        //         const x = xIndex + vec2_x[0] * i;
-        //         const y = xIndex + vec2_x[1] * i;
-        //         const index = faceSize * d + width * (y - 1) + x;
-        //         if (!volume.data[index]) {
-        //             vec2_x[2] = Math.max(vec2_x[2], i);
-        //             break;
-        //         }
-        //     }
-
-        //     for (let i = 0; true; i++) {
-        //         const x = xIndex + vec2_y[0] * i;
-        //         const y = xIndex + vec2_y[1] * i;
-        //         const index = faceSize * d + width * (y - 1) + x;
-        //         if (!volume.data[index]) {
-        //             vec2_y[2] = Math.max(vec2_y[2], i);
-        //             break;
-        //         }
-        //     }
-        // }
-
         let maxVal = 0;
-        // let maxVal1 = 0;
         for (let d = 0; d < depth; d++) {
            const val = getVal(volume, d, yIndex, xIndex)
            maxVal = Math.max(maxVal, val);
-
-        //    const val1 = getVal(volume, d, yIndex1, xIndex1)
-        //    maxVal1 = Math.max(maxVal1, val1);
         }
         console.log('maxVal', maxVal);
-        // console.log('maxVal1', maxVal1);
+
+
+        console.log('xIndex1, yIndex1', xIndex1, yIndex1)
+        let maxVal1 = 0;
+        for (let d = 0; d < depth; d++) {
+
+           const val1 = getVal(volume, d, yIndex1, xIndex1)
+           maxVal1 = Math.max(maxVal1, val1);
+        }
+        console.log('maxVal1', maxVal1);
     }
     return {
         xIndex,
         yIndex,
-        vec2X: vec2_x,
-        vec2Y: vec2_y
     }
 }
 
@@ -232,11 +201,23 @@ const index2Lnglat = (volume, x, y) => {
     }
 }
 
+const index2Lnglat2 = (volume, x, y) => {
+    const {maxLatitude, maxLongitude, minLatitude, minLongitude, height, width} = volume;
+    const h1 = Math.tan(deg2radian(minLatitude));
+    const h2 = Math.tan(deg2radian(maxLatitude));
+    const dh = (h2 - h1) / width;
+    return {
+        lng: minLongitude + y * (maxLongitude - minLongitude) / height,
+        lat: radian2deg(Math.atan(h2 - x * dh)) - 1.45,
+    }
+}
+
 const cutCenterData = (volume, centerOffset, width, height, depth) => {
     const data = new Uint8Array(width * height * depth + 32);
     const dv = new DataView(data.buffer);
 
     const { offsetX, offsetY } = centerOffset;
+
     const top = Math.ceil(offsetY - height / 2);
     const bottom = Math.ceil(offsetY + height / 2);
     const left = Math.ceil(offsetX - width / 2);
@@ -251,13 +232,13 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
             const layerCnt = dv.getUint32(24, true);
             const cutHeight = dv.getFloat32(28, true);
      */
-    const min = index2Lnglat(volume, left, bottom);
-    const max = index2Lnglat(volume, right, top);
+    const min = index2Lnglat2(volume, left, bottom);
+    const max = index2Lnglat2(volume, right, top);
 
     dv.setUint32(0,  min.lng * 360000 | 0, true)
-    dv.setUint32(4,  min.lat * 360000 | 0, true)
+    dv.setUint32(4,  (min.lat + 0.1) * 360000 | 0, true)
     dv.setUint32(8,  max.lng * 360000 | 0, true)
-    dv.setUint32(12, max.lat * 360000 | 0, true)
+    dv.setUint32(12, (max.lat - 0.1) * 360000 | 0, true)
 
     dv.setUint32(16, width, true)
     dv.setUint32(20, height, true)
@@ -266,10 +247,11 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
 
     const faceSize = width * height;
 
-    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (top + y) + (left + x)]
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (bottom - y) + (right - x)]
+
     for(let z = 0; z < depth; z++) {
         for (let y = 0; y < height; y++) {
-            for (let x = width - 1; x >= 0; x--) {
+            for (let x = 0; x < width; x++) {
                 data[z * faceSize + y * width + x + 32] = apply(x, y, z);
             }
         }
@@ -296,8 +278,9 @@ const renderVolume = (volume, centerOffset, width, height, depth) => {
     const bottom = Math.ceil(offsetY + height / 2);
     const left = Math.ceil(offsetX - width / 2);
     const right = Math.ceil(offsetX + width / 2);
-    const min = index2Lnglat(volume, left, bottom);
-    const max = index2Lnglat(volume, right, top);
+
+    const min = index2Lnglat2(volume, left, bottom);
+    const max = index2Lnglat2(volume, right, top);
 
     volumeData = {
         minLongitude: min.lng,
