@@ -53,6 +53,12 @@ const routes= [
         name: "NortheastChinaColdVortex",
         component: () => import("../components/Three/NortheastChinaColdVortex.vue"),
       },
+
+      {
+        path: "/Cloud",
+        name: "Cloud",
+        component: () => import("../components/Atmosphere/Cloud.vue"),
+      },
     ],
   },
 ];
