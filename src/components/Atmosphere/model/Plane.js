@@ -2,11 +2,20 @@ import * as THREE from 'three';
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import fragment from '../shader/cloud/demo.frag'
 import vertex from '../shader/cloud/vertex.vert'
+import { defaultsDeep } from 'lodash';
 export class PlaneModel {
-    constructor(canvas) {
+    constructor(canvas, options = {}, dependency) {
         this.canvas = canvas;
 
+        this.options = options;
+
+        this.dependency = dependency;
+
+        this.setParams();
+
         this.aspect = canvas.clientHeight / canvas.clientWidth;
+
+        this.resolution = new THREE.Vector3(canvas.clientHeight, canvas.clientWidth, 1);
 
         // this.camera = new THREE.PerspectiveCamera(45, this.aspect, 0.1, 1000);
 
@@ -14,7 +23,15 @@ export class PlaneModel {
 
         this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
 
-        this.resolution = new THREE.Vector3(canvas.clientHeight, canvas.clientWidth, 1);
+        this.renderTarget = new THREE.WebGLRenderTarget(this.resolution.x, this.resolution.y, { type: THREE.UnsignedByteType} );
+
+        this.renderer.setRenderTarget(this.renderTarget);
+
+        this.material = null;
+        
+        this.geometry = null;
+        
+        this.uniforms = this.getUniform();
 
         this.controls = null;
 
@@ -33,8 +50,86 @@ export class PlaneModel {
         this.renderScene();
     }
 
-    getUniform () {
+    setParams () {
+        this.clock = new THREE.Clock();
+        this.pausedTime = 0.0;
+        this.deltaTime = 0.0;
+        this.startingTime = 0;
+        this.time = this.startingTime;
+        this.date = new THREE.Vector4();
 
+        this.resolution = new THREE.Vector3();
+        this.mouse = new THREE.Vector4(212, 393, -203, -325);
+        this.mouseButton = new THREE.Vector4(0, 0, 0, 0);
+        this.normalizedMouse = new THREE.Vector2(0.26452599388379205, 0.9985507246376811);
+        this.frameCounter = 0;
+
+        this.audioContext = {
+            sampleRate: 0
+        };
+
+        this.updateDate();
+    }
+
+    updateDate () {
+        let today = new Date();
+        this.date.x = today.getFullYear();
+        this.date.y = today.getMonth();
+        this.date.z = today.getDate();
+        this.date.w = today.getHours() * 60 * 60 
+            + today.getMinutes() * 60
+            + today.getSeconds()
+            + today.getMilliseconds() * 0.001;
+    }
+
+    getUniform () {
+        return {
+            iResolution: { type: 'v3', value: this.resolution },
+            iTime: { type: 'f', value: 0.0 },
+            iTimeDelta: { type: 'f', value: 0.0 },
+            iFrame: { type: 'i', value: 0 },
+            iMouse: { type: 'v4', value: new THREE.Vector4(212, 393, -203, -325) },
+            iMouseButton: { type: 'v2', value: new THREE.Vector4(0, 0, 0, 0) },
+
+            iChannelResolution: { type: 'v3v', value: Array(10).fill(new THREE.Vector3(0,0,0)) },
+
+            iDate: { type: 'v4', value: new THREE.Vector4(0, 0, 0, 0) },
+            // iSampleRate: { type: 'f', value: audioContext.sampleRate },
+            iChannel0: { type: 't' },
+            iChannel1: { type: 't' },
+            iChannel2: { type: 't' },
+            iChannel3: { type: 't' },
+            iChannel4: { type: 't' },
+            iChannel5: { type: 't' },
+            iChannel6: { type: 't' },
+            iChannel7: { type: 't' },
+            iChannel8: { type: 't' },
+            iChannel9: { type: 't' },
+
+            resolution: { type: 'v2', value: this.resolution },
+            time: { type: 'f', value: 0.0 },
+            mouse: { type: 'v2', value: this.normalizedMouse },
+        }
+    }
+
+    setUniforms () {
+        if(this.material) {
+
+            this.deltaTime = this.clock.getDelta();
+            this.time = this.startingTime + this.clock.getElapsedTime() - this.pausedTime;
+            this.updateDate();
+
+            this.material.uniforms['iResolution'].value = this.resolution;
+            this.material.uniforms['iTimeDelta'].value = this.deltaTime;
+            this.material.uniforms['iTime'].value = this.time;
+            this.material.uniforms['iFrame'].value = this.frameCounter;
+            this.material.uniforms['iMouse'].value = this.mouse;
+            this.material.uniforms['iMouseButton'].value = this.mouseButton;
+
+            this.material.uniforms['resolution'].value = this.resolution;
+            this.material.uniforms['time'].value = this.time;
+            this.material.uniforms['mouse'].value = this.normalizedMouse;
+        }
     }
 
     initCamera () {
@@ -43,20 +138,20 @@ export class PlaneModel {
         // this.camera.up.set( 0, 1, 0 ); // In our data, z is up
 
         const { x, y } = this.resolution;
-        this.camera = new THREE.OrthographicCamera(-x / 2.0, x / 2.0, y / 2.0, -y / 2.0, 1, 1000);
-        this.camera.position.set(0, 0, 10);
+        this.camera = new THREE.OrthographicCamera(-x / 2.0, x / 2.0, y / 2.0, -y / 2.0, 0.1, 1000);
+        this.camera.position.set(0, 0, 100);
     }
 
     createMesh() {
         const geometry = new THREE.PlaneGeometry(this.resolution.x, this.resolution.y);
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
-            fragmentShader: fragment,
+            depthWrite: false,
+            depthTest: false,
+            fragmentShader: this.options.fragmentShader || fragment,
             // vertexShader:   vertex,
             transparent: true,
-            uniforms: {
-                iResolution: { type: 'v3', value: this.resolution },
-            }
+            uniforms: defaultsDeep(this.options.uniforms || {}, this.getUniform())
         })
 
         this.material = material;
@@ -69,6 +164,9 @@ export class PlaneModel {
 
         const axesHelper = new THREE.AxesHelper(100);
         this.scene.add(axesHelper);
+
+        const gridHelper = new THREE.GridHelper(100);
+        this.scene.add(gridHelper);
     }
 
     initController() {
@@ -81,12 +179,21 @@ export class PlaneModel {
 
     render() {
         this.renderer.render(this.scene, this.camera);
-
     }
 
     renderScene() {
         const _render = () => {
+            this.setUniforms();
             this.render();
+            if (this.dependency) {
+                const texture = this.dependency.value.renderTarget.texture;
+                texture.magFilter = THREE.LinearFilter;
+                texture.minFilter = THREE.LinearFilter;
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                this.material.uniforms.tex.value = texture;
+            }
+            this.controls.update();
             requestAnimationFrame(_render)
         }
         _render();
@@ -112,6 +219,7 @@ export class PlaneModel {
         }
         if (this.material) this.material.uniforms.iResolution.value = this.resolution;
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        this.renderTarget.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     }
 
     resize() {

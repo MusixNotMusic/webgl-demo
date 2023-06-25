@@ -17,6 +17,8 @@
 <script>
 import { onMounted, onUnmounted, ref } from "vue";
 import { PlaneModel } from "./model/Plane.js";
+import demo1FragmentShader  from './shader/cloud/view.frag'
+import cloudFragmentShader  from './shader/cloud/cloud.glsl'
 export default {
   name: 'cloud',
   setup() {
@@ -25,21 +27,44 @@ export default {
     const bufferCRef = ref(null);
     const bufferDRef = ref(null);
 
-    let planeA;
+    let planeA = ref(null);
+    let planeB = ref(null);
+    let planeC = ref(null);
 
     const initA = () => {
-      planeA = new PlaneModel(bufferARef.value);
+      planeA.value = new PlaneModel(bufferARef.value);
+      console.log('planeA ==>', planeA.value)
+    }
+
+    const initB = () => {
+      const option = {
+        fragmentShader: cloudFragmentShader,
+        // uniforms: { tex: { value: null }}
+      }
+      planeB.value = new PlaneModel(bufferBRef.value, option);
+      console.log('planeB ==>', planeB.value)
+    }
+
+    const initC = () => {
+      const option = {
+        fragmentShader: cloudFragmentShader,
+      };
+      planeC.value = new PlaneModel(bufferCRef.value, option);
     }
 
     onMounted(() => {
       setTimeout(() => {
         initA()
+        initB()
+        initC()
       })
     })
 
     onUnmounted(() => {
-      if (planeA) {
-        planeA.dispose()
+      if (planeA.value) {
+        planeA.value.dispose()
+        planeB.value.dispose()
+        planeC.value.dispose()
       }
     })
 
