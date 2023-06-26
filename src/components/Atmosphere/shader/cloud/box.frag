@@ -445,21 +445,33 @@ vec2 hitBox( vec3 orig, vec3 dir ) {
 #define depthSampleCount 128
 
 vec4 renderB( in vec3 ro, in vec3 rd ) {
+    float t = 1.;
+
+    float tmax = 10000.;
+    // bouding top plane
+    float topd = ((MOUNTAIN_HEIGHT*INV_SCENE_SCALE)-ro.y)/rd.y;
+    if( rd.y > 0.0 && topd > 0.0 ) {
+        tmax = min(tmax, topd);
+    }
+
     vec2 bounds = hitBox( ro, rd );
     if ( bounds.x > bounds.y ) discard;
     bounds.x = max( bounds.x, 0.0 );
-    vec3 pos = ro + bounds.x * rd;
+    vec3 pos = ro + bounds.x * rd * tmax;
     vec3 inc = 1.0 / abs( rd );
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= float(depthSampleCount);
-
-    float t = 1.;
-
+    
     for ( float i = bounds.x; i < bounds.y; i += delta ) {
 
-		float h = pos.y - terrainMap( pos.xz, 7 );
-        t += .9 * h;
+		// float h = pos.y - terrainMap( pos.xz, 7 );
+        // t += .9 * h;
+        // pos += rd * h;
+
         pos += rd * delta;
+		float h = (pos.y - terrainMap( pos.xz, 7 )) / tmax;
+        if(abs(h)<(0.003*t) || t>tmax ) break; // use abs(h) to bounce back if under terrain
+	    t += .9 * h;
     }
 
 
