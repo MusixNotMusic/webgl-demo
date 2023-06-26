@@ -134,7 +134,7 @@ export class BoxModel {
 
     initCamera () {
         this.camera = new THREE.PerspectiveCamera( 45, this.aspect , 1, 1e5 );
-        this.camera.position.set( 50, 50, 50 );
+        this.camera.position.set( 0, 100, 0 );
         this.camera.up.set( 0, 1, 0 ); // In our data, z is up
 
         // const { x, y } = this.resolution;
@@ -143,7 +143,11 @@ export class BoxModel {
     }
 
     createMesh() {
-        const geometry = new THREE.BoxGeometry(20, 20, 20);
+        const width  = 1;
+        const height = 1;
+        const depth  = 1;
+        const scale = 100;
+        const geometry = new THREE.BoxGeometry(width, height, depth);
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
             // depthWrite: false,
@@ -163,8 +167,10 @@ export class BoxModel {
         this.material = material;
         this.geometry = geometry;
 
-        const plane = new THREE.Mesh(geometry, material);
-        this.scene.add(plane);
+        const box = new THREE.Mesh(geometry, material);
+        box.translateY(height / 2 * scale)
+        box.scale.set(scale, scale, scale);
+        this.scene.add(box);
 
         // axes helper
 

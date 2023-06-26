@@ -428,6 +428,87 @@ vec4 renderMountains (vec2 fragCoord) {
     return res;
 }
 
+
+vec2 hitBox( vec3 orig, vec3 dir ) {
+    const vec3 box_min = vec3( - 0.5 );
+    const vec3 box_max = vec3( 0.5 );
+    vec3 inv_dir = 1.0 / dir;
+    vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
+    vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
+    vec3 tmin = min( tmin_tmp, tmax_tmp );
+    vec3 tmax = max( tmin_tmp, tmax_tmp );
+    float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
+    float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
+    return vec2( t0, t1 );
+}
+
+#define depthSampleCount 128
+
+vec4 renderB( in vec3 ro, in vec3 rd ) {
+    vec2 bounds = hitBox( ro, rd );
+    if ( bounds.x > bounds.y ) discard;
+    bounds.x = max( bounds.x, 0.0 );
+    vec3 pos = ro + bounds.x * rd;
+    vec3 inc = 1.0 / abs( rd );
+    float delta = min( inc.x, min( inc.y, inc.z ) );
+    delta /= float(depthSampleCount);
+
+    float t = 1.;
+
+    for ( float i = bounds.x; i < bounds.y; i += delta ) {
+
+		float h = pos.y - terrainMap( pos.xz, 7 );
+        t += .9 * h;
+        pos += rd * delta;
+    }
+
+
+	vec3 col, bgcol;
+    
+    // float tmax = 10000.;
+    // // bouding top plane
+    // float topd = ((MOUNTAIN_HEIGHT*INV_SCENE_SCALE)-ro.y)/rd.y;
+    // if( rd.y > 0.0 && topd > 0.0 ) {
+    //     tmax = min(tmax, topd);
+    // }
+    
+    // // intersect with heightmap
+    // float t = 1.;
+	// for( int i=0; i<128; i++ ) {
+    //     vec3 pos = ro + t*rd;
+	// 	float h = pos.y - terrainMap( pos.xz, 7 );
+    //     if(abs(h)<(0.003*t) || t>tmax ) break; // use abs(h) to bounce back if under terrain
+	//     t += .9 * h;
+	// }
+   	
+    bgcol = col = getSkyColor(rd);
+	if( t < bounds.y) {
+		// vec3 pos = ro + t*rd;
+        vec3 nor = calcNormal( pos, t, 15);
+           
+        // terrain color - just back and white
+        float s = smoothstep(0.5,0.9,dot(nor, vec3(.3,1.,0.05)));
+        col = mix( vec3(.01), vec3(0.5,0.52,0.6), smoothstep(.1,.7,s ));
+
+        float fogAmount = HEIGHT_BASED_FOG_C * (1.-exp( -t*rd.y*HEIGHT_BASED_FOG_B))/rd.y;
+        col = mix( col, bgcol, fogAmount);
+    } else {
+        t = 10000.;
+    }
+
+	return vec4( col, t );
+}
+
+vec4 renderMountainsB (vec2 fragCoord) {
+    vec3 ro = vOrigin, rd = normalize(vDirection);
+    vec3 o = hash33( vec3(fragCoord,iFrame) ) - 0.5; // dither
+    // getRay( iTime, (fragCoord+o.xy), iResolution.xy, iMouse/iResolution.xyxy, ro, rd);
+
+    vec4 res = renderB( ro + rd*o.z, rd );
+
+    return res;
+}
+
 //=========================== render could ===========================
 
 #define CLOUD_MARCH_STEPS 12
@@ -783,9 +864,10 @@ vec4 renderCould (vec2 fragCoord) {
 void main () {
     vec2 fragCoord = gl_FragCoord.xy;
 
-    gl_FragColor = cloudShapesNoise(texCoord2D);
+    // gl_FragColor = cloudShapesNoise(texCoord2D);
     // gl_FragColor = cloudShapesCube(fragCoord);
     // gl_FragColor = renderMountains(fragCoord);
+    gl_FragColor = renderMountainsB(fragCoord);
     // gl_FragColor = renderCould(texCoord2D);
     // gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
 }
