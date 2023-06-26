@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
-import fragment from '../shader/cloud/demo.frag'
-import vertex from '../shader/cloud/vertex.vert'
+import fragment from '../shader/cloud/box.frag'
+import vertex from '../shader/cloud/box.vert'
 import { defaultsDeep } from 'lodash';
-export class PlaneModel {
+export class BoxModel {
     constructor(canvas, options = {}, dependency) {
         this.canvas = canvas;
 
@@ -113,7 +113,7 @@ export class PlaneModel {
     }
 
     setUniforms () {
-        if(this.material) {
+        if(this.material && this.material.uniforms) {
 
             this.deltaTime = this.clock.getDelta();
             this.time = this.startingTime + this.clock.getElapsedTime() - this.pausedTime;
@@ -133,26 +133,32 @@ export class PlaneModel {
     }
 
     initCamera () {
-        // this.camera = new THREE.PerspectiveCamera( 45, this.aspect , 1, 1e5 );
-        // this.camera.position.set( 50, 50, 50 );
-        // this.camera.up.set( 0, 1, 0 ); // In our data, z is up
+        this.camera = new THREE.PerspectiveCamera( 45, this.aspect , 1, 1e5 );
+        this.camera.position.set( 50, 50, 50 );
+        this.camera.up.set( 0, 1, 0 ); // In our data, z is up
 
-        const { x, y } = this.resolution;
-        this.camera = new THREE.OrthographicCamera(-x / 2.0, x / 2.0, y / 2.0, -y / 2.0, 0.1, 1000);
-        this.camera.position.set(0, 0, 100);
+        // const { x, y } = this.resolution;
+        // this.camera = new THREE.OrthographicCamera(-x / 2.0, x / 2.0, y / 2.0, -y / 2.0, 0.1, 1000);
+        // this.camera.position.set(0, 0, 100);
     }
 
     createMesh() {
-        const geometry = new THREE.PlaneGeometry(this.resolution.x, this.resolution.y);
+        const geometry = new THREE.BoxGeometry(20, 20, 20);
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
             // depthWrite: false,
             // depthTest: false,
             fragmentShader: this.options.fragmentShader || fragment,
-            // vertexShader:   vertex,
+            vertexShader:   this.options.vertexShader || vertex,
             transparent: true,
             uniforms: defaultsDeep(this.options.uniforms || {}, this.getUniform())
         })
+
+        // const material = new THREE.MeshBasicMaterial({
+        //     side: THREE.DoubleSide,
+        //     transparent: true,
+        //     color: 'orange'
+        // })
 
         this.material = material;
         this.geometry = geometry;
@@ -162,10 +168,10 @@ export class PlaneModel {
 
         // axes helper
 
-        const axesHelper = new THREE.AxesHelper(100);
+        const axesHelper = new THREE.AxesHelper(1000);
         this.scene.add(axesHelper);
 
-        const gridHelper = new THREE.GridHelper(100);
+        const gridHelper = new THREE.GridHelper(1000, 50);
         this.scene.add(gridHelper);
     }
 
@@ -217,7 +223,7 @@ export class PlaneModel {
         if (this.geometry) {
             this.geometry = new THREE.PlaneGeometry(this.resolution.x, this.resolution.y);
         }
-        if (this.material) this.material.uniforms.iResolution.value = this.resolution;
+        if (this.material && this.material.uniforms) this.material.uniforms.iResolution.value = this.resolution;
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         this.renderTarget.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     }

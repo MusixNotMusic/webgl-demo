@@ -17,8 +17,14 @@
 <script>
 import { onMounted, onUnmounted, ref } from "vue";
 import { PlaneModel } from "./model/Plane.js";
+import { PlaneModel1 } from "./model/Plane1.js";
+import { BoxModel } from "./model/Box.js";
 import demo1FragmentShader  from './shader/cloud/view.frag'
 import cloudFragmentShader  from './shader/cloud/cloud.glsl'
+import cloud1FragmentShader  from './shader/cloud/cloud1.glsl'
+
+import cloudBoxFragmentShader from './shader/cloud/box.frag'
+import { Box2 } from "three";
 export default {
   name: 'cloud',
   setup() {
@@ -38,18 +44,18 @@ export default {
 
     const initB = () => {
       const option = {
-        fragmentShader: cloudFragmentShader,
+        fragmentShader: cloudBoxFragmentShader,
         // uniforms: { tex: { value: null }}
       }
-      planeB.value = new PlaneModel(bufferBRef.value, option);
+      planeB.value = new BoxModel(bufferBRef.value, option);
       console.log('planeB ==>', planeB.value)
     }
 
     const initC = () => {
       const option = {
-        fragmentShader: cloudFragmentShader,
+        fragmentShader: cloud1FragmentShader || demo1FragmentShader,
       };
-      planeC.value = new PlaneModel(bufferCRef.value, option);
+      planeC.value = new PlaneModel1(bufferCRef.value, option);
     }
 
     onMounted(() => {
@@ -61,11 +67,9 @@ export default {
     })
 
     onUnmounted(() => {
-      if (planeA.value) {
-        planeA.value.dispose()
-        planeB.value.dispose()
-        planeC.value.dispose()
-      }
+      if (planeA.value) planeA.value.dispose()
+      if (planeB.value) planeB.value.dispose()
+      if (planeC.value) planeC.value.dispose()
     })
 
     return {

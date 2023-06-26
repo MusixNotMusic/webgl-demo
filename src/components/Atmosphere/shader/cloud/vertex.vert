@@ -2,6 +2,7 @@
 uniform float aspect;
 // out vec2 texCoord;
 out vec3 texCoord;
+out vec2 texCoord2D;
 
 void main() {
 
@@ -12,5 +13,6 @@ void main() {
 
 	// texCoord.x *= aspect;
 	texCoord = position;
+	texCoord2D = uv;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

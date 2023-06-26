@@ -19,6 +19,9 @@ uniform sampler2D   iChannel9;
 uniform sampler2D   iKeyboard;
 uniform float       iSampleRate;
 
+varying vec3        texCoord;
+varying vec2        texCoord2D;
+
 #define iGlobalTime iTime
 #define iGlobalFrame iFrame
 
@@ -333,6 +336,7 @@ float terrainMapB( in vec2 x, const int OCTAVES ) {
     }
 	return s*a*(MOUNTAIN_HEIGHT*INV_SCENE_SCALE*.5);
 }
+
 vec3 calcNormal(in vec3 pos, float t, const int OCTAVES) {
     vec2  eps = vec2( (0.0015)*t, 0.0 );
     return normalize( vec3( terrainMap(pos.xz-eps.xy, OCTAVES) - terrainMap(pos.xz+eps.xy, OCTAVES),
@@ -775,10 +779,9 @@ vec4 renderCould (vec2 fragCoord) {
 
 void main () {
     vec2 fragCoord = gl_FragCoord.xy;
-    vec2 vUV = fragCoord / iResolution.xy;
 
-    // gl_FragColor = cloudShapesNoise(vUV);
+    // gl_FragColor = cloudShapesNoise(texCoord2D);
     // gl_FragColor = cloudShapesCube(fragCoord);
-    // gl_FragColor = renderMountains(fragCoord);
-    gl_FragColor = renderCould(fragCoord);
+    gl_FragColor = renderMountains(fragCoord);
+    // gl_FragColor = renderCould(texCoord2D);
 }
