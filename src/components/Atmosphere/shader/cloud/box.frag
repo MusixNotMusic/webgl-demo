@@ -340,11 +340,36 @@ float terrainMapB( in vec2 x, const int OCTAVES ) {
 	return s*a*(MOUNTAIN_HEIGHT*INV_SCENE_SCALE*.5);
 }
 
+
+float terrainMapNormalize( in vec2 x, const int OCTAVES ) {
+	vec2 p = x;
+    float s = mix(1., smoothstep(.0,.4, abs(p.y)), .75);
+    
+    float a = 0.;
+    float b = 1.;
+	vec2  d = vec2(0.0);
+    for( int i=0; i<OCTAVES; i++ ) {
+        vec3 n = noised(p);
+        d += n.yz;
+        a += b*n.x/(1.0+dot(d,d));
+		b *= 0.5;
+        p = m2*p;
+    }
+	return s*a;
+}
+
 vec3 calcNormal(in vec3 pos, float t, const int OCTAVES) {
     vec2  eps = vec2( (0.0015)*t, 0.0 );
     return normalize( vec3( terrainMap(pos.xz-eps.xy, OCTAVES) - terrainMap(pos.xz+eps.xy, OCTAVES),
                             2.0*eps.x,
                             terrainMap(pos.xz-eps.yx, OCTAVES) - terrainMap(pos.xz+eps.yx, OCTAVES) ) );
+}
+
+vec3 calcNormal1(in vec3 pos, float t, const int OCTAVES) {
+    vec2  eps = vec2( (0.0015)*t, 0.0 );
+    return normalize( vec3( terrainMapNormalize(pos.xz-eps.xy, OCTAVES) - terrainMapNormalize(pos.xz+eps.xy, OCTAVES),
+                            2.0*eps.x,
+                            terrainMapNormalize(pos.xz-eps.yx, OCTAVES) - terrainMapNormalize(pos.xz+eps.yx, OCTAVES) ) );
 }
 
 vec4 render( in vec3 ro, in vec3 rd ) {
@@ -464,44 +489,72 @@ vec4 renderB( in vec3 ro, in vec3 rd ) {
     
     for ( float i = bounds.x; i < bounds.y; i += delta ) {
 
-		// float h = pos.y - terrainMap( pos.xz, 7 );
-        // t += .9 * h;
-        // pos += rd * h;
-
         pos += rd * delta;
-		float h = (pos.y - terrainMap( pos.xz, 7 )) / tmax;
+		float h = (pos.y - terrainMap( pos.xz, 7 ));
         if(abs(h)<(0.003*t) || t>tmax ) break; // use abs(h) to bounce back if under terrain
-	    t += .9 * h;
+	    t += .9 * delta;
     }
 
 
 	vec3 col, bgcol;
+
+    // col = vec3(terrainMapNormalize(pos.yz, 10), terrainMapNormalize(pos.xz, 5),  terrainMapNormalize(pos.xy, 7));
+    col = vec3(terrainMapNormalize(pos.xz * 0.001, 10));
+
+	return vec4( col, 1.0 );
+}
+
+vec4 renderC( in vec3 ro, in vec3 rd ) {
+	vec3 col, bgcol;
     
-    // float tmax = 10000.;
-    // // bouding top plane
-    // float topd = ((MOUNTAIN_HEIGHT*INV_SCENE_SCALE)-ro.y)/rd.y;
-    // if( rd.y > 0.0 && topd > 0.0 ) {
-    //     tmax = min(tmax, topd);
-    // }
+    float tmax = 500.;
+    // bouding top plane
+    float topd = (ro.y)/rd.y;
+    if( rd.y > 0.0 && topd > 0.0 ) {
+        tmax = min(tmax, topd);
+    }
     
-    // // intersect with heightmap
-    // float t = 1.;
-	// for( int i=0; i<128; i++ ) {
-    //     vec3 pos = ro + t*rd;
-	// 	float h = pos.y - terrainMap( pos.xz, 7 );
-    //     if(abs(h)<(0.003*t) || t>tmax ) break; // use abs(h) to bounce back if under terrain
-	//     t += .9 * h;
-	// }
+    // intersect with heightmap
+    float t = 1.;
+	for( int i=0; i<256; i++ ) {
+        vec3 pos = ro + t*rd;
+		float h = pos.y - terrainMapNormalize( pos.xz, 7 );
+        if(abs(h)<(0.003*t) || t>tmax ) break; // use abs(h) to bounce back if under terrain
+	    t += .9 * h;
+	}
    	
     bgcol = col = getSkyColor(rd);
-	if( t < bounds.y) {
-		// vec3 pos = ro + t*rd;
-        vec3 nor = calcNormal( pos, t, 15);
+	if( t<tmax) {
+		vec3 pos = ro + t*rd;
+        vec3 nor = calcNormal1( pos, t, 15);
            
         // terrain color - just back and white
         float s = smoothstep(0.5,0.9,dot(nor, vec3(.3,1.,0.05)));
         col = mix( vec3(.01), vec3(0.5,0.52,0.6), smoothstep(.1,.7,s ));
+		
+        // lighting	
+        // shadow is calculated based on the slope of a low frequency version of the heightmap
+        float shadow = .5 + clamp( -8.+ 16.*dot(SUN_DIR, calcNormal1(pos, t, 5)), 0.0, .5 );
+        shadow *= smoothstep(20.,80.,pos.y);
+        
+        float ao = terrainMapNormalize(pos.xz, 10)-terrainMapNormalize(pos.xz,7);
+        ao = clamp(.25 + ao / 200., 0., 1.);
 
+        float ambient  = max(0.5+0.5*nor.y,0.0);
+		float diffuse  = max(dot(SUN_DIR, nor), 0.0);
+		float backlight = max(0.5 + 0.5*dot( normalize( vec3(-SUN_DIR.x, 0., SUN_DIR.z)), nor), 0.0);
+	 	
+        //
+        // use a 3-light setup as described by Íñigo Quílez
+        // https://iquilezles.org/articles/outdoorslighting
+        //
+		vec3 lin = (diffuse*shadow*3.) * SUN_COLOR;
+		lin += (ao*ambient)*vec3(0.40,0.60,1.00);
+        lin += (backlight)*vec3(0.40,0.50,0.60);
+		col *= lin;
+        col *= (.6+.4*smoothstep(400.,100.,abs(pos.z))); // dark in the distance
+    
+        // height based fog, see https://iquilezles.org/articles/fog
         float fogAmount = HEIGHT_BASED_FOG_C * (1.-exp( -t*rd.y*HEIGHT_BASED_FOG_B))/rd.y;
         col = mix( col, bgcol, fogAmount);
     } else {
@@ -517,6 +570,7 @@ vec4 renderMountainsB (vec2 fragCoord) {
     // getRay( iTime, (fragCoord+o.xy), iResolution.xy, iMouse/iResolution.xyxy, ro, rd);
 
     vec4 res = renderB( ro + rd*o.z, rd );
+    // vec4 res = renderC( ro + rd*o.z, rd );
 
     return res;
 }
@@ -824,7 +878,10 @@ bool mouseChanged() {
 
 vec4 renderCould (vec2 fragCoord) {
     vec4 color = vec4(0.0);
-    if (fragCoord.y < 1.5) {
+    vec3 ro = vOrigin;
+    vec3 rd = normalize(vDirection);
+
+    if (fragCoord.y < 0.5) {
         color = saveCamera(iTime, fragCoord, iMouse/iResolution.xyxy);
         if( abs(fragCoord.x-1.5)<0.5 ) color = vec4(iMouse);
         if( abs(fragCoord.x-0.5)<0.5 ) color = mouseChanged() ? vec4(0) : vec4(iResolution.xy,0,0);
@@ -834,11 +891,14 @@ vec4 renderCould (vec2 fragCoord) {
        		return color;
         } else {
             // float dist = texelFetch(iChannel2, ivec2(fragCoord),0).w * SCENE_SCALE;
-            float dist = renderMountains(fragCoord).w * SCENE_SCALE;
-            vec4 col = vec4(0,0,0,1);
+            float dist = renderMountains(vec2(fragCoord)).w * SCENE_SCALE;
+            vec4 col = vec4(0.0,dist,dist,1);
             
-            vec3 ro, rd;
-    		getRay( iTime, fragCoord, iResolution.xy, iMouse/iResolution.xyxy, ro, rd);
+            // vec3 ro, rd;
+    		// getRay( iTime, fragCoord, iResolution.xy, iMouse/iResolution.xyxy, ro, rd);
+
+            vec3 ro = vOrigin * 1000.0;
+            vec3 rd = normalize(vDirection);
 
             if( rd.y > 0. ) {
                 // clouds
@@ -854,23 +914,84 @@ vec4 renderCould (vec2 fragCoord) {
                 col.rgb = mix(col.rgb, getSkyColor(rd)*(1.-col.a), clamp(fogAmount,0.,1.));
             }
 
-            if( col.w > 1. ) {
-                color = vec4(0,0,0,1);
-            } else {
-                vec2 spos = reprojectPos(ro+rd*dist, iResolution.xy, iChannel1);
-                vec2 rpos = spos * iResolution.xy;
+            // if( col.w > 1. ) {
+            //     color = vec4(0,0,0,1);
+            // } else {
+            //     vec2 spos = reprojectPos(ro+rd*dist, iResolution.xy, iChannel1);
+            //     vec2 rpos = spos * iResolution.xy;
 
-        		if( !letterBox(rpos.xy, iResolution.xy, 2.3) 
-                    && !resolutionChanged() && !mouseChanged()) {
-                    vec4 ocol = texture( iChannel1, spos, 0.0 ).xyzw;
-                    col = mix(ocol, col, 0.05);
-                }
-            }
+        	// 	if( !letterBox(rpos.xy, iResolution.xy, 2.3) 
+            //         && !resolutionChanged() && !mouseChanged()) {
+            //         vec4 ocol = texture( iChannel1, spos, 0.0 ).xyzw;
+            //         col = mix(ocol, col, 0.05);
+            //     }
+            // }
 
             color = col;
             return color;
         }
     }
+}
+
+vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
+    if( rd.y < 0. ) {
+        return vec4(0,0,0,0);
+    }
+
+    ro.xz *= SCENE_SCALE;
+    // ro.y = sqrt(EARTH_RADIUS*EARTH_RADIUS-dot(ro.xz,ro.xz));
+    ro.y = EARTH_RADIUS;
+
+    float start = interectCloudSphere( rd, CLOUDS_BOTTOM );
+    float end  = interectCloudSphere( rd, CLOUDS_TOP );
+    
+    if (start > dist) {
+        return vec4(0,0,0,0);
+    }
+    
+    end = min(end, dist);
+    
+    float sundotrd = dot( rd, -SUN_DIR);
+
+    // raymarch
+    float d = start;
+    float dD = (end-start) / float(CLOUD_MARCH_STEPS);
+
+    float h = hash13(rd + fract(iTime) );
+    d -= dD * h;
+
+    float scattering =  mix( HenyeyGreenstein(sundotrd, CLOUDS_FORWARD_SCATTERING_G),
+        HenyeyGreenstein(sundotrd, CLOUDS_BACKWARD_SCATTERING_G), CLOUDS_SCATTERING_LERP );
+
+    float transmittance = 1.0;
+    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
+
+    dist = EARTH_RADIUS;
+
+    for(int s=0; s<CLOUD_MARCH_STEPS; s++) {
+        vec3 p = ro + d * rd;
+
+        float norY = clamp( (length(p) - (EARTH_RADIUS + CLOUDS_BOTTOM)) * (1./(CLOUDS_TOP - CLOUDS_BOTTOM)), 0., 1.);
+
+        float alpha = cloudMap( p, rd, norY );
+
+        if( alpha > 0. ) {
+            dist = min( dist, d);
+            vec3 ambientLight = mix( CLOUDS_AMBIENT_COLOR_BOTTOM, CLOUDS_AMBIENT_COLOR_TOP, norY );
+
+            vec3 S = (ambientLight + SUN_COLOR * (scattering * volumetricShadow(p, sundotrd))) * alpha;
+            float dTrans = exp(-alpha * dD);
+            vec3 Sint = (S - S * dTrans) * (1. / alpha);
+            scatteredLight += transmittance * Sint; 
+            transmittance *= dTrans;
+        }
+
+        if( transmittance <= CLOUDS_MIN_TRANSMITTANCE ) break;
+
+        d += dD;
+    }
+
+    return vec4(scatteredLight, transmittance);
 }
 
 void main () {
@@ -879,7 +1000,8 @@ void main () {
     // gl_FragColor = cloudShapesNoise(texCoord2D);
     // gl_FragColor = cloudShapesCube(fragCoord);
     // gl_FragColor = renderMountains(fragCoord);
-    gl_FragColor = renderMountainsB(fragCoord);
-    // gl_FragColor = renderCould(texCoord2D);
+    // gl_FragColor = renderMountainsB(fragCoord);
+    // gl_FragColor = renderCould(fragCoord);
+    gl_FragColor = cloudRenderDemo(vOrigin, normalize(vDirection), 10000.0);
     // gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
 }

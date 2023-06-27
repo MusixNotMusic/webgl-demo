@@ -20,10 +20,11 @@ import { PlaneModel } from "./model/Plane.js";
 import { PlaneModel1 } from "./model/Plane1.js";
 import { BoxModel } from "./model/Box.js";
 import demo1FragmentShader  from './shader/cloud/view.frag'
-import cloudFragmentShader  from './shader/cloud/cloud.glsl'
+// import cloudFragmentShader  from './shader/cloud/cloud.glsl'
 import cloud1FragmentShader  from './shader/cloud/cloud1.glsl'
 
-import cloudBoxFragmentShader from './shader/cloud/box.frag'
+// import cloudBoxFragmentShader from './shader/cloud/box.frag'
+import cloudBoxFragmentShader from './shader/cloud/box1.frag'
 import { Box2 } from "three";
 export default {
   name: 'cloud',
@@ -60,9 +61,9 @@ export default {
 
     onMounted(() => {
       setTimeout(() => {
-        initA()
+        // initA()
         initB()
-        initC()
+        // initC()
       })
     })
 

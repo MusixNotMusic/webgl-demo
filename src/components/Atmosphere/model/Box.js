@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
-import fragment from '../shader/cloud/box.frag'
+import fragment from '../shader/cloud/box1.frag'
 import vertex from '../shader/cloud/box.vert'
 import { defaultsDeep } from 'lodash';
 export class BoxModel {
@@ -134,7 +134,7 @@ export class BoxModel {
 
     initCamera () {
         this.camera = new THREE.PerspectiveCamera( 45, this.aspect , 1, 1e5 );
-        this.camera.position.set( 0, 100, 0 );
+        this.camera.position.set( 0, 500, -500 );
         this.camera.up.set( 0, 1, 0 ); // In our data, z is up
 
         // const { x, y } = this.resolution;
@@ -146,7 +146,7 @@ export class BoxModel {
         const width  = 1;
         const height = 1;
         const depth  = 1;
-        const scale = 100;
+        const scale = 200;
         const geometry = new THREE.BoxGeometry(width, height, depth);
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
@@ -241,5 +241,8 @@ export class BoxModel {
 
     dispose() {
         window.removeEventListener('resize', this.resizeBind)
+        this.canvas.remove();
+        this.material.dispose();
+        this.camera.dispose();
     }
 }
