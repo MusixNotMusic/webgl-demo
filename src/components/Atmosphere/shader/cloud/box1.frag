@@ -243,6 +243,19 @@ vec4 cloudShapesCube (vec2 fragCoord) {
     return vec4(c);
 }
 
+vec4 cloudShapesCube1 (vec3 p) {
+    // float z = floor(fragCoord.x/34.) + 8.*floor(fragCoord.y/34.);
+    // vec2 uv = mod(fragCoord.xy, 34.) - 1.;
+    // vec3 coord = vec3(uv, z) / 32.;
+
+    float r = tilableVoronoi( p, 16,  3. );
+    float g = tilableVoronoi( p,  4,  8. );
+    float b = tilableVoronoi( p,  4, 16. );
+
+    float c = max(0., 1.-(r + g * .5 + b * .25) / 1.75);
+    return vec4(c);
+}
+
 
 //=========================== render could ===========================
 
@@ -312,34 +325,29 @@ float cloudMapBase(vec3 p, float norY) {
 	return remap( cloud.r - n, cloud.g, 1.);
 }
 
-// float cloudMapDetail(vec3 p) { 
-//     // 3d lookup in 2d texture :(
-//     p = abs(p);
-  
-//     float yi = mod(p.y,32.);
-//     ivec2 offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
-//     // float a = texture(iChannel3, (mod(p.xz,32.)+vec2(offset.xy)+1.)/iResolution.xy).r;
-//     float a = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
-    
-//     yi = mod(p.y+1.,32.);
-//     offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
-//     float b = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
-    
-//     return mix(a,b,fract(p.y));
-// }
-
 float cloudMapDetail(vec3 p) { 
     // 3d lookup in 2d texture :(
     p = abs(p);
   
-    float yi = mod(p.y * 32.0,32.);
+    float yi = mod(p.y,32.);
     ivec2 offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
     // float a = texture(iChannel3, (mod(p.xz,32.)+vec2(offset.xy)+1.)/iResolution.xy).r;
     float a = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
     
-    yi = mod(p.y * 32.0+1.,32.);
+    yi = mod(p.y+1.,32.);
     offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
     float b = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
+    
+    return mix(a,b,fract(p.y));
+}
+
+float cloudMapDetail1(vec3 p) { 
+    // 3d lookup in 2d texture :(
+    p = abs(p);
+  
+    float a = cloudShapesCube1(p).r;
+    
+    float b = cloudShapesCube1(p + vec3(0.0, 0.01, 0.0)).r;
     
     return mix(a,b,fract(p.y));
 }
@@ -366,6 +374,26 @@ float cloudMap(vec3 pos, vec3 rd, float norY) {
 
     return m;
     // return clamp(m * CLOUDS_DENSITY * (1.+max((ps.x-7000.)*0.5,0.)), 0., 1.);
+}
+
+float cloudMap1(vec3 pos, vec3 rd, float norY) {
+    vec3 ps = pos;
+    
+    float m = cloudMapBase(ps, norY);
+	m *= cloudGradient( norY );
+
+	float dstrength = smoothstep(1., 0.5, m);
+    
+    // // erode with detail
+    if(dstrength > 0.) {
+		m -= cloudMapDetail1( ps ) * dstrength * CLOUDS_DETAIL_STRENGTH;
+    }
+
+	m = smoothstep( 0., CLOUDS_BASE_EDGE_SOFTNESS, m+(CLOUDS_COVERAGE-1.) );
+    m *= linearstep0(CLOUDS_BOTTOM_SOFTNESS, norY);
+
+    // return m;
+    return clamp(m * CLOUDS_DENSITY * (1.+max((ps.x-7000.)*0.5,0.)), 0., 1.);
 }
 
 float volumetricShadow(in vec3 from, in float sundotrd ) {
@@ -597,32 +625,45 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
 
     dist = EARTH_RADIUS;
 
+    vec3 p = vec3(0.0);
+    vec4 col = vec4(0.0);
+    vec4 wind = vec4(10.0, 4.0, 0.0, 100.0);
+    vec3 windV =  vec3(iTime / wind.w * wind.x, iTime / wind.w * wind.y, iTime / wind.w * wind.z);
+    float top = 0.5;
+    float bottom = 0.2;
+    float alpha = 1.0;
     for(int s=0; s<CLOUD_MARCH_STEPS; s++) {
-        vec3 p = ro + d * rd;
+        p = ro + d * rd;
 
-        float norY = clamp( (p.y + 0.5 - (EARTH_RADIUS + CLOUDS_BOTTOM)) * (1./(CLOUDS_TOP - CLOUDS_BOTTOM)), 0., 1.);
-        scatteredLight = vec3(norY);
+        float norY = clamp( (p.y - bottom) * (1./(top - bottom)), 0., 1.);
+
         // float alpha = cloudMap( p, rd, norY );
-        // scatteredLight = vec3(alpha);
-        float c = cloudMapDetail(p);
-        scatteredLight = vec3(c);
-        // if( alpha > 0. ) {
-        //     dist = min( dist, d);
-        //     vec3 ambientLight = mix( CLOUDS_AMBIENT_COLOR_BOTTOM, CLOUDS_AMBIENT_COLOR_TOP, norY );
 
-        //     vec3 S = (ambientLight + SUN_COLOR * (scattering * volumetricShadow(p, sundotrd))) * alpha;
-        //     float dTrans = exp(-alpha * dD);
-        //     vec3 Sint = (S - S * dTrans) * (1. / alpha);
-        //     scatteredLight += transmittance * Sint; 
-        //     transmittance *= dTrans;
-        // }
+        if (norY > bottom) {
 
-        if( transmittance <= CLOUDS_MIN_TRANSMITTANCE ) break;
+            alpha = cloudMap1(p, rd, norY);
+            vec4 col1 = cloudShapesCube1(p * 0.8+ windV);
+            // vec4 col2 = cloudShapesCube1(p * 0.5 + vec3(0.0, 0.1, 0.0) + windV);
 
+            // alpha = mix(col1.r, col2.r, fract(p.y + 0.5));
+
+            // col = vec4(1.0, 1.0, 1.0, alpha);
+            col = col1;
+        } else {
+            col = vec4(0.0);
+            break;
+        }
+        
+        if (col.y > 0.3) {
+            // col = clamp(1.0 - col, 0.1, 0.9 ) + vec4(p, 1.0);
+            // col = vec4(p, alpha) + clamp(col, 0.1, 0.4 );
+            col = vec4(vec3(1.0), pow(alpha, 2.2)) + col;
+            break;
+        }
         d += dD;
     }
 
-    return vec4(scatteredLight, transmittance);
+    return col;
 }
 
 
@@ -678,10 +719,10 @@ void main () {
     vec2 fragCoord = gl_FragCoord.xy;
 
     // gl_FragColor = cloudShapesNoise(texCoord2D);
-    gl_FragColor = cloudShapesCube(fragCoord);
+    // gl_FragColor = cloudShapesCube(fragCoord);
     // gl_FragColor = renderMountains(fragCoord);
     // gl_FragColor = renderMountainsB(fragCoord);
     // gl_FragColor = renderCould(fragCoord);
-    // gl_FragColor = cloudRenderDemo(vOrigin, normalize(vDirection), 10000.0);
+    gl_FragColor = cloudRenderDemo(vOrigin, normalize(vDirection), 10000.0);
     // gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
 }

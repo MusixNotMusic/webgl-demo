@@ -243,6 +243,5 @@ export class BoxModel {
         window.removeEventListener('resize', this.resizeBind)
         this.canvas.remove();
         this.material.dispose();
-        this.camera.dispose();
     }
 }
