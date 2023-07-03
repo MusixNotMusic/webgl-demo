@@ -596,7 +596,7 @@ vec2 hitBox( vec3 orig, vec3 dir ) {
     return vec2( t0, t1 );
 }
 
-vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
+vec4 cloudRenderDemo (vec3 ro, vec3 rd) {
     vec2 bounds = hitBox( ro, rd );
     if ( bounds.x > bounds.y ) discard;
 
@@ -605,12 +605,7 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
     float start = bounds.x;
     float end  =  bounds.y;
     
-    if (start > dist) {
-        return vec4(0,0,0,1);
-    }
-    
-    end = min(end, dist);
-    
+
     float sundotrd = dot( rd, -SUN_DIR);
 
     // raymarch
@@ -623,7 +618,6 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
     float transmittance = 1.0;
     vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
 
-    dist = EARTH_RADIUS;
 
     vec3 p = vec3(0.0);
     vec4 col = vec4(0.0);
@@ -642,7 +636,7 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
         if (norY > bottom) {
 
             alpha = cloudMap1(p, rd, norY);
-            vec4 col1 = cloudShapesCube1(p * 0.8+ windV);
+            vec4 col1 = cloudShapesCube1(p * 0.3+ windV);
             // vec4 col2 = cloudShapesCube1(p * 0.5 + vec3(0.0, 0.1, 0.0) + windV);
 
             // alpha = mix(col1.r, col2.r, fract(p.y + 0.5));
@@ -667,53 +661,133 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd, float dist) {
 }
 
 
-vec4 renderCould (vec2 fragCoord) {
-    vec4 color = vec4(0.0);
-
-    if( letterBox(fragCoord, iResolution.xy, 2.25) ) {
-        color = vec4( 0., 0., 0., 1. );
-        return color;
-    } else {
-        float dist = 10.0;
-        vec4 col = vec4(0.0, 0.0, 0.0, 1);
-        
-        // vec3 ro, rd;
-        // getRay( iTime, fragCoord, iResolution.xy, iMouse/iResolution.xyxy, ro, rd);
-
-        vec3 ro = vOrigin;
-        vec3 rd = normalize(vDirection);
-
-        if( rd.y > 0. ) {
-            // clouds
-            col = cloudRenderDemo(ro, rd, dist);
-            float fogAmount = 1.-(.1 + exp(-dist*0.05));
-            col.rgb = mix(col.rgb, getSkyColor(rd)*(1.-col.a), fogAmount);
-        } else {
-            // cloud layer below horizon
-            col = renderCloudLayer(ro, rd, dist);
-            // height based fog, see https://iquilezles.org/articles/fog
-            float fogAmount = HEIGHT_BASED_FOG_C * 
-                (1.-exp( -dist*rd.y*(INV_SCENE_SCALE*HEIGHT_BASED_FOG_B)))/rd.y;
-            col.rgb = mix(col.rgb, getSkyColor(rd)*(1.-col.a), clamp(fogAmount,0.,1.));
-        }
-
-        // if( col.w > 1. ) {
-        //     color = vec4(0,0,0,1);
-        // } else {
-        //     vec2 spos = reprojectPos(ro+rd*dist, iResolution.xy, iChannel1);
-        //     vec2 rpos = spos * iResolution.xy;
-
-        // 	if( !letterBox(rpos.xy, iResolution.xy, 2.3) 
-        //         && !resolutionChanged() && !mouseChanged()) {
-        //         vec4 ocol = texture( iChannel1, spos, 0.0 ).xyzw;
-        //         col = mix(ocol, col, 0.05);
-        //     }
-        // }
-
-        color = col;
-        return color;
-    }
+vec3 modularsnap(in vec3 p,float size)//p = position, size can be vec3
+{
+    return floor((p+size*.5)/size) * size;
 }
+
+float hash11(float p)
+{
+    p = fract(p * .1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
+}
+
+float hashRain12(vec2 p)
+{
+    vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+float sdBox( vec3 p, vec3 b )
+{
+    vec3 q = abs(p) - b;
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+float sdPlane( vec3 p, vec3 n, float h )
+{
+    // n must be normalized
+    return dot(p,n) + h;
+}
+
+float sdSphere( vec3 p, float s )
+{
+    return length(p)-s;
+}
+
+vec3 repeat( in vec3 p, in vec3 c )
+{
+    vec3 q = mod(p+0.5*c,c)-0.5*c;
+    return q;
+}
+
+
+float rainsdf(vec3 p)
+{
+    float rainsize=.125;
+    float snapsize=.45;// rain droplets separation
+    vec3 m=modularsnap(p,snapsize);
+
+    float x=1.0-2.0*hashRain12((m.xz+.5)*1.31457453); //multiplying by a random offset
+    float z=1.0-2.0*hashRain12((m.xz+.2)*1.41569562);
+
+    float yrandom=hashRain12(m.xz*1.4234123); //random y offset
+
+    float rainspeed = 2.5+.3*hash11(yrandom);//random rainfall speed
+
+    //separating droplets in x,y,z dimension
+    vec3 randomoffset=vec3(x*snapsize*.25,-iTime*(rainspeed)+yrandom,z*snapsize*.25);
+
+    //you can choose any sdf shape
+
+    //BOX WATER DROPLET
+    //float r=sdBox(repeat(p-randomoffset,vec3(snapsize)),  vec3(.025,.5,.025)*rainsize);
+
+    //ELONGATED SPHERE WATER DROPLET
+    p=repeat(p-randomoffset,vec3(snapsize));
+    p.y*=.05;//elongated sphere effect
+
+    float r=sdSphere( p,rainsize*.015);
+
+    return r;
+}
+
+
+/**
+ * rain render
+ */
+vec4 rainRender(vec3 o, vec3 d)
+{
+
+    float r=1.0;
+    float plane=1.0;
+    float maxdist=32.0;
+    float t=0.5;
+
+    //Marching
+    //u don't need many steps, 64 steps because of plane
+    //water droplets would work with 16 steps :)
+
+    vec4 raincolor =  vec4(1.0, 1.0, 1.0, 0.9);// default blue color for rain
+    vec4 color =      vec4(0.0);
+    vec4 background = vec4(0.0);
+
+    for(int i=0;i<64;i++)
+    {
+        vec3 p=o+d*t;
+        r=rainsdf(p);
+        plane=sdPlane(p,vec3(0.0,1.0,0.0),1.0);//added a plane so you can percieve the rain in 3D
+
+        float dist=min(r,plane);
+        t+=dist;
+
+        if(dist<.0001||t>maxdist)//
+        {
+            if(r<plane)
+            {
+                color= raincolor;
+            }
+            break;
+        }
+    }
+
+
+    return color;
+}
+
+vec2 rot2D(vec2 p, float angle) {
+
+    angle = radians(angle);
+    float s = sin(angle);
+    float c = cos(angle);
+
+    return p * mat2(c,s,-s,c);
+
+}
+
 
 void main () {
     vec2 fragCoord = gl_FragCoord.xy;
@@ -723,6 +797,8 @@ void main () {
     // gl_FragColor = renderMountains(fragCoord);
     // gl_FragColor = renderMountainsB(fragCoord);
     // gl_FragColor = renderCould(fragCoord);
-    gl_FragColor = cloudRenderDemo(vOrigin, normalize(vDirection), 10000.0);
+    vec4 cloud = cloudRenderDemo(vOrigin, normalize(vDirection));
+    vec4 rain = rainRender(vOrigin, normalize(vDirection));
+    gl_FragColor = cloud + rain;
     // gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
 }
