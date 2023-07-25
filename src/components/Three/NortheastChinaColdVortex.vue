@@ -43,6 +43,7 @@ const initMapbox = () => {
         volumeRender = new VolumeRenderClass('volume-test', map, '/resource/eastnorth75', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/eastnorth150', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
+        // volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/0601-1', vertexGobalShader, fragmentGobalShader, 60000)
         // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
         volumeRenderGlobal.drawLayer();
         volumeRender1.drawLayer();
@@ -55,11 +56,19 @@ const initMapbox = () => {
         // const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat([e.lngLat.lng, e.lngLat.lat], 1000);
         // console.log('mercatorCoord ==>', mercatorCoord);
 
-        pickupVolumeData(volumeRenderGlobal.volume, e.lngLat)
+        const {xIndex, yIndex} = pickupVolumeData(volumeRenderGlobal.volume, e.lngLat);
+        console.log("xIndex, yIndex", xIndex, yIndex)
+
+        const res = lnglat2Index(volumeRenderGlobal.volume, e.lngLat.lng, e.lngLat.lat);
+
+        console.log("lnglat2Index xIndex, yIndex", res.xIndex, res.yIndex);
 
         // cutCenterData(volumeRenderGlobal.volume, {offsetX: 277, offsetY: 1800}, 150, 150, 32)
 
-        // renderVolume(volumeRenderGlobal.volume, {offsetX: 277, offsetY: 1800}, 150, 150, 32)
+        // renderVolume(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, 150, 150, 32)
+        const radius = 50;
+        renderVolume(volumeRenderGlobal.volume, {offsetX: res.xIndex, offsetY: res.yIndex}, radius, radius, 32, e.lngLat, radius * 1.7 * 1000)
+        // renderVolume(volumeRenderGlobal.volume, {offsetX: 600, offsetY: 1410}, 200, 200, 32);
     })
 }
 
@@ -193,13 +202,6 @@ const readFile = (path) => {
  * @param {*} x 
  * @param {*} y 
  */
-const index2Lnglat = (volume, x, y) => {
-    const {maxLatitude, maxLongitude, minLatitude, minLongitude, height, width} = volume;
-    return {
-        lng: minLongitude + y * (maxLongitude - minLongitude) / height,
-        lat: maxLatitude - x * (maxLatitude - minLatitude) / width,
-    }
-}
 
 const index2Lnglat2 = (volume, x, y) => {
     const {maxLatitude, maxLongitude, minLatitude, minLongitude, height, width} = volume;
@@ -209,6 +211,30 @@ const index2Lnglat2 = (volume, x, y) => {
     return {
         lng: minLongitude + y * (maxLongitude - minLongitude) / height,
         lat: radian2deg(Math.atan(h2 - x * dh)) - 1.45,
+        // lat: radian2deg(Math.atan(h2 - x * dh)) - 3.65,
+        // lat: radian2deg(Math.atan(h2 - x * dh)),
+        // lat: maxLatitude - x / (maxLatitude - minLatitude),
+    }
+}
+
+/**
+ * 经纬度转 墨卡托
+ * @param {*} volume 
+ * @param {*} lng 
+ * @param {*} lat 
+ */
+const lnglat2Index = (volume, lng, lat) => {
+    const {maxLatitude, maxLongitude, minLatitude, minLongitude, height, width} = volume;
+    const max = mapboxgl.MercatorCoordinate.fromLngLat([maxLongitude, maxLatitude], 0);
+    const min = mapboxgl.MercatorCoordinate.fromLngLat([minLongitude, minLatitude], 0);
+    const cur = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], 0);
+
+    const tx = (cur.x - min.x) / (max.x - min.x);
+    const ty = (max.y - cur.y) / (max.y - min.y);
+
+    return {
+        xIndex: ty * width,
+        yIndex: tx * height,
     }
 }
 
@@ -269,7 +295,7 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
 }
 
 
-const renderVolume = (volume, centerOffset, width, height, depth) => {
+const renderVolume = (volume, centerOffset, width, height, depth, lnglat, radius) => {
     let volumeData = {};
     const data = new Uint8Array(width * height * depth);
 
@@ -279,18 +305,21 @@ const renderVolume = (volume, centerOffset, width, height, depth) => {
     const left = Math.ceil(offsetX - width / 2);
     const right = Math.ceil(offsetX + width / 2);
 
+    const ll = new mapboxgl.LngLat(lnglat.lng, lnglat.lat);
+    const coors = ll.toBounds(radius).toArray();
+
     const min = index2Lnglat2(volume, left, bottom);
     const max = index2Lnglat2(volume, right, top);
 
     volumeData = {
-        minLongitude: min.lng,
-        minLatitude:  min.lat,
-        maxLongitude: max.lng,
-        maxLatitude:  max.lat,
+        minLongitude: coors[1][0] || min.lng,
+        minLatitude:  coors[1][1] || min.lat,
+        maxLongitude: coors[0][0] || max.lng,
+        maxLatitude:  coors[0][1] || max.lat,
         width:        width,
         height:       height,
         depth:        depth,
-        cutHeight:    500
+        cutHeight:    volume.cutHeight
     }
 
     const faceSize = width * height;
