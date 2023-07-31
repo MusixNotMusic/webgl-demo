@@ -11,13 +11,15 @@
   "dependencies": {
     "@turf/projection": "^6.5.0",
     "@turf/turf": "^6.5.0",
+    "fflate": "^0.7.3",
     "gl-matrix": "^3.4.3",
     "lodash": "^4.17.21",
-    "mapbox-gl": "^2.13.0",
+    "mapbox-gl": "^2.15.0",
     "three": "^0.150.1",
     "threebox-plugin": "^2.2.7",
     "vue": "^3.2.45",
-    "vue-router": "^4.1.6"
+    "vue-router": "^4.1.6",
+    "zstddec": "^0.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.0.0",

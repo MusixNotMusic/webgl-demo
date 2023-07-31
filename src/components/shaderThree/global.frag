@@ -18,6 +18,12 @@ uniform sampler2D colorMap;
 uniform vec3 cameraPosition;
 uniform float brightness;
 
+uniform float maxLat;
+uniform float minLat;
+
+#define PI 3.141592653589793
+#define QPI 0.7853981633974483
+
 vec4 pos = vec4(0.0, 0.1, -0.5, 0.03);
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
@@ -33,7 +39,13 @@ vec2 hitBox( vec3 orig, vec3 dir ) {
     return vec2( t0, t1 );
 }
 
+float latMercatorNormalize (float lat) {
+    return ((180.0 / PI) * log(tan(QPI + (lat * PI) / 360.0))) / 360.0;
+}
+
 float sample1( vec3 p ) {
+    // p.x = (latMercatorNormalize(maxLat) - latMercatorNormalize(minLat + p.x * (maxLat - minLat))) / (latMercatorNormalize(maxLat) - latMercatorNormalize(minLat));
+    // p.x = p.x - 0.1;
     return texture( tex, p ).r;
 }
 
@@ -112,25 +124,9 @@ void main(){
 
     if(maxVal < 0.01 || maxVal > 0.99) discard;
 
-    // pxColor = vec4(normalize(maxP), 1.0);
 
     pxColor = colorSimple(maxVal);
     
-    // if (length(p.xy - vRadarOrigin.xy) < vRadarOrigin.w) {
-    //     pxColor = colorSimple(maxVal);
-    // } else {
-    //     vec4 colorMax = colorSimple(maxVal);
-    //     vec3 colorW = sumColor.rgb / sumA;
-    //     float avgA = sumA / n;
-    //     float u = pow(1.0 - avgA, n);
-    //      if (maxVal > 0.2) {
-    //         pxColor.rgb  = u * colorW + (1.0 - u) * colorMax.rgb;
-    //         pxColor.a = pow( avgA, 1.0/ 3.3 );
-    //     } else {
-    //         pxColor.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
-    //         pxColor.a = pow( avgA, 1.0/ 2.5 );
-    //     } 
-    // }
 
     vec4 colorMax = colorSimple(maxVal);
     vec3 colorW = sumColor.rgb / sumA;
@@ -144,14 +140,11 @@ void main(){
         pxColor.a = pow( avgA, 1.0/ 2.5 );
     } 
 
-    // if (length(p.xy - vRadarOrigin.xy) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     if (length(p.xy - vec2(-0.5)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
     if (length(p.xy - vec2(-0.5, -0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
     if (length(p.xy - vec2(-0.4)) < 0.01) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 
-    // if (mod(p.x, 0.0005) < 0.0001) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
-    // if (mod(p.y, 0.0007) < 0.0001) pxColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     color = pxColor * brightness;
 

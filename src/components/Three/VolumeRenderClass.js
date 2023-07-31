@@ -64,6 +64,8 @@ export default class VolumeRenderClass{
             brightness:       { value: 1 },
             rangeColor1:      { value: 0 },
             rangeColor2:      { value: 1 },
+            maxLat:           { value: 50 },
+            minLat:           { value: 20 },
         };
 
         this.cmtextures = {};
@@ -141,9 +143,11 @@ export default class VolumeRenderClass{
                         // }
 
                         if (
-                            (cos > 0.01 && cos < 0.1) ||
+                            (cos > 0.01 && cos < 0.1) 
+                            ||
                             // (cos > 0.12 && cos < 0.18) ||
-                            (cos > 0.2 && cos < 0.3) ||
+                            (cos > 0.2 && cos < 0.3) 
+                            ||
                             // (cos > 0.32 && cos < 0.38) ||
                             (cos > 0.4 && cos < 0.5) 
                             ) {
@@ -159,33 +163,44 @@ export default class VolumeRenderClass{
         }
     }
 
+    /**
+     * 处理原始数据
+     * @param {*} data 
+     * @returns 
+     */
+    static parseRawVolumeData (data) {
+        const dv = new DataView(data, 0, 32);
+        const body = new DataView(data, 32);
+        const minLongitude = dv.getUint32(0, true);
+        const minLatitude = dv.getUint32(4, true);
+        const maxLongitude = dv.getUint32(8, true);
+        const maxLatitude = dv.getUint32(12, true);
+        const widDataCnt = dv.getUint32(16, true);
+        const heiDataCnt = dv.getUint32(20, true);
+        const layerCnt = dv.getUint32(24, true);
+        const cutHeight = dv.getFloat32(28, true);
+
+        const volume = {
+            data: new Uint8Array(body.buffer.slice(32)),
+            width: widDataCnt,
+            height: heiDataCnt,
+            depth: layerCnt,
+            minLongitude: minLongitude / 360000,
+            minLatitude: minLatitude / 360000,
+            maxLongitude: maxLongitude / 360000,
+            maxLatitude: maxLatitude / 360000,
+            cutHeight: cutHeight
+        };
+
+        return volume;
+    }
+
     init() {
         const loader = new THREE.FileLoader();
     
         loader.setResponseType('arraybuffer').load(this.path, 
             (data) => { 
-                const dv = new DataView(data, 0, 32);
-                const body = new DataView(data, 32);
-                const minLongitude = dv.getUint32(0, true);
-                const minLatitude = dv.getUint32(4, true);
-                const maxLongitude = dv.getUint32(8, true);
-                const maxLatitude = dv.getUint32(12, true);
-                const widDataCnt = dv.getUint32(16, true);
-                const heiDataCnt = dv.getUint32(20, true);
-                const layerCnt = dv.getUint32(24, true);
-                const cutHeight = dv.getFloat32(28, true);
-    
-                const volume = {
-                    data: new Uint8Array(body.buffer.slice(32)),
-                    width: widDataCnt,
-                    height: heiDataCnt,
-                    depth: layerCnt,
-                    minLongitude: minLongitude / 360000,
-                    minLatitude: minLatitude / 360000,
-                    maxLongitude: maxLongitude / 360000,
-                    maxLatitude: maxLatitude / 360000,
-                    cutHeight: cutHeight
-                };
+                const volume = VolumeRenderClass.parseRawVolumeData(data);
 
                 if (this.other) {
                     this.otherOperation(volume)
@@ -270,6 +285,8 @@ export default class VolumeRenderClass{
 
         this.uniforms.tex.value =  texture
         this.uniforms.colorMap.value =  this.colorMapTexture[this.parameters.colorMap]
+        this.uniforms.maxLat.value = volume.maxLatitude
+        this.uniforms.minLat.value = volume.minLatitude
 
         const geometry = new THREE.BoxGeometry( 1, 1, 1 );
 

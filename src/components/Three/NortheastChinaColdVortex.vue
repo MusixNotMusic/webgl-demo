@@ -1,10 +1,18 @@
 <template>
     <div id="map"></div>
     <div class=""></div>
+    <div class="upload">
+        <div>
+            <label for="">截取半径:</label>
+            <input type="text" v-model="radius" @change="radiusChange">
+        </div>
+        <input type="file" id="uploadInput" @change="uploadFileChange">
+        <button @click="pickDataClick">下载数据</button>
+    </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -15,14 +23,21 @@ import fragmentGobalBakShader from '../shaderThree/global_bak.frag'
 import vertexShader from '../shaderThree/demo.vert'
 import vertexGobalShader from '../shaderThree/global.vert'
 import VolumeRenderClass from './VolumeRenderClass'
+import { decompress } from './utils/ZstdDecompress'
 
 const centerOrigin =  [104, 30] || [0, 0];
 
 mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xocjRvM2VsMGFkdzNqc2l3NHhxM285eCJ9.9TK1C4mjpPMG5wNx8m1KmA';
+
 let map;
 let volumeRender;
 let volumeRender1;
 let volumeRenderGlobal;
+
+let radius = ref(75);
+let xIndex = 0;
+let yIndex = 0;
+
 const initMapbox = () => {
     map = new mapboxgl.Map({
         container: 'map',
@@ -40,90 +55,43 @@ const initMapbox = () => {
 
 
     map.on('style.load', () => {
-        volumeRender = new VolumeRenderClass('volume-test', map, '/resource/eastnorth75', vertexShader, fragmentGobalBakShader, 60000, true)
+        // volumeRender = new VolumeRenderClass('volume-test', map, '/resource/eastnorth75', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRender1 = new VolumeRenderClass('volume-test1', map, '/resource/eastnorth150', vertexShader, fragmentGobalBakShader, 60000, true)
         volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/data1', vertexGobalShader, fragmentGobalShader, 60000)
-        // volumeRenderGlobal = new VolumeRenderClass('volume-global', map, '/resource/0601-1', vertexGobalShader, fragmentGobalShader, 60000)
-        // volumeRender1 = new VolumeRenderClass('volume-global', map, '/resource/data1(1)', vertexGobalShader, fragmentGobalShader, 60000)
+
         volumeRenderGlobal.drawLayer();
         volumeRender1.drawLayer();
-        volumeRender.drawLayer();
+        // volumeRender.drawLayer();
     });
 
     map.on('click', (e) => {
         console.log(e.lngLat.lng, e.lngLat.lat)
 
-        // const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat([e.lngLat.lng, e.lngLat.lat], 1000);
-        // console.log('mercatorCoord ==>', mercatorCoord);
-
-        const {xIndex, yIndex} = pickupVolumeData(volumeRenderGlobal.volume, e.lngLat);
-        console.log("xIndex, yIndex", xIndex, yIndex)
-
         const res = lnglat2Index(volumeRenderGlobal.volume, e.lngLat.lng, e.lngLat.lat);
-
+       
+        xIndex = res.xIndex;
+        yIndex = res.yIndex;
+        
         console.log("lnglat2Index xIndex, yIndex", res.xIndex, res.yIndex);
 
         // cutCenterData(volumeRenderGlobal.volume, {offsetX: 277, offsetY: 1800}, 150, 150, 32)
 
-        // renderVolume(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, 150, 150, 32)
-        const radius = 50;
-        renderVolume(volumeRenderGlobal.volume, {offsetX: res.xIndex, offsetY: res.yIndex}, radius, radius, 32, e.lngLat, radius * 1.7 * 1000)
-        // renderVolume(volumeRenderGlobal.volume, {offsetX: 600, offsetY: 1410}, 200, 200, 32);
+        const _radius = Number(radius.value);
+
+
+        const { width, height, maxLongitude, minLongitude, maxLatitude, minLatitude } = volumeRenderGlobal.volume;
+        const uLon = (maxLongitude - minLongitude) / height;
+        const uLat = (maxLatitude - minLatitude) / width;
+
+        const { lng, lat } = e.lngLat;
+        const bounds = [[lng - _radius * 0.5 * uLon, lat - _radius * 0.5 * uLat], [lng + _radius * 0.5 * uLon, lat + _radius * 0.5 * uLat]];
+        renderVolumeByBounds(volumeRenderGlobal.volume, {offsetX: res.xIndex, offsetY: res.yIndex}, _radius, _radius, 32, bounds);
+        // renderVolume(volumeRenderGlobal.volume, {offsetX: res.xIndex, offsetY: res.yIndex}, radius, radius, 32, e.lngLat, radius * 1000)
     })
 }
 
 const deg2radian = (deg) => deg / 180 * Math.PI;
 const radian2deg = (radian) => radian / Math.PI * 180;
-
-const pickupVolumeData = (volume, center) => {
-    const { maxLatitude, maxLongitude, minLatitude, minLongitude, width, height, depth } = volume;
-    const { lng, lat } = center;
-    // const yIndex = Math.ceil((maxLongitude - lng) / (maxLongitude - minLongitude) * width);
-    // const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * height);
-
-    const tan = Math.tan;
-
-    const yIndex = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
-    const xIndex = Math.ceil((maxLatitude - lat) / (maxLatitude - minLatitude) * width);
-
-    const h1 = tan(deg2radian(minLatitude));
-    const h2 = tan(deg2radian(maxLatitude));
-    const dh = (h2 - h1) / width;
-    const yIndex1 = Math.ceil((lng - minLongitude) / (maxLongitude - minLongitude) * height);
-    const xIndex1 = Math.ceil((h2 - tan(deg2radian(lat))) / dh);
-    // const xIndex1 = width - Math.ceil((tan(deg2radian(lat)) - h1) / dh);
-
-    const faceSize = width * height;
-
-    const getVal = (volume, z, y, x) => {
-        return volume.data[faceSize * z +  (y - 1) * width + x]
-    }
-
-
-    if (center) {
-        console.log('xIndex, yIndex', xIndex, yIndex)
-        let maxVal = 0;
-        for (let d = 0; d < depth; d++) {
-           const val = getVal(volume, d, yIndex, xIndex)
-           maxVal = Math.max(maxVal, val);
-        }
-        console.log('maxVal', maxVal);
-
-
-        console.log('xIndex1, yIndex1', xIndex1, yIndex1)
-        let maxVal1 = 0;
-        for (let d = 0; d < depth; d++) {
-
-           const val1 = getVal(volume, d, yIndex1, xIndex1)
-           maxVal1 = Math.max(maxVal1, val1);
-        }
-        console.log('maxVal1', maxVal1);
-    }
-    return {
-        xIndex,
-        yIndex,
-    }
-}
 
 const readFile = (path) => {
     const loader = new THREE.FileLoader();
@@ -238,6 +206,16 @@ const lnglat2Index = (volume, lng, lat) => {
     }
 }
 
+/**
+     *      const minLongitude = dv.getUint32(0, true);
+            const minLatitude = dv.getUint32(4, true);
+            const maxLongitude = dv.getUint32(8, true);
+            const maxLatitude = dv.getUint32(12, true);
+            const widDataCnt = dv.getUint32(16, true);
+            const heiDataCnt = dv.getUint32(20, true);
+            const layerCnt = dv.getUint32(24, true);
+            const cutHeight = dv.getFloat32(28, true);
+     */
 const cutCenterData = (volume, centerOffset, width, height, depth) => {
     const data = new Uint8Array(width * height * depth + 32);
     const dv = new DataView(data.buffer);
@@ -248,16 +226,7 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
     const bottom = Math.ceil(offsetY + height / 2);
     const left = Math.ceil(offsetX - width / 2);
     const right = Math.ceil(offsetX + width / 2);
-    /**
-     *      const minLongitude = dv.getUint32(0, true);
-            const minLatitude = dv.getUint32(4, true);
-            const maxLongitude = dv.getUint32(8, true);
-            const maxLatitude = dv.getUint32(12, true);
-            const widDataCnt = dv.getUint32(16, true);
-            const heiDataCnt = dv.getUint32(20, true);
-            const layerCnt = dv.getUint32(24, true);
-            const cutHeight = dv.getFloat32(28, true);
-     */
+   
     const min = index2Lnglat2(volume, left, bottom);
     const max = index2Lnglat2(volume, right, top);
 
@@ -340,6 +309,50 @@ const renderVolume = (volume, centerOffset, width, height, depth, lnglat, radius
 
 }
 
+const renderVolumeByBounds = (volume, centerOffset, width, height, depth, bounds) => {
+    let volumeData = {};
+    const data = new Uint8Array(width * height * depth);
+
+    const { offsetX, offsetY } = centerOffset;
+    const top = Math.floor(offsetY - height / 2);
+    const bottom = Math.floor(offsetY + height / 2);
+    const left = Math.floor(offsetX - width / 2);
+    const right = Math.floor(offsetX + width / 2);
+
+    const coors = bounds;
+
+    const min = index2Lnglat2(volume, left, bottom);
+    const max = index2Lnglat2(volume, right, top);
+
+    volumeData = {
+        minLongitude: coors[1][0] || min.lng,
+        minLatitude:  coors[1][1] || min.lat,
+        maxLongitude: coors[0][0] || max.lng,
+        maxLatitude:  coors[0][1] || max.lat,
+        width:        width,
+        height:       height,
+        depth:        depth,
+        cutHeight:    volume.cutHeight
+    }
+
+    const faceSize = width * height;
+
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (bottom - y) + (right - x)]
+
+    for(let z = 0; z < depth; z++) {
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                data[z * faceSize + y * width + x] = apply(x, y, z);
+            }
+        }
+    }
+
+    volumeData.data = data;
+
+    volumeRender1.reset(volumeData)
+
+}
+
 onMounted(() => {
     initMapbox()
 
@@ -351,6 +364,36 @@ onUnmounted(() => {
     if (volumeRender) volumeRender.dispose()
     if (volumeRenderGlobal) volumeRenderGlobal.dispose()
 })
+
+
+const uploadFileChange = () => {
+    const uploadInput = document.getElementById("uploadInput");
+    var reader = new FileReader();
+
+    for (const file of uploadInput.files) {
+        // formData.append('files', file, file.name);
+
+        reader.addEventListener('load', () => {
+            decompress(reader.result).then((data) => {
+                console.log("decompress", data);
+                const volume = VolumeRenderClass.parseRawVolumeData(data.buffer);
+                volumeRenderGlobal.reset(volume);
+            });
+        });
+        reader.readAsArrayBuffer(file);
+    }
+
+
+    console.log('uploadFileChange', uploadInput.files, reader);
+}
+
+const radiusChange = () => {
+    console.log('radius =>', radius)
+}
+
+const pickDataClick = () => {
+    cutCenterData(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, radius.value, radius.value, 32)
+}
     
 </script>
 
@@ -364,6 +407,29 @@ body {
     top: 0;
     bottom: 0;
     width: 100%; 
+}
+
+.upload {
+    position: fixed;
+    top: 20px;
+    left: 40px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 5px;
+   
+}
+button {
+    padding: 0px
+}
+label {
+    color: #fff;
+}
+
+input[type="file"] {
+    color: #fff;
 }
 </style>
   
