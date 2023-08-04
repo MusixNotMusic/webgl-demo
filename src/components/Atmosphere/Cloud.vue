@@ -25,7 +25,6 @@ import cloud1FragmentShader  from './shader/cloud/cloud1.glsl'
 
 // import cloudBoxFragmentShader from './shader/cloud/box.frag'
 import cloudBoxFragmentShader from './shader/cloud/box1.frag'
-import { Box2 } from "three";
 export default {
   name: 'cloud',
   setup() {

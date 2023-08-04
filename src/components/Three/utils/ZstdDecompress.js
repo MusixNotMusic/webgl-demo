@@ -28,7 +28,7 @@ export function decompress(buf, filename) {
                 reject(e)
             })
         } else {
-            resolve(buf);
+            resolve(new Uint8Array(buf));
         }
     });
 

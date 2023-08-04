@@ -59,6 +59,11 @@ const routes= [
         name: "Cloud",
         component: () => import("../components/Atmosphere/Cloud.vue"),
       },
+      {
+        path: "/Isosurface",
+        name: "Isosurface",
+        component: () => import("../components/Three/Isosurface.vue"),
+      }
     ],
   },
 ];

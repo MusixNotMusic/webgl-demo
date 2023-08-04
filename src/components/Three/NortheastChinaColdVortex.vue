@@ -6,6 +6,10 @@
             <label for="">截取半径:</label>
             <input type="text" v-model="radius" @change="radiusChange">
         </div>
+        <div>
+            <label for="">是否添加头:</label>
+            <input type="checkbox" v-model="head" @change="headChange">
+        </div>
         <input type="file" id="uploadInput" @change="uploadFileChange">
         <button @click="pickDataClick">下载数据</button>
     </div>
@@ -35,6 +39,7 @@ let volumeRender1;
 let volumeRenderGlobal;
 
 let radius = ref(75);
+let head = ref(true);
 let xIndex = 0;
 let yIndex = 0;
 
@@ -217,8 +222,6 @@ const lnglat2Index = (volume, lng, lat) => {
             const cutHeight = dv.getFloat32(28, true);
      */
 const cutCenterData = (volume, centerOffset, width, height, depth) => {
-    const data = new Uint8Array(width * height * depth + 32);
-    const dv = new DataView(data.buffer);
 
     const { offsetX, offsetY } = centerOffset;
 
@@ -229,16 +232,26 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
    
     const min = index2Lnglat2(volume, left, bottom);
     const max = index2Lnglat2(volume, right, top);
+    
+    let data;
 
-    dv.setUint32(0,  min.lng * 360000 | 0, true)
-    dv.setUint32(4,  (min.lat + 0.1) * 360000 | 0, true)
-    dv.setUint32(8,  max.lng * 360000 | 0, true)
-    dv.setUint32(12, (max.lat - 0.1) * 360000 | 0, true)
+    if (head.value) {
 
-    dv.setUint32(16, width, true)
-    dv.setUint32(20, height, true)
-    dv.setUint32(24, depth, true)
-    dv.setFloat32(28, 500.0, true)
+        data = new Uint8Array(width * height * depth + 32);
+        const dv = new DataView(data.buffer);
+
+        dv.setUint32(0,  min.lng * 360000 | 0, true)
+        dv.setUint32(4,  (min.lat + 0.1) * 360000 | 0, true)
+        dv.setUint32(8,  max.lng * 360000 | 0, true)
+        dv.setUint32(12, (max.lat - 0.1) * 360000 | 0, true)
+
+        dv.setUint32(16, width, true)
+        dv.setUint32(20, height, true)
+        dv.setUint32(24, depth, true)
+        dv.setFloat32(28, 500.0, true)
+    } else {
+        data = new Uint8Array(width * height * depth);
+    }
 
     const faceSize = width * height;
 
@@ -255,7 +268,7 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
 
     const elem = window.document.createElement('a');
     elem.href = window.URL.createObjectURL(new Blob([data], {type: "application/octet-stream"}));
-    elem.download = 'cutData';        
+    elem.download = `cut_${width}x${height}x${depth}_uint8.raw`;
     document.body.appendChild(elem);
     elem.click();        
     document.body.removeChild(elem);
@@ -391,6 +404,10 @@ const radiusChange = () => {
     console.log('radius =>', radius)
 }
 
+const headChange = () => {
+    console.log('head =>', head)
+}
+
 const pickDataClick = () => {
     cutCenterData(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, radius.value, radius.value, 32)
 }
@@ -419,13 +436,16 @@ body {
     display: flex;
     flex-direction: column;
     row-gap: 5px;
+    column-gap: 10px;
+    align-items: flex-start;
    
 }
 button {
-    padding: 0px
+    padding: 0px 20px;
 }
 label {
     color: #fff;
+    width: 80px;
 }
 
 input[type="file"] {
