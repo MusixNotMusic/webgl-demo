@@ -28,8 +28,6 @@ varying vec3 vDirection;
 #define iGlobalTime iTime
 #define iGlobalFrame iFrame
 
-#define SHADER_TOY
-
 // Himalayas. Created by Reinder Nijhoff 2018
 // @reindernijhoff
 //
@@ -42,60 +40,10 @@ varying vec3 vDirection;
 #define SCENE_SCALE (10.)
 #define INV_SCENE_SCALE (.1)
 
-#define MOUNTAIN_HEIGHT (5000.)
-#define MOUNTAIN_HW_RATIO (0.00016)
-
 #define SUN_DIR normalize(vec3(-.7,.5,.75))
 #define SUN_COLOR (vec3(1.,.9,.85)*1.4)
 
-#define FLAG_POSITION (vec3(3900.5,720.,-2516.)*INV_SCENE_SCALE)
-#define HUMANOID_SCALE (2.)
-
-#define CAMERA_RO (vec3(3980.,730.,-2650.)*INV_SCENE_SCALE)
 #define CAMERA_FL 2.
-
-#define HEIGHT_BASED_FOG_B 0.02
-#define HEIGHT_BASED_FOG_C 0.05
-
-
-vec2 reprojectPos( in vec3 pos, in vec2 resolution, in sampler2D storage ) {
-    mat4 oldCam = mat4( texelFetch(storage,ivec2(2,0),0),
-    texelFetch(storage,ivec2(3,0),0),
-    texelFetch(storage,ivec2(4,0),0),
-    0.0, 0.0, 0.0, 1.0 );
-
-    vec4 wpos = vec4(pos,1.0);
-    vec3 cpos = (wpos*oldCam).xyz;
-    vec2 npos = CAMERA_FL * cpos.xy / cpos.z;
-    return 0.5 + 0.5*npos*vec2(resolution.y/resolution.x,1.0);
-}
-
-//
-// Fast skycolor function by Íñigo Quílez
-// https://www.shadertoy.com/view/MdX3Rr
-//
-vec3 getSkyColor(vec3 rd) {
-    float sundot = clamp(dot(rd,SUN_DIR),0.0,1.0);
-    vec3 col = vec3(0.2,0.5,0.85)*1.1 - max(rd.y,0.01)*max(rd.y,0.01)*0.5;
-    col = mix( col, 0.85*vec3(0.7,0.75,0.85), pow(1.0-max(rd.y,0.0), 6.0) );
-
-    col += 0.25*vec3(1.0,0.7,0.4)*pow( sundot,5.0 );
-    col += 0.25*vec3(1.0,0.8,0.6)*pow( sundot,64.0 );
-    col += 0.20*vec3(1.0,0.8,0.6)*pow( sundot,512.0 );
-
-    col += clamp((0.1-rd.y)*10., 0., 1.) * vec3(.0,.1,.2);
-    col += 0.2*vec3(1.0,0.8,0.6)*pow( sundot, 8.0 );
-    return col;
-}
-
-bool letterBox(vec2 fragCoord, const vec2 resolution, const float aspect) {
-    if( fragCoord.x < 0. || fragCoord.x > resolution.x ||
-    abs(2.*fragCoord.y-resolution.y) > resolution.x * (1./aspect) ) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 //
 // Noise functions
@@ -104,10 +52,6 @@ bool letterBox(vec2 fragCoord, const vec2 resolution, const float aspect) {
 //
 // https://www.shadertoy.com/view/4djSRW
 //
-float hash12( vec2 p ) {
-    p  = 50.0*fract( p*0.3183099 );
-    return fract( p.x*p.y*(p.x+p.y) );
-}
 
 float hash13(vec3 p3) {
     p3  = fract(p3 * 1031.1031);
@@ -115,11 +59,6 @@ float hash13(vec3 p3) {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-vec3 hash33(vec3 p3) {
-    p3 = fract(p3 * vec3(.1031, .1030, .0973));
-    p3 += dot(p3, p3.yxz+19.19);
-    return fract((p3.xxy + p3.yxx)*p3.zyx);
-}
 
 float valueHash(vec3 p3) {
     p3  = fract(p3 * 0.1031);
@@ -259,7 +198,7 @@ vec4 cloudShapesCube1 (vec3 p) {
 
 //=========================== render could ===========================
 
-#define CLOUD_MARCH_STEPS 12
+#define CLOUD_MARCH_STEPS 5
 #define CLOUD_SELF_SHADOW_STEPS 6
 
 #define EARTH_RADIUS    (0.0) // (6371000.)
@@ -325,21 +264,6 @@ float cloudMapBase(vec3 p, float norY) {
 	return remap( cloud.r - n, cloud.g, 1.);
 }
 
-float cloudMapDetail(vec3 p) { 
-    // 3d lookup in 2d texture :(
-    p = abs(p);
-  
-    float yi = mod(p.y,32.);
-    ivec2 offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
-    float a = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
-    
-    yi = mod(p.y+1.,32.);
-    offset = ivec2(mod(yi,8.), mod(floor(yi/8.),4.))*34 + 1;
-    float b = cloudShapesCube((mod(p.xz,32.)+vec2(offset.xy)+1.)).r;
-    
-    return mix(a,b,fract(p.y));
-}
-
 float cloudMapDetail1(vec3 p) { 
     // 3d lookup in 2d texture :(
     p = abs(p);
@@ -355,25 +279,6 @@ float cloudGradient( float norY ) {
     return linearstep( 0., .05, norY ) - linearstep( .8, 1.2, norY);
 }
 
-float cloudMap(vec3 pos, vec3 rd, float norY) {
-    vec3 ps = pos;
-    
-    float m = cloudMapBase(ps, norY);
-	m *= cloudGradient( norY );
-
-	float dstrength = smoothstep(1., 0.5, m);
-    
-    // // erode with detail
-    if(dstrength > 0.) {
-		m -= cloudMapDetail( ps ) * dstrength * CLOUDS_DETAIL_STRENGTH;
-    }
-
-	// m = smoothstep( 0., CLOUDS_BASE_EDGE_SOFTNESS, m+(CLOUDS_COVERAGE-1.) );
-    // m *= linearstep0(CLOUDS_BOTTOM_SOFTNESS, norY);
-
-    return m;
-    // return clamp(m * CLOUDS_DENSITY * (1.+max((ps.x-7000.)*0.5,0.)), 0., 1.);
-}
 
 float cloudMap1(vec3 pos, vec3 rd, float norY) {
     vec3 ps = pos;
@@ -395,191 +300,6 @@ float cloudMap1(vec3 pos, vec3 rd, float norY) {
     return clamp(m * CLOUDS_DENSITY * (1.+max((ps.x-7000.)*0.5,0.)), 0., 1.);
 }
 
-float volumetricShadow(in vec3 from, in float sundotrd ) {
-    float dd = CLOUDS_SHADOW_MARGE_STEP_SIZE;
-    vec3 rd = SUN_DIR;
-    float d = dd * .5;
-    float shadow = 1.0;
-
-    for(int s=0; s<CLOUD_SELF_SHADOW_STEPS; s++) {
-        vec3 pos = from + rd * d;
-        float norY = (pos.y + 0.5 - (EARTH_RADIUS + CLOUDS_BOTTOM)) * (1./(CLOUDS_TOP - CLOUDS_BOTTOM));
-
-        if(norY > 1.) return shadow;
-
-        float muE = cloudMap( pos, rd, norY );
-        shadow *= exp(-muE * dd);
-
-        dd *= CLOUDS_SHADOW_MARGE_STEP_MULTIPLY;
-        d += dd;
-    }
-    return shadow;
-}
-
-vec4 renderClouds( vec3 ro, vec3 rd, inout float dist ) {
-    if( rd.y < 0. ) {
-        return vec4(0,0,0,10);
-    }
-
-    ro.xz *= SCENE_SCALE;
-    ro.y = sqrt(EARTH_RADIUS*EARTH_RADIUS-dot(ro.xz,ro.xz));
-
-    float start = interectCloudSphere( rd, CLOUDS_BOTTOM );
-    float end  = interectCloudSphere( rd, CLOUDS_TOP );
-    
-    if (start > dist) {
-        return vec4(0,0,0,10);
-    }
-    
-    end = min(end, dist);
-    
-    float sundotrd = dot( rd, -SUN_DIR);
-
-    // raymarch
-    float d = start;
-    float dD = (end-start) / float(CLOUD_MARCH_STEPS);
-
-    float h = hash13(rd + fract(iTime) );
-    d -= dD * h;
-
-    float scattering =  mix( HenyeyGreenstein(sundotrd, CLOUDS_FORWARD_SCATTERING_G),
-        HenyeyGreenstein(sundotrd, CLOUDS_BACKWARD_SCATTERING_G), CLOUDS_SCATTERING_LERP );
-
-    float transmittance = 1.0;
-    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
-
-    dist = EARTH_RADIUS;
-
-    for(int s=0; s<CLOUD_MARCH_STEPS; s++) {
-        vec3 p = ro + d * rd;
-
-        float norY = clamp( (length(p) - (EARTH_RADIUS + CLOUDS_BOTTOM)) * (1./(CLOUDS_TOP - CLOUDS_BOTTOM)), 0., 1.);
-
-        float alpha = cloudMap( p, rd, norY );
-
-        if( alpha > 0. ) {
-            dist = min( dist, d);
-            vec3 ambientLight = mix( CLOUDS_AMBIENT_COLOR_BOTTOM, CLOUDS_AMBIENT_COLOR_TOP, norY );
-
-            vec3 S = (ambientLight + SUN_COLOR * (scattering * volumetricShadow(p, sundotrd))) * alpha;
-            float dTrans = exp(-alpha * dD);
-            vec3 Sint = (S - S * dTrans) * (1. / alpha);
-            scatteredLight += transmittance * Sint; 
-            transmittance *= dTrans;
-        }
-
-        if( transmittance <= CLOUDS_MIN_TRANSMITTANCE ) break;
-
-        d += dD;
-    }
-
-    return vec4(scatteredLight, transmittance);
-}
-
-//
-//
-// !Because I wanted a second cloud layer (below the horizon), I copy-pasted 
-// almost all of the code above:
-//
-
-float cloudMapLayer(vec3 pos, vec3 rd, float norY) {
-    vec3 ps = pos;
-
-    float m = cloudMapBase(ps, norY);
-	// m *= cloudGradient( norY );
-	float dstrength = smoothstep(1., 0.5, m);
-    
-    // erode with detail
-    if (dstrength > 0.) {
-		m -= cloudMapDetail( ps ) * dstrength * CLOUDS_DETAIL_STRENGTH;
-    }
-
-	m = smoothstep( 0., CLOUDS_BASE_EDGE_SOFTNESS, m+(CLOUDS_LAYER_COVERAGE-1.) );
-
-    return clamp(m * CLOUDS_DENSITY, 0., 1.);
-}
-
-
-float volumetricShadowLayer(in vec3 from, in float sundotrd ) {
-    float dd = CLOUDS_LAYER_SHADOW_MARGE_STEP_SIZE;
-    vec3 rd = SUN_DIR;
-    float d = dd * .5;
-    float shadow = 1.0;
-
-    for(int s=0; s<CLOUD_SELF_SHADOW_STEPS; s++) {
-        vec3 pos = from + rd * d;
-        float norY = clamp( (pos.y - CLOUDS_LAYER_BOTTOM ) * (1./(CLOUDS_LAYER_TOP - CLOUDS_LAYER_BOTTOM)), 0., 1.);
-
-        if(norY > 1.) return shadow;
-
-        float muE = cloudMapLayer( pos, rd, norY );
-        shadow *= exp(-muE * dd);
-
-        dd *= CLOUDS_SHADOW_MARGE_STEP_MULTIPLY;
-        d += dd;
-    }
-    return shadow;
-}
-
-vec4 renderCloudLayer( vec3 ro, vec3 rd, inout float dist ) {
-    // if( rd.y > 0. ) {
-    //     return vec4(0,0,0,10);
-    // }
-
-    ro.xz *= SCENE_SCALE;
-    ro.y = 0.;
-
-    float start = CLOUDS_LAYER_TOP/rd.y;
-    float end  = CLOUDS_LAYER_BOTTOM/rd.y;
-    
-    if (start > dist) {
-        return vec4(0,0,0,10);
-    }
-    
-    end = min(end, dist);
-    
-    float sundotrd = dot( rd, -SUN_DIR);
-
-    // raymarch
-    float d = start;
-    float dD = (end-start) / float(CLOUD_MARCH_STEPS);
-
-    float h = hash13(rd + fract(iTime) );
-    d -= dD * h;
-
-    float scattering =  mix( HenyeyGreenstein(sundotrd, CLOUDS_FORWARD_SCATTERING_G),
-        HenyeyGreenstein(sundotrd, CLOUDS_BACKWARD_SCATTERING_G), CLOUDS_SCATTERING_LERP );
-
-    float transmittance = 1.0;
-    vec3 scatteredLight = vec3(0.0, 0.0, 0.0);
-
-    dist = EARTH_RADIUS;
-
-    for(int s=0; s<CLOUD_MARCH_STEPS; s++) {
-        vec3 p = ro + d * rd;
-
-        float norY = clamp( (p.y - CLOUDS_LAYER_BOTTOM ) * (1./(CLOUDS_LAYER_TOP - CLOUDS_LAYER_BOTTOM)), 0., 1.);
-
-        float alpha = cloudMapLayer( p, rd, norY );
-
-        if( alpha > 0. ) {
-            dist = min( dist, d);
-            vec3 ambientLight = mix( CLOUDS_AMBIENT_COLOR_BOTTOM, CLOUDS_AMBIENT_COLOR_TOP, norY );
-
-            vec3 S = .7 * (ambientLight +  SUN_COLOR * (scattering * volumetricShadowLayer(p, sundotrd))) * alpha;
-            float dTrans = exp(-alpha * dD);
-            vec3 Sint = (S - S * dTrans) * (1. / alpha);
-            scatteredLight += transmittance * Sint; 
-            transmittance *= dTrans;
-        }
-
-        if( transmittance <= CLOUDS_MIN_TRANSMITTANCE ) break;
-
-        d += dD;
-    }
-
-    return vec4(scatteredLight, transmittance);
-}
 
 
 vec2 hitBox( vec3 orig, vec3 dir ) {
@@ -595,7 +315,7 @@ vec2 hitBox( vec3 orig, vec3 dir ) {
     return vec2( t0, t1 );
 }
 
-vec4 cloudRenderDemo (vec3 ro, vec3 rd) {
+vec4 cloudRender (vec3 ro, vec3 rd) {
     vec2 bounds = hitBox( ro, rd );
     if ( bounds.x > bounds.y ) discard;
 
@@ -603,7 +323,6 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd) {
 
     float start = bounds.x;
     float end  =  bounds.y;
-    
 
     float sundotrd = dot( rd, -SUN_DIR);
 
@@ -620,7 +339,7 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd) {
 
     vec3 p = vec3(0.0);
     vec4 col = vec4(0.0);
-    vec4 wind = vec4(10.0, 4.0, 0.0, 100.0);
+    vec4 wind = vec4(10.0, 4.0, 0.0, 200.0);
     vec3 windV =  vec3(iTime / wind.w * wind.x, iTime / wind.w * wind.y, iTime / wind.w * wind.z);
     float top = 0.5;
     float bottom = 0.2;
@@ -630,26 +349,17 @@ vec4 cloudRenderDemo (vec3 ro, vec3 rd) {
 
         float norY = clamp( (p.y - bottom) * (1./(top - bottom)), 0., 1.);
 
-        // float alpha = cloudMap( p, rd, norY );
-
         if (norY > bottom) {
 
             alpha = cloudMap1(p, rd, norY);
-            vec4 col1 = cloudShapesCube1(p * 0.3+ windV);
-            // vec4 col2 = cloudShapesCube1(p * 0.5 + vec3(0.0, 0.1, 0.0) + windV);
+            col = cloudShapesCube1(p + windV);
 
-            // alpha = mix(col1.r, col2.r, fract(p.y + 0.5));
-
-            // col = vec4(1.0, 1.0, 1.0, alpha);
-            col = col1;
         } else {
             col = vec4(0.0);
             break;
         }
         
         if (col.y > 0.3) {
-            // col = clamp(1.0 - col, 0.1, 0.9 ) + vec4(p, 1.0);
-            // col = vec4(p, alpha) + clamp(col, 0.1, 0.4 );
             col = vec4(vec3(1.0), pow(alpha, 2.2)) + col;
             break;
         }
@@ -704,11 +414,11 @@ vec3 repeat( in vec3 p, in vec3 c )
 }
 
 
-float rainsdf(vec3 p)
+float rainSDF(vec3 p)
 {
-    float rainsize=.125;
-    float snapsize=.45;// rain droplets separation
-    vec3 m=modularsnap(p,snapsize);
+    float rainsize= .125;
+    float snapsize= .45;// rain droplets separation
+    vec3 m = modularsnap(p,snapsize);
 
     float x=1.0-2.0*hashRain12((m.xz+.5)*1.31457453); //multiplying by a random offset
     float z=1.0-2.0*hashRain12((m.xz+.2)*1.41569562);
@@ -729,7 +439,7 @@ float rainsdf(vec3 p)
     p=repeat(p-randomoffset,vec3(snapsize));
     p.y*=.05;//elongated sphere effect
 
-    float r=sdSphere( p,rainsize*.015);
+    float r = sdSphere( p, rainsize * .01);
 
     return r;
 }
@@ -744,33 +454,84 @@ vec4 rainRender(vec3 o, vec3 d)
     float r=1.0;
     float plane=1.0;
     float maxdist=32.0;
-    float t=0.5;
+    float t= 0.5;
 
     //Marching
     //u don't need many steps, 64 steps because of plane
     //water droplets would work with 16 steps :)
 
-    vec4 raincolor =  vec4(1.0, 1.0, 1.0, 0.9);// default blue color for rain
+    vec4 raincolor =  vec4(1.0, 1.0, 1.0, 0.7);// default blue color for rain
     vec4 color =      vec4(0.0);
-    vec4 background = vec4(0.0);
 
-    for(int i=0;i<64;i++)
-    {
-        vec3 p=o+d*t;
-        r=rainsdf(p);
-        plane=sdPlane(p,vec3(0.0,1.0,0.0),1.0);//added a plane so you can percieve the rain in 3D
+    for(int i = 0; i < 32; i++) {
+        vec3 p = o + d * t;
+        
+        r = rainSDF(p);
 
-        float dist=min(r,plane);
-        t+=dist;
+        plane = sdPlane(p, vec3(0.0, 1.0, 0.0), 1.0);//added a plane so you can percieve the rain in 3D
 
-        if(dist<.0001||t>maxdist)//
-        {
-            if(r<plane)
-            {
-                color= raincolor;
+        float dist = min(r, plane);
+        t += dist;
+
+        if(dist < .0001 || t > maxdist) {
+            if(r < plane) {
+                color = raincolor;
             }
             break;
         }
+    }
+
+
+    return color;
+}
+
+
+vec4 rainRender1(vec3 ro, vec3 rd)
+{
+
+    vec2 bounds = hitBox( ro, rd );
+    if ( bounds.x > bounds.y ) discard;
+
+    bounds.x = max( bounds.x, 0.0 );
+
+    float start = bounds.x;
+    float end  =  bounds.y;
+
+    int step = 32;
+
+    float d = start;
+    float dD = (end-start) / float(step);
+
+    float maxdist = 32.0;
+    float distance = 0.5;
+    //Marching
+    //u don't need many steps, 64 steps because of plane
+    //water droplets would work with 16 steps :)
+
+    vec4 raincolor =  vec4(1.0, 1.0, 1.0, 0.7);// default blue color for rain
+    vec4 color =      vec4(0.0);
+
+    for(int i = 0; i < step; i++) {
+        vec3 p = ro + d * rd;
+
+        if (p.y > 0.25) break;
+
+        vec3 p1 = ro + distance * rd;
+        float r = rainSDF(p1);
+
+        float plane = sdPlane(p1, vec3(0.0, 1.0, 0.0), 1.0);//added a plane so you can percieve the rain in 3D
+
+        float dist = min(r, plane);
+        distance += dist;
+
+        if(dist < .0001 || distance > maxdist) {
+            if(r < plane) {
+                color = raincolor;
+            }
+            break;
+        }
+
+        d += dD;
     }
 
 
@@ -787,17 +548,210 @@ vec2 rot2D(vec2 p, float angle) {
 
 }
 
+// lightning
+// https://www.shadertoy.com/view/WscyWB
+
+// const int MAX_STEPS = 32;
+// const float EPSILON = 1e-4;
+// const float CLOUD_START = 20.0;
+// const float CLOUD_EXTENT = 20.0;
+// float speed = 2.5;
+// const float strikeFrequency = 0.1;
+
+// const float MIN_DIST = 0.1;
+// const float MAX_DIST = 1000.0;
+
+// vec2 bolt0 = vec2(1e10);
+// vec2 bolt1 = vec2(1e10);
+// vec2 bolt2 = vec2(1e10);
+
+// const vec3 boltColour = vec3(0.3, 0.6, 1.0);
+// //Used to shape lightning bolts
+// //https://www.shadertoy.com/view/lt3BWM
+
+// #define HASHSCALE 0.1031
+
+// float hash(float p){
+//     vec3 p3  = fract(vec3(p) * HASHSCALE);
+//     p3 += dot(p3, p3.yzx + 19.19);
+//     return fract((p3.x + p3.y) * p3.z);
+// }
+
+// float fade(float t) { return t*t*t*(t*(6.*t-15.)+10.); }
+
+// float grad(float hash, float p){
+//     int i = int(1e4*hash);
+//     return (i & 1) == 0 ? p : -p;
+// }
+
+// float perlinNoise1D(float p){
+//     float pi = floor(p), pf = p - pi, w = fade(pf);
+//     return mix(grad(hash(pi), pf), grad(hash(pi + 1.0), pf - 1.0), w) * 2.0;
+// }
+
+
+// float fbm(float pos, int octaves){
+//     if(pos < 0.0){
+//         return 0.0;
+//     }
+//     float total = 0.0;
+//     float frequency = 0.2;
+//     float amplitude = 1.0;
+//     for(int i = 0; i < octaves; i++){
+//         if(i > 2){
+//             pos += 0.5*iTime;
+//         }
+//         total += perlinNoise1D(pos * frequency) * amplitude;
+//         amplitude *= 0.5;
+//         frequency *= 2.0;
+//     }
+//     return total;
+// }
+
+// float sdCappedCylinder( vec3 p, float h, float r ){
+//     vec2 d = abs(vec2(length(p.xz),p.y)) - vec2(h,r);
+//     return min(max(d.x,d.y),0.0) + length(max(d,0.0));
+// }
+
+// float getSDF(vec3 p) {
+
+//     float dist = 1e10;
+
+//     //Shift everything to start at the cloud
+//     p.y -= CLOUD_START;
+
+//     //The counter of a bolt in a series
+//     float t = 0.0;
+//     //The offset of the series
+//     float shift = 0.0;
+
+//     //Number of noise levels for FBM
+//     int octaves = 4;
+//     //Scale of the y coordinate as noise input. Controls the smoothness of the bolt
+//     float scale = 0.5;
+//     //Offset to give simultaneous bolts different shapes
+//     float shapeOffset = 15.2;
+//     //Fraction of the total bolt length 0->1
+//     float progress;
+
+//     //The fraction of the lifetime of the bolt it takes for it to descend.
+//     //The bolt persists in full form for 1.0-descentDuration fraction of the total period.
+//     float descentDuration = 0.5;
+
+//     //Spatial range of the bolt
+//     float range = CLOUD_EXTENT*0.4;
+//     float boltLength = CLOUD_START*0.5;
+//     //Bolt thickness
+//     float radius = 0.01;
+//     //xz: the shape of the bolt
+//     //y:  progress used as bolt length and positioning
+//     vec3 offset;
+//     vec2 location;
+
+//     float time;
+
+//     for(int i = 0; i < 3; i++){
+
+//         shapeOffset *= 2.0;
+//         shift = fract(shift + 0.25);
+//         time = iTime * speed + shift;
+//         t = floor(time)+1.0;
+        
+//         //Reset the position of the iteration bolt
+//         if(i == 0){
+//         	bolt0 = vec2(1e10);
+//         }
+//         if(i == 1){
+//         	bolt1 = vec2(1e10);
+//         }
+//         if(i == 2){
+//         	bolt2 = vec2(1e10);
+//         }
+
+//         //Bolts strike randomly
+//         if(hash(float(i)+t*0.026) > strikeFrequency){
+//             continue;
+//         }
+//         location = 2.0*vec2(hash(t+float(i)+0.43), hash(t+float(i)+0.3))-1.0;
+//         location *= range;
+//         progress = clamp(fract(time)/descentDuration, 0.0, 1.0);
+        
+//         //Briefly increase the radius of the bolt the moment it makes contact
+//         if(progress > 0.95 && fract(time) - descentDuration < 0.1){
+//             radius = 0.1;
+//         }else{
+//             radius = 0.01;
+//         }
+//         progress *= boltLength;
+//         offset = vec3(location.x+fbm(shapeOffset+t*0.2+(scale*p.y), octaves), 
+//                       progress, 
+//                       location.y+fbm(shapeOffset+t*0.12-(scale*p.y), octaves));
+        
+//         //Store the xz location of the iteration bolt
+//         //Raymarching translations are reversed so invert the sign
+//         if(i == 0){
+//         	bolt0 = -location.xy;
+//         }
+//         if(i == 1){
+//         	bolt1 = -location.xy;
+//         }
+//         if(i == 2){
+//         	bolt2 = -location.xy;
+//         }
+//         dist = min(dist, sdCappedCylinder(p+offset, radius, progress));
+//     }
+
+//     return dist;
+// }
+
+// float getGlow(float dist, float radius, float intensity){
+//     dist = max(dist, 1e-6);
+//     return pow(radius/dist, intensity);	
+// }
+
+// float distanceToScene(vec3 ro, vec3 rd, float start, float end, out vec3 glow) {
+
+//     float depth = start;
+//     float dist;
+    
+//     for (int i = 0; i < MAX_STEPS; i++) {
+
+//         vec3 p = ro + depth * rd;
+//         //Warping the cylinder breaks the shape. Reduce step size to avoid this.
+//         dist = 0.5 * getSDF(p);
+//         //Accumulate the glow along the view ray.
+//         glow += getGlow(dist, 0.01, 0.8) * boltColour;
+
+//         if (dist < EPSILON){
+//             return depth;
+//         }
+
+//         depth += dist;
+
+//         if (depth >= end){ 
+//             return end; 
+//         }
+//     }
+
+//     return end;
+// }
 
 void main () {
     vec2 fragCoord = gl_FragCoord.xy;
 
-    // gl_FragColor = cloudShapesNoise(texCoord2D);
-    // gl_FragColor = cloudShapesCube(fragCoord);
-    // gl_FragColor = renderMountains(fragCoord);
-    // gl_FragColor = renderMountainsB(fragCoord);
-    // gl_FragColor = renderCould(fragCoord);
-    vec4 cloud = cloudRenderDemo(vOrigin, normalize(vDirection));
-    vec4 rain = rainRender(vOrigin, normalize(vDirection));
-    gl_FragColor = cloud + rain;
-    // gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+    // vec4 cloud = vec4(0.0);
+
+    vec4 rain = rainRender1(vOrigin, normalize(vDirection));
+    vec4 cloud = cloudRender(vOrigin, normalize(vDirection));
+
+    vec4 color = vec4(0.0);
+
+    // vec3 glow = vec3(0);
+    // float dist = distanceToScene(vOrigin, normalize(vDirection), 0.0, MAX_DIST, glow);
+    // if (vOrigin.y < CLOUD_START) {
+    //     color += vec4(glow, 0.6);
+    // }
+
+    gl_FragColor = color + cloud + rain;
+    // gl_FragColor = mix(cloud, rain, 0.6);
 }
