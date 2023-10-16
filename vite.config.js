@@ -2,9 +2,19 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import glsl from 'vite-plugin-glsl';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), glsl()],
+  plugins: [vue(), glsl(
+    {
+      include: [              
+        '**/*.glsl', '**/*.wgsl',
+        '**/*.vert', '**/*.frag',
+        '**/*.vs', '**/*.fs'
+      ]
+    }
+  )],
+  build: {
+    target: "esnext",
+  },
   server: {
     https: false,
     // Listening on all local IPs

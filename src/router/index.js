@@ -63,8 +63,21 @@ const routes= [
         path: "/Isosurface",
         name: "Isosurface",
         component: () => import("../components/Three/Isosurface.vue"),
+      },
+      {
+        path: "/WebGPU",
+        name: "WebGPU",
+        redirect: "/Triangle",
+        component: () => import("../components/WebGPU/Index.vue"),
+        children: [
+          {
+            path: "/Triangle",
+            name: "Triangle",
+            component: () => import("../components/WebGPU/Triangle.vue"),
+          },
+        ]
       }
-    ],
+    ]
   },
 ];
 

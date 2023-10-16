@@ -19,7 +19,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import mapboxgl from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import 'mapbox-gl/src/css/mapbox-gl.css'
 
 import fragmentShader from '../shaderThree/volume-demo.frag'
 import fragmentGobalShader from '../shaderThree/global.frag'
@@ -31,7 +31,7 @@ import { decompress } from './utils/ZstdDecompress'
 
 const centerOrigin =  [104, 30] || [0, 0];
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xocjRvM2VsMGFkdzNqc2l3NHhxM285eCJ9.9TK1C4mjpPMG5wNx8m1KmA';
+mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xsb3JwcXcyMDBkYTNqcXRyeTdpMnpxNCJ9.bNtA76Bl0x_Z9S3oXJnFqw';
 
 let map;
 let volumeRender;
@@ -54,7 +54,7 @@ const initMapbox = () => {
         pitch: 45,
         projection: 'mercator',
         // projection: 'globe',
-        useWebGL2: true,
+        useWebGL2: false,
         antialias: true // create the gl context with MSAA antialiasing, so custom layers are antialiased
     });
 
