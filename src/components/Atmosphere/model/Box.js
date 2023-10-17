@@ -86,31 +86,8 @@ export class BoxModel {
 
     getUniform () {
         return {
-            iResolution: { type: 'v3', value: this.resolution },
             iTime: { type: 'f', value: 0.0 },
-            iTimeDelta: { type: 'f', value: 0.0 },
-            iFrame: { type: 'i', value: 0 },
-            iMouse: { type: 'v4', value: new THREE.Vector4(212, 393, -203, -325) },
-            iMouseButton: { type: 'v2', value: new THREE.Vector4(0, 0, 0, 0) },
-
-            iChannelResolution: { type: 'v3v', value: Array(10).fill(new THREE.Vector3(0,0,0)) },
-
-            iDate: { type: 'v4', value: new THREE.Vector4(0, 0, 0, 0) },
-            // iSampleRate: { type: 'f', value: audioContext.sampleRate },
-            iChannel0: { type: 't' },
-            iChannel1: { type: 't' },
-            iChannel2: { type: 't' },
-            iChannel3: { type: 't' },
-            iChannel4: { type: 't' },
-            iChannel5: { type: 't' },
-            iChannel6: { type: 't' },
-            iChannel7: { type: 't' },
-            iChannel8: { type: 't' },
-            iChannel9: { type: 't' },
-
-            resolution: { type: 'v2', value: this.resolution },
-            time: { type: 'f', value: 0.0 },
-            mouse: { type: 'v2', value: this.normalizedMouse },
+            status: { value: [true, false, false, true] },
         }
     }
 
@@ -121,16 +98,9 @@ export class BoxModel {
             this.time = this.startingTime + this.clock.getElapsedTime() - this.pausedTime;
             this.updateDate();
 
-            this.material.uniforms['iResolution'].value = this.resolution;
-            this.material.uniforms['iTimeDelta'].value = this.deltaTime;
+     
             this.material.uniforms['iTime'].value = this.time;
-            this.material.uniforms['iFrame'].value = this.frameCounter;
-            this.material.uniforms['iMouse'].value = this.mouse;
-            this.material.uniforms['iMouseButton'].value = this.mouseButton;
-
-            this.material.uniforms['resolution'].value = this.resolution;
-            this.material.uniforms['time'].value = this.time;
-            this.material.uniforms['mouse'].value = this.normalizedMouse;
+            this.material.uniforms['status'].value = [true, false, false, true];
         }
     }
 
@@ -221,7 +191,7 @@ export class BoxModel {
         this.canvas.height = container.clientHeight;
         this.canvas.style.width = container.clientWidth + 'px';
         this.canvas.style.height = container.clientHeight + 'px';
-        this.resolution = new THREE.Vector3(this.canvas.clientHeight, this.canvas.clientWidth, 1);
+        // this.resolution = new THREE.Vector3(this.canvas.clientHeight, this.canvas.clientWidth, 1);
         if (this.camera) {
             this.camera.left = -this.resolution.x / 2.0;
             this.camera.right = this.resolution.x / 2.0;
@@ -233,7 +203,7 @@ export class BoxModel {
         if (this.geometry) {
             this.geometry = new THREE.PlaneGeometry(this.resolution.x, this.resolution.y);
         }
-        if (this.material && this.material.uniforms) this.material.uniforms.iResolution.value = this.resolution;
+        // if (this.material && this.material.uniforms) this.material.uniforms.iResolution.value = this.resolution;
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         this.renderTarget.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     }
