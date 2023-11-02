@@ -65,6 +65,11 @@ const routes= [
         component: () => import("../components/Atmosphere/Weather.vue"),
       },
       {
+        path: "/WindField",
+        name: "WindField",
+        component: () => import("../components/Atmosphere/WindFieldArrows.vue"),
+      },
+      {
         path: "/Isosurface",
         name: "Isosurface",
         component: () => import("../components/Three/Isosurface.vue"),

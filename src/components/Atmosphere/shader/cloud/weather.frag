@@ -149,12 +149,13 @@ vec4 cloudShapesNoise (vec2 uv) {
 }
 
 vec4 cloudShapesCube1 (vec3 p) {
-    float r = tilableVoronoi( p,  4,  4. );
-    float g = tilableVoronoi( p,  4,  8. );
-    float b = tilableVoronoi( p,  4,  4. );
+    float r = tilableVoronoi( p,  3,  2. );
+    float g = tilableVoronoi( p,  4,  4. );
+    float b = tilableVoronoi( p,  5,  4. );
 
     float c = max(0., 1.-(r + g * .5 + b * .25) / 1.75);
     return vec4(c);
+    // return vec4(vec2(c), 1.0, c);
 }
 
 
