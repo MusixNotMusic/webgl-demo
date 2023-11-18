@@ -57,7 +57,6 @@ export default class DemoModelLayer extends BaseModelLayer{
       this.addLight();
       this.drawLayer();
       this.addHelperMesh();
-      this.drawDistanceLayer(true);
       return null;
     })
   }
@@ -69,34 +68,41 @@ export default class DemoModelLayer extends BaseModelLayer{
 
     return new Promise((resolve, reject) => {
       loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
+        // loader.load( '/model/fbx/mig23mld.fbx',  ( model ) => {
+        console.log('this.modelSize ==>');
         this.data.forEach(item => {
           const object = model.clone();
 
-          object.name = item.name;
+          this.setMeshSide(object);
 
-          object.userData = {
+          object.rotation.x += Math.PI / 2;
+
+          this.setObjectCenter(object);
+
+          const custom = new THREE.Object3D();
+
+          custom.name = item.name;
+
+          custom.userData = {
             lon: item.lon,
             lat: item.lat,
             type: this.type
           }
 
-          this.setMeshSide(object);
+          custom.add(object)
 
-          this.setObjectBounds(object, item.bounds);
+          this.setObjectBounds(custom, item.bounds);
 
-          // object.rotation.x += Math.PI / 2;
 
-          scene.add( object );
+          scene.add( custom );
 
-          this.addCSS2Object(object, item.name);
+          this.addCSS2Object(custom, item.name);
         })
 
         resolve(model)
       });
     })
   }
-
-
 
   setMeshBounds (mesh, bounds) {
     const min = mapboxgl.MercatorCoordinate.fromLngLat([bounds.minX, bounds.maxY], bounds.minZ);
@@ -111,6 +117,19 @@ export default class DemoModelLayer extends BaseModelLayer{
     mesh.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
     mesh.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
     mesh.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
+  }
+
+
+  lookAt() {
+    const radar1 = this.scene.getObjectByName('radar-1');
+    const radar2 = this.scene.getObjectByName('radar-2');
+
+    const direction = new THREE.Vector3();
+    radar1.getWorldDirection(direction);
+    console.log('WorldDirection ==>', direction);
+    const { x, y, z } = radar2.position;
+    // radar1.up.set(0, 0, 1);
+    radar1.lookAt(x, y, z);
   }
 
   destroy () {

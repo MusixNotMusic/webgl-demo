@@ -175,6 +175,12 @@ export default class BaseModelLayer extends BaseModelModel{
     return size;
   }
 
+  setObjectCenter (object) {
+    const box = new THREE.Box3().setFromObject(object);
+    const center = box.getCenter(new THREE.Vector3());
+    object.position.set(-center.x, -center.y, -center.z);
+  }
+
   setObjectBounds (object, bounds) {
     const size = this.getObjectSize(object);
 

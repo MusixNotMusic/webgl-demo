@@ -75,7 +75,7 @@ export default class ThreeModel {
     }
 
     initMesh (buffer) {
-        console.log('initMesh =>', buffer)
+        // console.log('initMesh =>', buffer)
         // this.material = new THREE.MeshBasicMaterial( {
         //     color: 'orange',
         //     transparent: true,
@@ -142,6 +142,22 @@ export default class ThreeModel {
 
         this.scene.add(this.grid);
         this.scene.add(new THREE.AxesHelper( 1e2 ));
+
+
+        const coneGeo = new THREE.ConeGeometry(5, 20, 32);
+        const baseMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
+
+        const coneMesh = new THREE.Mesh(coneGeo, baseMaterial);
+        coneMesh.position.set(50, 50, 50);
+        coneMesh.rotateX(Math.PI / 2);
+
+        const direction = new THREE.Vector3();
+        coneMesh.getWorldDirection(direction);
+        console.log('WorldDirection ==>', direction);
+
+        coneMesh.lookAt(0, 0, 0);
+
+        this.scene.add(coneMesh);
 
         this.render();
     }
