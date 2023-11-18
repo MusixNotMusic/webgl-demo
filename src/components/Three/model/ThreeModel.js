@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import Object3D from 'threebox-plugin/src/objects/Object3D';
 
 export default class ThreeModel {
     constructor() {
@@ -57,25 +58,20 @@ export default class ThreeModel {
 
         this.scene.add(ambientLight);
 
-        // this.particleLight = new THREE.Mesh(
-        //     new THREE.SphereGeometry( .05, 8, 8 ),
-        //     new THREE.MeshBasicMaterial( { color: 0xffffff } )
-        // );
-        // this.scene.add( this.particleLight );
+        // this.addOneLight([0, 100, 0]);
+        this.addOneLight([100, 200, 100]);
+        this.addOneLight([-100, -200, -100]);
+    }
 
-        // this.particleLight.add( new THREE.PointLight( 0xffffff, 300 ) );
+    addOneLight(position) {
+        const light = new THREE.DirectionalLight( 0xffffff, 3 );
+        light.position.set( position[0], position[1], position[2] );
+        this.scene.add( light );
 
-        const light1 = new THREE.DirectionalLight( 0xffffff, 3 );
-        light1.position.set( 0, 100, 0 );
-        this.scene.add( light1 );
 
-        const light2 = new THREE.DirectionalLight( 0xffffff, 3 );
-        light2.position.set( 100, 200, 100 );
-        this.scene.add( light2 );
-
-        const light3 = new THREE.DirectionalLight( 0xffffff, 3 );
-        light3.position.set( - 100, - 200, - 100 );
-        this.scene.add( light3 );
+        const lHelper = new THREE.DirectionalLightHelper(light, 5);
+        light.target = new THREE.Object3D();
+        this.scene.add( lHelper );
     }
 
     initMesh (buffer) {

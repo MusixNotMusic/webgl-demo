@@ -86,9 +86,14 @@ const routes= [
             component: () => import("../components/WebGPU/Triangle.vue"),
           },
         ]
-      }
-    ]
-  },
+      },
+      {
+        path: "/Model",
+        name: "Model",
+        component: () => import("../components/ModelLoad/Demo.vue"),
+      },
+    ],
+  }
 ];
 
 const router = createRouter({
