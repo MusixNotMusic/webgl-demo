@@ -3,6 +3,8 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import Object3D from 'threebox-plugin/src/objects/Object3D';
 
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
 export default class ThreeModel {
     constructor() {
         this.scene = new THREE.Scene();
@@ -33,6 +35,9 @@ export default class ThreeModel {
         this.controls.addEventListener( 'change', this.renderBind );
         this.controls.target.set( 0, 0, 0 );
         this.controls.update();
+        
+
+        this.control = new TransformControls( this.camera, this.renderer.domElement );
     }
 
     init(path) {
@@ -145,6 +150,7 @@ export default class ThreeModel {
 
 
         const coneGeo = new THREE.ConeGeometry(5, 20, 32);
+        coneGeo.rotateX( Math.PI / 2 );
         const baseMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
 
         const coneMesh = new THREE.Mesh(coneGeo, baseMaterial);
@@ -155,11 +161,26 @@ export default class ThreeModel {
         coneMesh.getWorldDirection(direction);
         console.log('WorldDirection ==>', direction);
 
-        coneMesh.lookAt(0, 0, 0);
 
+        this.coneMesh = coneMesh;
+
+        // const { control } = this;
+        // control.setMode('scale');
+        // control.addEventListener( 'dragging-changed', ( event ) => {
+
+        //     this.controls.enabled = ! event.value;
+
+        // } );
+        // control.attach( coneMesh );
+        // this.scene.add( control );
+
+        const axesHelper = new THREE.AxesHelper(10);
+        axesHelper.position.set(this.coneMesh.position.x, this.coneMesh.position.y, this.coneMesh.position.z);
+
+        this.scene.add(axesHelper);
         this.scene.add(coneMesh);
 
-        this.render();
+        this.animate();
     }
 
     onWindowResize () {
@@ -169,7 +190,9 @@ export default class ThreeModel {
     }
 
     render () {
-        this.renderer.render( this.scene, this.camera );
+        if (this.renderer) {
+            this.renderer.render( this.scene, this.camera );
+        }
     }
 
     emptyScene () {
@@ -197,6 +220,13 @@ export default class ThreeModel {
             })
             this.scene.children = []
         }
+    }
+
+    animate() {
+
+        requestAnimationFrame( this.animate.bind(this) );
+        this.render();
+
     }
 
     resetScene () {

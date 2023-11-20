@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import mapboxgl from "mapbox-gl";
@@ -25,6 +26,8 @@ export default class DemoModelLayer extends BaseModelLayer{
     this.calcModelBounds();
 
     this.zoomBind = this.zoom.bind(this);
+
+    this.control = new TransformControls( this.camera, this.renderer.domElement );
 
     window.radar = this;
 
@@ -56,7 +59,6 @@ export default class DemoModelLayer extends BaseModelLayer{
     return this.initMesh().then(() => {
       this.addLight();
       this.drawLayer();
-      this.addHelperMesh();
       return null;
     })
   }
@@ -70,7 +72,7 @@ export default class DemoModelLayer extends BaseModelLayer{
       loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
         // loader.load( '/model/fbx/mig23mld.fbx',  ( model ) => {
         console.log('this.modelSize ==>');
-        this.data.forEach(item => {
+        this.data.forEach((item, index) => {
           const object = model.clone();
 
           this.setMeshSide(object);
@@ -93,8 +95,29 @@ export default class DemoModelLayer extends BaseModelLayer{
 
           this.setObjectBounds(custom, item.bounds);
 
+          // const boxGeometry = new THREE.BoxGeometry(500, 500, 500);
+          // const boxMaterial = new THREE.MeshBasicMaterial( { color: 'red' } );
+          // const box = new THREE.Mesh(boxGeometry, boxMaterial);
+          // boxMaterial.wireframe = true;
+          // custom.add( box );
 
+
+          const axesHelper = new THREE.AxesHelper(500);
+          custom.add(axesHelper);
+          
           scene.add( custom );
+
+          if (index === 0) {
+            const { control } = this;
+            control.addEventListener( 'dragging-changed', ( event ) => {
+
+              controls.enabled = ! event.value;
+    
+            } );
+            control.attach( custom );
+            scene.add( control );
+            this.setObjectBounds(control, item.bounds);
+          }
 
           this.addCSS2Object(custom, item.name);
         })
@@ -121,15 +144,18 @@ export default class DemoModelLayer extends BaseModelLayer{
 
 
   lookAt() {
-    const radar1 = this.scene.getObjectByName('radar-1');
+    const radar1 = this.scene.getObjectByName('radar-3');
     const radar2 = this.scene.getObjectByName('radar-2');
 
-    const direction = new THREE.Vector3();
-    radar1.getWorldDirection(direction);
-    console.log('WorldDirection ==>', direction);
+    window.radar1 = radar1;
+    window.radar2 = radar2;
+
     const { x, y, z } = radar2.position;
-    // radar1.up.set(0, 0, 1);
+
     radar1.lookAt(x, y, z);
+
+    // radar1.rotateZ(Math.PI / 2);
+    // radar1.rotateX(Math.PI / 2);
   }
 
   destroy () {

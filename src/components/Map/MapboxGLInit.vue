@@ -30,7 +30,7 @@ export default {
                 container: props.id,
                 // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
                 style: 'mapbox://styles/mapbox/streets-v12',
-                zoom: 8,
+                zoom: 10,
                 center: props.center,
                 pitch: 45,
                 projection: 'mercator',
