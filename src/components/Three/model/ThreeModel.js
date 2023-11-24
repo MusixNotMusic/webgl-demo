@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import Object3D from 'threebox-plugin/src/objects/Object3D';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
@@ -12,6 +12,7 @@ export default class ThreeModel {
         this.onWindowResizeBind = this.onWindowResize.bind(this);
 
         window.ThreeModel = this;
+        window.THREE = THREE;
     }
 
     initRender () {
@@ -51,9 +52,12 @@ export default class ThreeModel {
 
         this.initLight()
 
+        // this.initModelMesh()
+
         fetch(path)
             .then(response => response.arrayBuffer())
-            .then(buffer => this.initMesh(new Float32Array(buffer)))
+            .then(buffer =>
+                 this.initMesh(new Float32Array(buffer)))
 
         window.addEventListener( 'resize', this.onWindowResizeBind );
     }
@@ -78,6 +82,47 @@ export default class ThreeModel {
         light.target = new THREE.Object3D();
         this.scene.add( lHelper );
     }
+
+    getObjectSize (object) {
+        object.scale.set(1, 1, 1);
+        const aabb = new THREE.Box3().setFromObject(object);
+        const size = new THREE.Vector3();
+        aabb.getSize(size);
+        return size;
+    }
+
+    setObjectCenter (object) {
+        const box = new THREE.Box3().setFromObject(object);
+        const center = box.getCenter(new THREE.Vector3());
+        object.position.set(-center.x, -center.y, -center.z);
+    }
+
+    initModelMesh () {
+        const { scene } = this
+        const loader = new FBXLoader();
+    
+        loader.load( '/model/fbx/radar.fbx',  ( model ) => {
+            const object = model.clone();
+
+            object.rotation.x += Math.PI / 2;
+
+            this.setObjectCenter(object);
+
+            const custom = new THREE.Object3D();
+
+
+            custom.add(object)
+
+            const axesHelper = new THREE.AxesHelper(500);
+            custom.add(axesHelper);
+            custom.position.set(100, 100, 50);
+            custom.scale.set(0.2, 0.2, 0.2);
+            custom.rotateX(Math.PI / 2);
+            this.custom = custom;
+            scene.add( custom );
+        })
+
+      }
 
     initMesh (buffer) {
         // console.log('initMesh =>', buffer)
@@ -142,7 +187,10 @@ export default class ThreeModel {
 
         this.scene.add( this.mesh );
 
+        this.mesh.attach(new THREE.AxesHelper(10))
+
         this.grid = new THREE.GridHelper( 400, 100 )
+
         this.grid.rotateX(Math.PI / 2)
 
         this.scene.add(this.grid);
@@ -154,31 +202,25 @@ export default class ThreeModel {
         const baseMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
 
         const coneMesh = new THREE.Mesh(coneGeo, baseMaterial);
-        coneMesh.position.set(50, 50, 50);
-        coneMesh.rotateX(Math.PI / 2);
+        // coneMesh.position.set(50, 50, 50);
 
         const direction = new THREE.Vector3();
         coneMesh.getWorldDirection(direction);
         console.log('WorldDirection ==>', direction);
 
+        const axesHelper = new THREE.AxesHelper(20);
 
-        this.coneMesh = coneMesh;
+        const group = new THREE.Group();
 
-        // const { control } = this;
-        // control.setMode('scale');
-        // control.addEventListener( 'dragging-changed', ( event ) => {
+        group.add(axesHelper);
 
-        //     this.controls.enabled = ! event.value;
+        group.add(coneMesh);
 
-        // } );
-        // control.attach( coneMesh );
-        // this.scene.add( control );
+        group.position.set(50, 50, 50);
 
-        const axesHelper = new THREE.AxesHelper(10);
-        axesHelper.position.set(this.coneMesh.position.x, this.coneMesh.position.y, this.coneMesh.position.z);
+        this.coneMesh = group;
 
-        this.scene.add(axesHelper);
-        this.scene.add(coneMesh);
+        this.scene.add(group);
 
         this.animate();
     }

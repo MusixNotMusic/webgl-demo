@@ -28,10 +28,11 @@ import vertexShader from '../shaderThree/demo.vert'
 import vertexGobalShader from '../shaderThree/global.vert'
 import VolumeRenderClass from './VolumeRenderClass'
 import { decompress } from './utils/ZstdDecompress'
+import { accessToken } from './token'
 
 const centerOrigin =  [104, 30] || [0, 0];
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xsb3JwcXcyMDBkYTNqcXRyeTdpMnpxNCJ9.bNtA76Bl0x_Z9S3oXJnFqw';
+mapboxgl.accessToken = accessToken;
 
 let map;
 let volumeRender;

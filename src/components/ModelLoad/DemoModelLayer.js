@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+
 import mapboxgl from "mapbox-gl";
 
 import { radarTestSet } from "./Constants";
@@ -30,6 +32,7 @@ export default class DemoModelLayer extends BaseModelLayer{
     this.control = new TransformControls( this.camera, this.renderer.domElement );
 
     window.radar = this;
+    window.THREE = THREE;
 
   }
 
@@ -108,6 +111,10 @@ export default class DemoModelLayer extends BaseModelLayer{
           scene.add( custom );
 
           if (index === 0) {
+
+            const box = new THREE.BoxGeometry(10);
+            const material = new THREE.MeshBasicMaterial({ color: 'blue' });
+
             const { control } = this;
             control.addEventListener( 'dragging-changed', ( event ) => {
 
@@ -116,7 +123,8 @@ export default class DemoModelLayer extends BaseModelLayer{
             } );
             control.attach( custom );
             scene.add( control );
-            this.setObjectBounds(control, item.bounds);
+            window.control = control;
+            // this.setObjectBounds(control, item.bounds);
           }
 
           this.addCSS2Object(custom, item.name);
@@ -144,7 +152,7 @@ export default class DemoModelLayer extends BaseModelLayer{
 
 
   lookAt() {
-    const radar1 = this.scene.getObjectByName('radar-3');
+    const radar1 = this.scene.getObjectByName('radar-1');
     const radar2 = this.scene.getObjectByName('radar-2');
 
     window.radar1 = radar1;
@@ -154,8 +162,31 @@ export default class DemoModelLayer extends BaseModelLayer{
 
     radar1.lookAt(x, y, z);
 
-    // radar1.rotateZ(Math.PI / 2);
-    // radar1.rotateX(Math.PI / 2);
+    radar1.rotateY(-Math.PI / 2);
+    radar1.rotateZ(-Math.PI / 2);
+  }
+
+  lookAt2() {
+    const source = this.scene.getObjectByName('radar-1');
+    const target = this.scene.getObjectByName('radar-2');
+
+    const faceVector = source.faceVector || new THREE.Vector3(0, 1, 0);
+
+
+
+    const sPos = source.position.clone();
+    const tPos = target.position.clone();
+
+    const h1 = new THREE.Vector2(sPos.x, sPos.z);
+    const h2 = new THREE.Vector2(tPos.x, tPos.z);
+    const elevation = h1.sub(h2).angle()
+
+    const v1 = new THREE.Vector2(tPos.x, tPos.y);
+    const v2 = new THREE.Vector2(sPos.x, sPos.y);
+    const direction = v1.sub(v2).angle();
+
+    source.rotateZ(direction);
+    // source.rotateX(elevation);
   }
 
   destroy () {
