@@ -6,6 +6,8 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import MapboxGLInit from '../Map/MapboxGLInit.vue';
 import { geojsonIO } from './geojson.io/ui/dnd';
+import { drawCircle } from './geojson.io/layer/circle';
+import { drawLine } from './geojson.io/layer/line';
 
 const mapboxGLLoadedFunc = (map) => {
     console.log('mapboxGLLoadedFunc ==>', map)
@@ -14,36 +16,17 @@ const mapboxGLLoadedFunc = (map) => {
 
 const randomRgba = () => `rgb(${Math.random() * 256 | 0},${Math.random() * 256 | 0},${Math.random() * 256 | 0})`
 
-const drawLine = (map, geojson) => {
-    const id = 'line-' + Date.now();
-    if (!map.getSource(id)) {
-        map.addSource(id, { type: 'geojson', data: geojson });
-    } 
-
-    if (!map.getLayer(id)) {
-        let layer = {
-            id: id,
-            type: "line",
-            source: id,
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': randomRgba(),
-                'line-width': 3
-            }
-        };
-
-        map.addLayer(layer);
-    }
-}
-
 const center = ref([104.1465432836781, 30.857102559661133]);
 const addDemoModelLayer = (map) => {
     geojsonIO(map, (geojson) => {
         console.log('geojson ==>', geojson)
-        drawLine(map, geojson);
+        const type = geojson.features[0].geometry.type;
+
+        if (type.toLocaleLowerCase() === 'point') {
+            drawCircle(map, geojson);
+        } else {
+            drawLine(map, geojson);
+        }
     })
 }
 
