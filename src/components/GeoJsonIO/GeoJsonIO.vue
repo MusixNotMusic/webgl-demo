@@ -14,8 +14,6 @@ const mapboxGLLoadedFunc = (map) => {
     addDemoModelLayer(map);
 }
 
-const randomRgba = () => `rgb(${Math.random() * 256 | 0},${Math.random() * 256 | 0},${Math.random() * 256 | 0})`
-
 const center = ref([104.1465432836781, 30.857102559661133]);
 const addDemoModelLayer = (map) => {
     geojsonIO(map, (geojson) => {
