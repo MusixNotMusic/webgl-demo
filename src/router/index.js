@@ -92,6 +92,11 @@ const routes= [
         name: "Model",
         component: () => import("../components/ModelLoad/Demo.vue"),
       },
+      {
+        path: "/GeoJsonIO",
+        name: "GeoJsonIO",
+        component: () => import("../components/GeoJsonIO/GeoJsonIO.vue"),
+      },
     ],
   }
 ];
