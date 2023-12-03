@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
+// import { TransformControls } from 'three/addons/controls/TransformControls.js';
+// import { TransformControls, TransformControlsGizmo } from './TransformMapboxControls.js';
+import { TransformControls } from './TransformMapboxControlsV2.js';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
@@ -9,6 +11,8 @@ import mapboxgl from "mapbox-gl";
 import { radarTestSet } from "./Constants";
 
 import BaseModelLayer from "./BaseModelLayer";
+
+import { CameraSync } from '../../lib/mapbox/CameraSync'; 
 
 /***
  * 矩形立方体的 等值面结构
@@ -21,18 +25,30 @@ export default class DemoModelLayer extends BaseModelLayer{
 
     this.type = 'radar'
 
-    this.resizeBind = this.resize.bind(this);
-
     this.data = radarTestSet;
     // 预计边界
     this.calcModelBounds();
 
     this.zoomBind = this.zoom.bind(this);
 
-    this.control = new TransformControls( this.camera, this.renderer.domElement );
+    this.resizeBind = this.resize.bind(this);
+
+    this.clickBind = this.raycast.bind(this);
+
+    this.cameraOne = new THREE.PerspectiveCamera();
+
+    this.cameraSync = new CameraSync(map, this.cameraOne);
+
+    this.control = new TransformControls( map, this.camera, this.renderer.domElement );
+    // this.control = new TransformControls(this.camera, this.renderer.domElement );
+
+    this.raycast = new THREE.Raycaster();
 
     window.radar = this;
     window.THREE = THREE;
+    window.mapboxgl = mapboxgl;
+
+    // this.control.render()
 
   }
 
@@ -49,14 +65,19 @@ export default class DemoModelLayer extends BaseModelLayer{
   addEventListener() {
     if (this.map) {
       this.map.on('zoom', this.zoomBind);
+      this.map.on('click', this.clickBind);
+      this.map.on('resize', this.resizeBind);
     }
   }
 
   removeEventListener() {
     if (this.map) {
       this.map.off('zoom', this.zoomBind);
+      this.map.off('click', this.clickBind);
+      this.map.off('resize', this.resizeBind);
     }
   }
+  
 
   render () {
     return this.initMesh().then(() => {
@@ -98,36 +119,48 @@ export default class DemoModelLayer extends BaseModelLayer{
 
           this.setObjectBounds(custom, item.bounds);
 
-          // const boxGeometry = new THREE.BoxGeometry(500, 500, 500);
-          // const boxMaterial = new THREE.MeshBasicMaterial( { color: 'red' } );
-          // const box = new THREE.Mesh(boxGeometry, boxMaterial);
-          // boxMaterial.wireframe = true;
-          // custom.add( box );
-
-
           const axesHelper = new THREE.AxesHelper(500);
           custom.add(axesHelper);
           
           scene.add( custom );
 
+          this.addCSS2Object(custom, item.name);
+
           if (index === 0) {
 
-            const box = new THREE.BoxGeometry(10);
-            const material = new THREE.MeshBasicMaterial({ color: 'blue' });
+            const box = new THREE.BoxGeometry(1);
+            const material = new THREE.MeshNormalMaterial();
+            const boxMesh = new THREE.Mesh(box, material);
 
-            const { control } = this;
-            control.addEventListener( 'dragging-changed', ( event ) => {
+            material.wireframe = true
 
-              controls.enabled = ! event.value;
+            this.setObjectBounds(boxMesh, item.bounds);
+            scene.add(boxMesh);
+
+
+            this.control.attach(boxMesh);
+
+            // const { control } = this;
+
+            // control.addEventListener( 'dragging-changed', ( event ) => {
+
+            //   // controls.enabled = ! event.value;
+            //   !event.value ? this.map.dragPan.disable() : this.map.dragPan.enable()
     
-            } );
-            control.attach( custom );
-            scene.add( control );
-            window.control = control;
-            // this.setObjectBounds(control, item.bounds);
-          }
+            // } );
 
-          this.addCSS2Object(custom, item.name);
+            // scene.add( control );
+
+            // this.setObjectBounds(control, item.bounds);
+            // this.setObjectBounds(control._gizmo, item.bounds);
+            // this.setObjectBounds(control._plane, item.bounds);
+            // const {x, y, z} = control.object.position;
+            // control._gizmo.position.set(x, y, z);
+            // control._gizmo.scale.set(1e6, 1e6, 1e6);
+            // control._plane.position.set(x, y, z);
+            // control._plane.scale.set(1e6, 1e6, 1e6);
+            // window.control = control;
+          }
         })
 
         resolve(model)

@@ -11,7 +11,7 @@ export default class BaseModelModel {
 
         this.scene = new THREE.Scene();
 
-        this.camera = new THREE.Camera();
+        this.camera = new THREE.PerspectiveCamera();
     }
 
     initColorTexture () {
