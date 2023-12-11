@@ -1528,7 +1528,7 @@ class TransformControlsPlane extends Mesh {
 
 		super(
 			new PlaneGeometry( 1e6, 1e6, 2, 2 ),
-			new MeshBasicMaterial( { visible: true, wireframe: false, side: DoubleSide, transparent: true, opacity: 0.5, toneMapped: false, color: '#00ffff' } )
+			new MeshBasicMaterial( { visible: false, wireframe: false, side: DoubleSide, transparent: true, opacity: 0.5, toneMapped: false, color: '#00ffff' } )
 		);
 
 		this.isTransformControlsPlane = true;
