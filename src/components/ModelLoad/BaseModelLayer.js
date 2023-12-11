@@ -24,14 +24,19 @@ export default class BaseModelLayer extends BaseModelModel{
     this.option = Object.assign(defaultOption, option);
 
     this.exaggeration = this.map.getTerrain() ? this.map.getTerrain().exaggeration : 1;
+
+    this.resizeBind = this.resize.bind(this);
   }
 
-  addEventListener () {
+  addEventListener () {}
+  removeEventListener () {}
 
+  _addEventListener () {
+    this.map.on('resize', this.resizeBind);
   }
 
-  removeEventListener () {
-
+  _removeEventListener () {
+    this.map.off('resize', this.resizeBind);
   }
 
   initCanvas(map) {
@@ -159,12 +164,12 @@ export default class BaseModelLayer extends BaseModelModel{
     const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ];
 
     mesh.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
-    mesh.position.z = (boundScaleBox[1] + boundScaleBox[4]) / 2;
-    mesh.position.y = (boundScaleBox[2] + boundScaleBox[5]) / 2;
+    mesh.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
+    mesh.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
 
     mesh.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
-    mesh.scale.z = (boundScaleBox[4] - boundScaleBox[1]);
-    mesh.scale.y = (boundScaleBox[5] - boundScaleBox[2]);
+    mesh.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
+    mesh.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
   }
 
   getObjectSize (object) {
@@ -243,6 +248,7 @@ export default class BaseModelLayer extends BaseModelModel{
         if (this.option.useCSS2) {
           this.initCSS2();
         }
+        this._addEventListener();
         this.addEventListener();
       },
 
@@ -254,6 +260,7 @@ export default class BaseModelLayer extends BaseModelModel{
             .makeTranslation(0, 0, 0)
 
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
+        // camera.projectionMatrixInverse.elements = camera.projectionMatrix.invert().elements;
 
         if (renderer) {
           renderer.resetState();
@@ -273,6 +280,7 @@ export default class BaseModelLayer extends BaseModelModel{
 
       onRemove: () => {
         this.cleanScene()
+        this._removeEventListener();
         this.removeEventListener();
       }
     };
@@ -280,6 +288,29 @@ export default class BaseModelLayer extends BaseModelModel{
     if (!this.map.getLayer(this.id)) {
       this.map.addLayer(customLayer)
     }
+  }
+
+  raycast(event) {
+    var mouse = new THREE.Vector2();
+    mouse.x = ( event.point.x / this.map.transform.width ) * 2 - 1;
+    mouse.y = 1 - ( event.point.y / this.map.transform.height ) * 2;
+
+    const raycaster = new THREE.Raycaster();
+
+    raycaster.setFromCamera(mouse, this.camera);
+
+    const projectionMatrixInvert = this.camera.projectionMatrix.invert();
+    const cameraPosition =
+            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    const mousePosition =
+            new THREE.Vector3(mouse.x, mouse.y, 1)
+            .applyMatrix4(projectionMatrixInvert);
+    const viewDirection = mousePosition.clone()
+            .sub(cameraPosition).normalize();
+
+    raycaster.set(cameraPosition, viewDirection);
+
+    console.log('raycaster', raycaster.intersectObjects(this.scene.children, true));
   }
 
 
