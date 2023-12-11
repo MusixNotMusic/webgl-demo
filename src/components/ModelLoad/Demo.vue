@@ -5,7 +5,6 @@
 <script setup>
 import mapboxgl from 'mapbox-gl';
 import { onMounted, onUnmounted, ref } from 'vue';
-import mapboxgl from 'mapbox-gl';
 import MapboxGLInit from '../Map/MapboxGLInit.vue';
 import DemoModelLayer from './DemoModelLayerV2';
 import { Threebox, THREE } from 'threebox-plugin';
@@ -21,7 +20,7 @@ const mapboxGLLoadedFunc = (map) => {
     console.log('mapboxGLLoadedFunc ==>', map)
     addDemoModelLayer(map);
 
-    addThreeBoxModelLayer(map);
+    // addThreeBoxModelLayer(map);
 }
 
 const center = ref([104.1465432836781, 30.867102559661133]);

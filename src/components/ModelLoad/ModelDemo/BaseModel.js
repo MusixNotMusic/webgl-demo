@@ -36,14 +36,18 @@ export default class BaseModelLayer extends BaseModelModel{
     this.exaggeration = this.map.getTerrain() ? this.map.getTerrain().exaggeration : 1;
 
     this.world = new THREE.Object3D();
+
+    this.resizeBind = this.resize.bind(this);
+
+    this.scene.add(this.world);
   }
 
-  addEventListener () {
-
+  _addEventListener () {
+      this.map.on('resize', this.resizeBind);
   }
 
-  removeEventListener () {
-
+  _removeEventListener () {
+     this.map.off('resize', this.resizeBind);
   }
 
   initCanvas(map) {
@@ -234,15 +238,17 @@ export default class BaseModelLayer extends BaseModelModel{
         if (this.option.useCSS2) {
           this.initCSS2();
         }
+        this._addEventListener()
         this.addEventListener();
       },
 
       render: (gl, matrix) => {
         const { renderer, scene, camera } = this;
 
+        // console.log('render ==>', matrix)
         const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
         const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
-        const scale = center.meterInMercatorCoordinateUnits();
+        const scale = mercator.meterInMercatorCoordinateUnits();
 
         // const translateScaleMatrix = new THREE.Matrix4();
         const translateScaleMatrix = new THREE.Matrix4()
@@ -256,7 +262,7 @@ export default class BaseModelLayer extends BaseModelModel{
 
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
 
-        // this.updateWorldPosition(this.map.getCenter())
+        this.updateWorldPosition(this.map.getCenter())
 
         if (renderer) {
           renderer.resetState();
@@ -276,6 +282,7 @@ export default class BaseModelLayer extends BaseModelModel{
 
       onRemove: () => {
         this.cleanScene()
+        this._removeEventListener();
         this.removeEventListener();
       }
     };

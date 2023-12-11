@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import mapboxgl from "mapbox-gl";
 
 import { radarTestSet } from "../Constants";
 
@@ -88,7 +87,7 @@ export default class Test extends BaseModelLayer{
             lon: item.lon,
             lat: item.lat,
             type: this.type,
-            scale: 100
+            scale: 1
           }
 
           custom.add(object)
@@ -97,8 +96,7 @@ export default class Test extends BaseModelLayer{
 
           const axesHelper = new THREE.AxesHelper(500);
           custom.add(axesHelper);
-          
-          // scene.add( custom );
+
           this.addNewScene( custom );
 
           if (index === 0) {
@@ -107,7 +105,7 @@ export default class Test extends BaseModelLayer{
 
               controls.enabled = ! event.value;
     
-            } );
+            });
             control.attach( custom );
             scene.add( control );
           }
