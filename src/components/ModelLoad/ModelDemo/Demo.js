@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
+// import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TransformControls } from '../TransformControls.js';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 

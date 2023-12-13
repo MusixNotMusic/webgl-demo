@@ -3,7 +3,8 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
+// import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TransformControls } from '../../ModelLoad/TransformControls';
 
 export default class ThreeModel {
     constructor() {
@@ -221,6 +222,15 @@ export default class ThreeModel {
         this.coneMesh = group;
 
         this.scene.add(group);
+
+
+        this.control.addEventListener( 'dragging-changed', ( event ) => {
+
+            this.controls.enabled = ! event.value;
+
+        });
+        this.control.attach( coneMesh );
+        this.scene.add( this.control );
 
         this.animate();
     }

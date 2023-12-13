@@ -220,7 +220,6 @@ class TransformControls extends Object3D {
 	}
 
 	pointerHover( pointer ) {
-
 		if ( this.object === undefined || this.dragging === true ) return;
 
 		_raycaster.setFromCamera( pointer, this.camera );

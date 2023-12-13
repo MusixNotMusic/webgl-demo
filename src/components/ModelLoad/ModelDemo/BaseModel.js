@@ -257,8 +257,8 @@ export default class BaseModelLayer extends BaseModelModel{
             center.y,
             center.z
           )  
-          .scale(new THREE.Vector3(scale, -scale, scale));
-        //   .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
+          .scale(new THREE.Vector3(scale, -scale, scale))
+          // .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
 
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
 
