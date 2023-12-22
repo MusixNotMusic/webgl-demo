@@ -227,6 +227,16 @@ export default class BaseModelLayer extends BaseModelModel{
     this.world.add(object);
   }
 
+  updateTransformCamera() {
+    const cameraPosition = this.map.transform._camera.position;
+    const mercatorCoordination = new mapboxgl.MercatorCoordinate(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+
+    const meterX = meterApplyX(cameraPosition[0]);
+    const meterY = meterApplyY(cameraPosition[1]);
+    const alt = mercatorCoordination.toAltitude();
+    this.transformCamera.position.set(meterX, meterY, alt);
+  }
+
 
   drawLayer () {
     const customLayer = {
@@ -259,6 +269,8 @@ export default class BaseModelLayer extends BaseModelModel{
           )  
           .scale(new THREE.Vector3(scale, -scale, scale))
           // .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
+        
+        this.updateTransformCamera();
 
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
 
