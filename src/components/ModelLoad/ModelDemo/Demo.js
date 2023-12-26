@@ -26,7 +26,9 @@ export default class Test extends BaseModelLayer{
 
     this.zoomBind = this.zoom.bind(this);
 
-    this.control = new TransformControls( this.camera, this.renderer.domElement );
+    this.transformCamera = new THREE.PerspectiveCamera();
+
+    this.control = new TransformControls( this.transformCamera, this.renderer.domElement );
 
     window.Test = this;
 
