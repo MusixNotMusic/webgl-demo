@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/NortheastChinaColdVortex",
+    redirect: "/WindField",
     component: () => import("../components/Index.vue"),
     children: [
       {
