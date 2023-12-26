@@ -124,11 +124,8 @@ export default class FlowFeildWind {
     getTextureData(data, width, height, depth) {
         const texture = new THREE.Data3DTexture( data, width, height, depth );
         texture.format = THREE.RedFormat;
-        // texture.type = THREE.FloatType;
         texture.type = THREE.FloatType;
-        texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        texture.unpackAlignment = 1;
-        texture.needsUpdate = true;
+        texture.minFilter = texture.magFilter = THREE.NearestFilter;
     }
 
     updateUniforms() {

@@ -5,11 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-<<<<<<< HEAD
     redirect: "/WindField",
-=======
-    redirect: "/Model",
->>>>>>> e5582355670c20935e45a6ba2ed8e1536e26aafe
     component: () => import("../components/Index.vue"),
     children: [
       {

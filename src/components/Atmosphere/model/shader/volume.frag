@@ -98,15 +98,15 @@ void main(){
 
     float maxVal = 0.0;
 
+    float u = 0.0;
+    float v = 0.0;
+
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
         // maxVal = max(maxVal, sample1( p + 0.5 ));
 
-        float u = float(texture(u_U, p + 0.5));
-        float v = float(texture(u_V, p + 0.5));
+        u = float(texture(u_U, p + 0.5));
+        v = float(texture(u_V, p + 0.5));
 		
-        // float u = DecodeFloatRGBA(colorU);
-        // float v = DecodeFloatRGBA(colorV);
-
         float speed= length(vec2(u, v));
 
         // maxVal = max(length(vec2(u, v)), maxVal);
@@ -125,9 +125,9 @@ void main(){
     //     discard;
     // }
 
-    color = texture(u_map, vec2(maxVal, 0.0));
+    // color = texture(u_map, vec2(0.12, 0.0));
 	
-    // color = vec4(1.0, 0.0, 0.0, 1.0);
+    color = vec4(vec3(v), 1.0);
     
     if ( color.a == 0.0 ) discard;
 }
