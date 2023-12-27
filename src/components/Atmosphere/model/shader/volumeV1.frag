@@ -65,6 +65,24 @@ void main(){
     vec2 direction = vec2(0.0);
     float speed = 0.0;
 
+    // base 1
+    // for ( float t = bounds.x; t < bounds.y; t += delta ) {
+
+    //     u = texture(u_U, p + 0.5);
+    //     v = texture(u_V, p + 0.5);
+    //     w = texture(u_W, p + 0.5);
+
+    //     direction = vec2(u.r, v.r);
+		
+    //     speed= length(direction);
+
+	// 	if(speed >= threshold0 && speed < threshold){
+    //         maxVal = speed;
+    //         break;
+ 	// 	}
+    //     p += rayDir * delta;
+    // }
+
     vec3 direction3 = vec3(0.0);
 
     vec4 nu = vec4(0.0);
@@ -96,9 +114,9 @@ void main(){
 
             nSpeed = length(vec3(nu.r, nv.r, nw.r));
 
-            // speed = nSpeed;
+            speed = max(speed, nSpeed);
 
-            speed = mix(speed, nSpeed, scale);
+            // speed = mix(speed, nSpeed, scale);
             
             break;
  		}
@@ -106,7 +124,7 @@ void main(){
     }
 
 
-    if (speed >= min(nSpeed, speed)) {
+    if (speed >= threshold0 && speed < threshold) {
         color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
     } else {
         color = vec4(0.0);

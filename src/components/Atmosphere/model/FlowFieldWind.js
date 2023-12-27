@@ -10,7 +10,7 @@ import { colorMap  } from './colorMap';
 import vertexShader from './shader/volume.vert';
 import fragmentShader from './shader/volume.frag';
 
-import { getColorSystem } from '../../utils/color/constants'
+import { getColorSystem } from '../../utils/color/constants';
 
 export default class FlowFeildWind {
     constructor(container, dataInstance) {
@@ -28,10 +28,17 @@ export default class FlowFeildWind {
         this.renderer = null;
         this.material = null;
 
+        // clock
+        this.clock = new THREE.Clock();
+        this.pausedTime = 0.0;
+        this.deltaTime = 0.0;
+        this.startingTime = 0;
+        this.time = this.startingTime;
+
         this.api = {
-            depthSampleCount: 1000,
-            threshold0: 0.5,
-            threshold: 10
+            depthSampleCount: 512,
+            threshold0: 20,
+            threshold: 40
         };
 
         this.uniforms = {
@@ -41,11 +48,12 @@ export default class FlowFeildWind {
             u_W: { value: null },
         };
 
-        this.textureColor =  getColorSystem().colorMapTexture['colors1']
+        this.textureColor =  getColorSystem().colorMapTexture['smallrainbows']
 
         this.onWindowResizeBind = this.onWindowResize.bind(this);
-        // this.initMeshBind = this.initMesh.bind(this);
+
         this.animateBind = this.animate.bind(this);
+        
         this.updateUniformsBind = this.updateUniforms.bind(this);
 
         this.init();
@@ -87,9 +95,9 @@ export default class FlowFeildWind {
         // gui
 
         this.gui = new GUI();
-        this.gui.add( this.api, 'depthSampleCount', 128, 512 ).step( 2 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.api, 'threshold0', 0, 10 ).step( 0.5 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.api, 'threshold', 10, 50 ).step( 0.5 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.api, 'depthSampleCount', 0, 2048 ).step( 2 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.api, 'threshold0', 0, 256 ).step( 0.01 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.api, 'threshold', 0, 256 ).step( 0.01).onChange( this.updateUniformsBind );
 
         this.guiStatsEl = document.createElement( 'div' );
         this.guiStatsEl.classList.add( 'gui-stats' );
@@ -125,7 +133,13 @@ export default class FlowFeildWind {
         const texture = new THREE.Data3DTexture( data, width, height, depth );
         texture.format = THREE.RedFormat;
         texture.type = THREE.FloatType;
-        texture.minFilter = texture.magFilter = THREE.NearestFilter;
+        // texture.format = THREE.RGBAFormat;
+        // texture.type = THREE.UnsignedByteType;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        // texture.unpackAlignment = 4;
+        texture.needsUpdate = true;
+        return texture;
     }
 
     updateUniforms() {
@@ -138,23 +152,26 @@ export default class FlowFeildWind {
 
 
     initMesh() {
-        const { api, Method } = this;
-
         this.clean();
 
         const geometry = new THREE.BoxGeometry(1, 1, 1);
 
         const { widthSize, heightSize, depthSize } = this.dataInstance.header;
         const { U, V, W } = this.dataInstance;
+        
+        this.time =  this.clock.getElapsedTime();
 
         const uniforms =  {
             u_map: { value: this.textureColor },
-            u_U:   { value: this.getTextureData( U.buffer, widthSize, heightSize, depthSize) },
-            u_V:   { value: this.getTextureData( V.buffer, widthSize, heightSize, depthSize) },
-            u_W:   { value: this.getTextureData( W.buffer, widthSize, heightSize, depthSize) },
+            
+            u_U:   { value: this.getTextureData( U, widthSize, heightSize, depthSize) },
+            u_V:   { value: this.getTextureData( V, widthSize, heightSize, depthSize) },
+            u_W:   { value: this.getTextureData( W, widthSize, heightSize, depthSize) },
+
             depthSampleCount: { value: this.api.depthSampleCount },
             threshold0: { value: this.api.threshold0 },
-            threshold: { value: this.api.threshold}
+            threshold: { value: this.api.threshold},
+            iTime: { value: this.time },
 		}
 
 
@@ -163,18 +180,23 @@ export default class FlowFeildWind {
             uniforms: uniforms,
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
-            side: THREE.BackSide
+            side: THREE.DoubleSide
         } );
         
         // const material = new THREE.MeshNormalMaterial();
 
+        this.material = material;
+
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.scale.set(10, 10, 10)
+
+        mesh.scale.set(50, 50, 10)
+
+        mesh.rotateX(Math.PI / 2);
 
         this.scene.add(mesh);
 
-        this.scene.add(new THREE.AxesHelper(1000));
-        this.scene.add(new THREE.GridHelper(1000, 100));
+        this.scene.add(new THREE.AxesHelper(100));
+        this.scene.add(new THREE.GridHelper(100, 10));
 
     }
 
@@ -193,18 +215,18 @@ export default class FlowFeildWind {
     }
 
     animate() {
-
-        requestAnimationFrame( this.animateBind );
+        this.frameId = requestAnimationFrame( this.animateBind );
 
         this.controls.update();
         this.stats.update();
 
         this.render();
-
     }
 
     render() {
-
+        this.camera.updateProjectionMatrix();
+        this.time =  this.clock.getElapsedTime();
+        this.material.uniforms.iTime.value = this.time;
         this.renderer.render( this.scene, this.camera );
 
     }
@@ -240,7 +262,8 @@ export default class FlowFeildWind {
         this.renderer = null;
         this.material = null;
 
+        cancelAnimationFrame(this.frameId);
+
         this.onWindowResizeBind = null;
-        this.initMeshBind = null;
     }
 }
