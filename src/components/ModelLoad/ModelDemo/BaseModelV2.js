@@ -3,6 +3,7 @@ import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRe
 
 import BaseModelModel from "../BaseModel";
 import mapboxgl from "mapbox-gl";
+import { mat4 } from 'gl-matrix';
 
 const defaultOption = {
   useCSS2: true
@@ -64,7 +65,7 @@ export default class BaseModelLayer extends BaseModelModel{
       renderer.domElement.style.width = mapCanvas.style.width;
       renderer.domElement.style.height = mapCanvas.style.height;
       renderer.domElement.style.position = "absolute";
-      // renderer.domElement.style.pointerEvents = "none";
+      renderer.domElement.style.pointerEvents = "none";
       renderer.setDrawingBufferSize(width, height, 1);
 
       map.getCanvasContainer().appendChild(renderer.domElement);
@@ -237,6 +238,168 @@ export default class BaseModelLayer extends BaseModelModel{
     this.transformCamera.position.set(meterX, meterY, alt);
   }
 
+  getWorldToCamera(worldSize, pixelsPerMeter) {
+    // transformation chain from world space to camera space:
+    // 1. Height value (z) of renderables is in meters. Scale z coordinate by pixelsPerMeter
+    // 2. Transform from pixel coordinates to camera space with cameraMatrix^-1
+    // 3. flip Y if required
+
+    // worldToCamera: flip * cam^-1 * zScale
+    // cameraToWorld: (flip * cam^-1 * zScale)^-1 => (zScale^-1 * cam * flip^-1)
+    let t = this.map.transform;
+    const matrix = new THREE.Matrix4();
+    const matrixT = new THREE.Matrix4();
+
+    // Compute inverse of camera matrix and post-multiply negated translation
+    const o = t._camera._orientation;
+    const p = t._camera.position;
+    
+    const invPosition = new THREE.Vector3(p[0], p[1], p[2]);
+
+    const quat = new THREE.Quaternion();
+    quat.set(o[0], o[1], o[2], o[3]);
+    const invOrientation = quat.conjugate();
+    invPosition.multiplyScalar(-worldSize);
+
+    matrixT.makeTranslation(invPosition.x, invPosition.y, invPosition.z);
+    matrix
+        .makeRotationFromQuaternion(invOrientation)
+        .premultiply(matrixT);
+    //this would make the matrix exact to getWorldToCamera but breaks
+    //this.translate(matrix.elements, matrix.elements, invPosition);
+
+    // Pre-multiply y (2nd row)
+    matrix.elements[1] *= -1.0;
+    matrix.elements[5] *= -1.0;
+    matrix.elements[9] *= -1.0;
+    matrix.elements[13] *= -1.0;
+
+    // Post-multiply z (3rd column)
+    matrix.elements[8] *= pixelsPerMeter;
+    matrix.elements[9] *= pixelsPerMeter;
+    matrix.elements[10] *= pixelsPerMeter;
+    matrix.elements[11] *= pixelsPerMeter;
+    //console.log(matrix.elements);
+    return matrix;
+}
+
+calcCameraMatrix(pitch, angle, trz) {
+  const t = this.map.transform;
+  const _pitch = (pitch === undefined) ? t._pitch : pitch;
+  const _angle = (angle === undefined) ? t.angle : angle;
+  const _trz = (trz === undefined) ? this.cameraTranslateZ : trz;
+
+  return new THREE.Matrix4()
+      .premultiply(_trz)
+      .premultiply(new THREE.Matrix4().makeRotationX(_pitch))
+      .premultiply(new THREE.Matrix4().makeRotationZ(_angle));
+}
+
+  updateCamera (mapboxProjectionMatrix) {
+    const { camera, map } = this;
+    const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
+    const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
+    const scale = mercator.meterInMercatorCoordinateUnits();
+
+    // const translateScaleMatrix = new THREE.Matrix4();
+    const translateScaleMatrix = new THREE.Matrix4()
+      .makeTranslation(
+        center.x,
+        center.y,
+        center.z
+      )  
+      .scale(new THREE.Vector3(scale, -scale, scale))
+      // .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
+
+    const { worldSize, pixelsPerMeter } = this.map.transform;
+
+    const matrix = this.getWorldToCamera(worldSize, pixelsPerMeter);
+
+    // console.log('matrix ==>', matrix);
+    const cameraPosition = this.map.transform._camera.position;
+    const mercatorCoordination = new mapboxgl.MercatorCoordinate(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+
+    const meterX = meterApplyX(cameraPosition[0]);
+    const meterY = meterApplyY(cameraPosition[1]);
+    const alt = mercatorCoordination.toAltitude();
+
+    const elements= [...this.map.transform._camera._transform]
+    elements[12] = meterX;
+    elements[13] = meterY;
+    elements[14] = alt;
+
+    const camareMatrix = new THREE.Matrix4().fromArray(elements);
+
+    this.mapboxProjectionMatrix = mapboxProjectionMatrix;
+    this.cameraMatrix = matrix;
+
+    this.camera.matrixAutoUpdate = false;
+    this.camera.matrixWorld = camareMatrix;
+    this.camera.matrix = camareMatrix;
+    
+    // camera.position.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+    
+    // camera.projectionMatrix = new THREE.Matrix4().fromArray(mapboxProjectionMatrix)
+    camera.projectionMatrix = new THREE.Matrix4().fromArray(mapboxProjectionMatrix).multiply(translateScaleMatrix)
+  }
+
+  updateCamera12(viewProjectionMatrix) {
+    const transform = this.map.transform;
+    const camera = this.camera;
+
+
+    const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
+    const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
+    const scale = mercator.meterInMercatorCoordinateUnits();
+
+    // const translateScaleMatrix = new THREE.Matrix4();
+    const translateScaleMatrix = new THREE.Matrix4()
+      .makeTranslation(
+        center.x,
+        center.y,
+        center.z
+      )  
+      .scale(new THREE.Vector3(scale, -scale, scale))
+
+
+    viewProjectionMatrix = new THREE.Matrix4().fromArray(viewProjectionMatrix).multiply(translateScaleMatrix).elements;
+
+    const projectionMatrix = new Float64Array(16),
+      projectionMatrixI = new Float64Array(16),
+      viewMatrix = new Float64Array(16),
+      viewMatrixI = new Float64Array(16);
+
+    // from https://github.com/mapbox/mapbox-gl-js/blob/master/src/geo/transform.js#L556-L568
+    const halfFov = transform._fov / 2;
+    const groundAngle = Math.PI / 2 + transform._pitch;
+    const topHalfSurfaceDistance = Math.sin(halfFov) * transform.cameraToCenterDistance / Math.sin(Math.PI - groundAngle - halfFov);
+    const furthestDistance = Math.cos(Math.PI / 2 - transform._pitch) * topHalfSurfaceDistance + transform.cameraToCenterDistance;
+    const farZ = furthestDistance * 1.01;
+
+    mat4.perspective(projectionMatrix, transform._fov, transform.width / transform.height, 1, farZ);
+    mat4.invert(projectionMatrixI, projectionMatrix);
+    mat4.multiply(viewMatrix, projectionMatrixI, viewProjectionMatrix);
+    mat4.invert(viewMatrixI, viewMatrix);
+
+    camera.projectionMatrix = new THREE.Matrix4().fromArray(projectionMatrix);
+
+    // =====================
+    const cameraPosition = this.map.transform._camera.position;
+    const mercatorCoordination = new mapboxgl.MercatorCoordinate(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+
+    const meterX = meterApplyX(cameraPosition[0]);
+    const meterY = meterApplyY(cameraPosition[1]);
+    const alt = mercatorCoordination.toAltitude();
+
+    viewMatrixI[12] = meterX;
+    viewMatrixI[13] = meterY;
+    viewMatrixI[14] = alt;
+    // =====================
+
+    camera.matrix = new THREE.Matrix4().fromArray(viewMatrixI);
+    camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
+  }
+
 
   drawLayer () {
     const customLayer = {
@@ -255,26 +418,24 @@ export default class BaseModelLayer extends BaseModelModel{
       render: (gl, matrix) => {
         const { renderer, scene, camera } = this;
 
-        // console.log('render ==>', matrix)
-        const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
-        const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
-        const scale = mercator.meterInMercatorCoordinateUnits();
+        // const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
+        // const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
+        // const scale = mercator.meterInMercatorCoordinateUnits();
 
-        // const translateScaleMatrix = new THREE.Matrix4();
-        const translateScaleMatrix = new THREE.Matrix4()
-          .makeTranslation(
-            center.x,
-            center.y,
-            center.z
-          )  
-          .scale(new THREE.Vector3(scale, -scale, scale))
-          // .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
-        
-        this.updateTransformCamera();
+        // const translateScaleMatrix = new THREE.Matrix4()
+        //   .makeTranslation(
+        //     center.x,
+        //     center.y,
+        //     center.z
+        //   )  
+        //   .scale(new THREE.Vector3(scale, -scale, scale))
 
-        camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
+        // camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
+        // this.updateCamera(matrix);
 
-        this.updateWorldPosition(this.map.getCenter())
+        this.updateCamera12(matrix)
+
+        // this.updateWorldPosition(this.map.getCenter())
 
         if (renderer) {
           renderer.resetState();

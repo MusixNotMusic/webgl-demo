@@ -6,7 +6,7 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 import { radarTestSet } from "../Constants";
 
-import BaseModelLayer from "./BaseModel";
+import BaseModelLayer from "./BaseModelV2";
 
 /***
  * 矩形立方体的 等值面结构
@@ -28,7 +28,7 @@ export default class Test extends BaseModelLayer{
 
     this.transformCamera = new THREE.PerspectiveCamera();
 
-    this.control = new TransformControls( this.transformCamera, this.renderer.domElement );
+    this.control = new TransformControls( this.camera, this.renderer.domElement );
 
     window.Test = this;
 
@@ -100,13 +100,14 @@ export default class Test extends BaseModelLayer{
           const axesHelper = new THREE.AxesHelper(500);
           custom.add(axesHelper);
 
-          this.addNewScene( custom );
+          // this.addNewScene( custom );
+          this.scene.add( custom );
 
           if (index === 0) {
             const { control } = this;
             control.addEventListener( 'dragging-changed', ( event ) => {
 
-              controls.enabled = ! event.value;
+              // controls.enabled = ! event.value;
     
             });
             control.attach( custom );

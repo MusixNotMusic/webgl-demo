@@ -236,6 +236,7 @@ export default class ThreeModel {
     }
 
     onWindowResize () {
+        this.renderer.setPixelRatio( window.devicePixelRatio );
         this.renderer.setSize( window.innerWidth, window.innerHeight );
 
         this.render();
