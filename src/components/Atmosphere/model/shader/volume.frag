@@ -48,73 +48,61 @@ void main(){
     
     vec3 p = vOrigin + bounds.x * rayDir;
 
-    vec3 pMax = vOrigin + bounds.x * rayDir;
-    
     vec3 inc = 1.0 / abs( rayDir );
 
     float delta = min( inc.x, min( inc.y, inc.z ) );
 
     delta /= depthSampleCount;
 
-    float maxVal = 1.0;
-
     vec4 u = vec4(0.0);
     vec4 v = vec4(0.0);
     vec4 w = vec4(0.0);
 
-    vec2 direction = vec2(0.0);
+    ivec3 iSize = textureSize(u_U, 0);
+    vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
+
+    // vec3 size = vec3(100.0);
+    vec3 inv_size = 1.0 / size;
+
     float speed = 0.0;
 
     vec3 direction3 = vec3(0.0);
 
-    vec4 nu = vec4(0.0);
-    vec4 nv = vec4(0.0);
-    vec4 nw = vec4(0.0);
-
-    ivec3 iSize = textureSize(u_U, 0);
-    vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
-
-    vec3 inv_size = 1.0 / size;
-
-    float nSpeed = 0.0;
-
-    vec3 size1 = vec3(100.0);
+    float scale = clamp(0.0, 1.0, fract(iTime / 20.0));
 
     float d = 0.0;
 
-    for ( float t = bounds.x; t < bounds.y; t += delta ) {
-        vec3 np = p + 0.5;
+    float r = 0.001;
 
-        np = floor(np * size) / size + inv_size / 2.0;
+    for ( float t = bounds.x; t < bounds.y; t += delta ) {
+
+        vec3 np = p + 0.5;
 
         u = texture(u_U, np);
         v = texture(u_V, np);
         w = texture(u_W, np);
 
         direction3 = vec3(u.r, v.r, w.r);
-		
+
+        vec3 nor = direction3 * scale * inv_size;
+
         speed= length(direction3);
 
-		if(speed >= threshold0 && speed < threshold){
-            d = sdSphere(vec3(0,0,0), 0.001);
-            if (d < 0.001) {
-                break;
-            }
+        vec3 center = floor((np + nor) * size) * inv_size + inv_size * 0.5 - nor;
+
+        d = sdSphere(np - center, r);
+        if (d < r) {
             break;
- 		}
+        }
 
         p += rayDir * delta;
     }
 
-
-    if (d <=0.01) {
-        color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
-    } else {
-        color = vec4(0.0);
+    if (d < r) {
+        if (speed >= threshold0 && speed < threshold) {
+            color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
+        }
     }
-    // if (d < 0.0001) {
-    //     color = texture(u_map, vec2(speed, 0.0));
-    // }
 
     if (color.a == 0.0) discard;
 }

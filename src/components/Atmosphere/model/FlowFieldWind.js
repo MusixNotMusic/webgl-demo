@@ -70,7 +70,7 @@ export default class FlowFeildWind {
 
         // camera
         this.camera = new THREE.PerspectiveCamera( 70, width / height, 1, 1000 );
-        this.camera.position.set(50, 50, 50);
+        this.camera.position.set(50, 50, 10);
         // renderer
 
         this.renderer = new THREE.WebGLRenderer( { antialias: true } );
