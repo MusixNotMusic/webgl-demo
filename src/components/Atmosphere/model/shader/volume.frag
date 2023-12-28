@@ -84,11 +84,11 @@ void main(){
 
         direction3 = vec3(u.r, v.r, w.r);
 
-        vec3 nor = direction3 * scale * inv_size;
+        vec3 offset = vec3(direction3.xy, 0.0) * inv_size * scale;
 
         speed= length(direction3);
 
-        vec3 center = floor((np + nor) * size) * inv_size + inv_size * 0.5 - nor;
+        vec3 center = floor((np + offset) * size) * inv_size + inv_size * 0.5 - offset;
 
         d = sdSphere(np - center, r);
         if (d < r) {
