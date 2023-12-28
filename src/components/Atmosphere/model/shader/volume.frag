@@ -36,6 +36,13 @@ float sdSphere( vec3 p, float s ) {
   return length(p)-s;
 }
 
+// float intersect(vec3 p, float r) {
+//     ivec3 iSize = textureSize(u_U, 0);
+//     vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
+//     vec3 newP = dot(p, size);
+
+// }
+
 
 void main(){
     vec3 rayDir = normalize( vDirection );
@@ -76,41 +83,49 @@ void main(){
 
     float nSpeed = 0.0;
 
-    for ( float t = bounds.x; t < bounds.y; t += delta ) {
+    vec3 size1 = vec3(100.0);
 
-        u = texture(u_U, p + 0.5);
-        v = texture(u_V, p + 0.5);
-        w = texture(u_W, p + 0.5);
+    float d = 0.0;
+
+    for ( float t = bounds.x; t < bounds.y; t += delta ) {
+        vec3 np = p + 0.5;
+
+        np = floor(np * size) / size;
+
+        u = texture(u_U, np);
+        v = texture(u_V, np);
+        w = texture(u_W, np);
 
         direction3 = vec3(u.r, v.r, w.r);
 		
         speed= length(direction3);
 
 		if(speed >= threshold0 && speed < threshold){
-            vec3 nor = direction3 / size;
-
-            float scale = clamp(0.0, 1.0, fract(iTime / 10.0));
-            nu = texture(u_U, p + 0.5 + nor * scale);
-            nv = texture(u_V, p + 0.5 + nor * scale);
-            nw = texture(u_W, p + 0.5 + nor * scale);
-
-            nSpeed = length(vec3(nu.r, nv.r, nw.r));
-
-            // speed = nSpeed;
-
-            speed = mix(speed, nSpeed, scale);
-            
+            d = sdSphere(vec3(0,0,0), 0.001);
+            if (d < 0.001) {
+                break;
+            }
             break;
  		}
+
+        // d = sdSphere(p - vec3( 0.1, 0.1, 0.1), 0.001);
+
+        // if (d < 0.0001) {
+        //     break;
+        // }
+
         p += rayDir * delta;
     }
 
 
-    if (speed >= min(nSpeed, speed)) {
+    if (d <=0.01) {
         color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
     } else {
         color = vec4(0.0);
     }
+    // if (d < 0.0001) {
+    //     color = texture(u_map, vec2(speed, 0.0));
+    // }
 
     if (color.a == 0.0) discard;
 }

@@ -94,6 +94,8 @@ void main(){
 
     float nSpeed = 0.0;
 
+    float scale = clamp(0.0, 1.0, fract(iTime / 10.0));
+
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
         u = texture(u_U, p + 0.5);
@@ -107,28 +109,28 @@ void main(){
 		if(speed >= threshold0 && speed < threshold){
             vec3 nor = direction3 / size;
 
-            float scale = clamp(0.0, 1.0, fract(iTime / 10.0));
             nu = texture(u_U, p + 0.5 + nor * scale);
             nv = texture(u_V, p + 0.5 + nor * scale);
             nw = texture(u_W, p + 0.5 + nor * scale);
 
             nSpeed = length(vec3(nu.r, nv.r, nw.r));
 
-            speed = max(speed, nSpeed);
+            speed = (speed + nSpeed) / 2.0;
 
             // speed = mix(speed, nSpeed, scale);
+
+            // speed = nSpeed;
             
             break;
  		}
         p += rayDir * delta;
     }
 
-
     if (speed >= threshold0 && speed < threshold) {
         color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
     } else {
-        color = vec4(0.0);
+        color = vec4(0.0, 0.0, 0.0, 0.5);
     }
 
-    if (color.a == 0.0) discard;
+    // if (color.a == 0.0) discard;
 }

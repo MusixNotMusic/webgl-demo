@@ -133,11 +133,8 @@ export default class FlowFeildWind {
         const texture = new THREE.Data3DTexture( data, width, height, depth );
         texture.format = THREE.RedFormat;
         texture.type = THREE.FloatType;
-        // texture.format = THREE.RGBAFormat;
-        // texture.type = THREE.UnsignedByteType;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
-        // texture.unpackAlignment = 4;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         return texture;
     }
@@ -189,7 +186,7 @@ export default class FlowFeildWind {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.scale.set(50, 50, 10)
+        mesh.scale.set(50, 50, 50)
 
         mesh.rotateX(Math.PI / 2);
 
