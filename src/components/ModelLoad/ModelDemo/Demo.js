@@ -89,8 +89,9 @@ export default class Test extends BaseModelLayer{
           custom.userData = {
             lon: item.lon,
             lat: item.lat,
+            alt: 20000,
             type: this.type,
-            scale: 1
+            scale: 5
           }
 
           custom.add(object)

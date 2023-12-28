@@ -4,8 +4,11 @@
 </template>
 <script>
 import { onMounted, onUnmounted, ref } from "vue";
-import InstancePerformance from "./model/InstancePerformance";
+// import InstancePerformance from "./model/InstancePerformance";
 import { WindField3DFormat } from "../parseFile/WindField3D/WindField3DFormat";
+import InstancePerformance from "./model/InstancePerformance";
+import FlowFeildWind from './model/FlowFieldWind';
+import { decompress } from "../utils/decompress/ZstdDecompress";
 
 export default {
   name: 'WindFieldArrows',
@@ -15,13 +18,17 @@ export default {
     const containerRef = ref(null);
 
     const render = () => {
-      fetch('/resource/windField').then(data => data.arrayBuffer()).then((buffer) => {
+      // fetch('/resource/wind/20221014_200000.00.31001.000_3000.zst')
+      fetch('/resource/wind/windField.zip')
+      // fetch('/resource/wind/windField')
+      .then(data => data.arrayBuffer())
+      .then(async (data) => { return await decompress(data); })
+      .then((buffer) => {
         const bytes = new Uint8Array(buffer);
         const wf3d = WindField3DFormat.parser(bytes);
-        // wf3d.header.widthSize = wf3d.header.widthSize / 2 | 0;
-        // wf3d.header.heightSize = wf3d.header.heightSize / 2 | 0;
         console.log('instance =>', wf3d);
-        instance = new InstancePerformance(containerRef.value, wf3d);
+        instance = new FlowFeildWind(containerRef.value, wf3d);
+        // instance = new InstancePerformance(containerRef.value, wf3d);
       })
     }
 
