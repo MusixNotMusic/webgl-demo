@@ -36,13 +36,6 @@ float sdSphere( vec3 p, float s ) {
   return length(p)-s;
 }
 
-// float intersect(vec3 p, float r) {
-//     ivec3 iSize = textureSize(u_U, 0);
-//     vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
-//     vec3 newP = dot(p, size);
-
-// }
-
 
 void main(){
     vec3 rayDir = normalize( vDirection );
@@ -81,6 +74,8 @@ void main(){
     ivec3 iSize = textureSize(u_U, 0);
     vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
 
+    vec3 inv_size = 1.0 / size;
+
     float nSpeed = 0.0;
 
     vec3 size1 = vec3(100.0);
@@ -90,7 +85,7 @@ void main(){
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
         vec3 np = p + 0.5;
 
-        np = floor(np * size) / size;
+        np = floor(np * size) / size + inv_size / 2.0;
 
         u = texture(u_U, np);
         v = texture(u_V, np);
@@ -107,12 +102,6 @@ void main(){
             }
             break;
  		}
-
-        // d = sdSphere(p - vec3( 0.1, 0.1, 0.1), 0.001);
-
-        // if (d < 0.0001) {
-        //     break;
-        // }
 
         p += rayDir * delta;
     }
