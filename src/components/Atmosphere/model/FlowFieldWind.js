@@ -48,7 +48,7 @@ export default class FlowFeildWind {
             u_W: { value: null },
         };
 
-        this.textureColor =  getColorSystem().colorMapTexture['smallrainbows']
+        this.textureColor =  getColorSystem().colorMapTexture['rainbows']
 
         this.onWindowResizeBind = this.onWindowResize.bind(this);
 

@@ -27,7 +27,7 @@ import fragmentGobalBakShader from '../shaderThree/global_bak.frag'
 import vertexShader from '../shaderThree/demo.vert'
 import vertexGobalShader from '../shaderThree/global.vert'
 import VolumeRenderClass from './VolumeRenderClass'
-import { decompress } from './utils/ZstdDecompress'
+import { decompress } from '../utils/decompress/ZstdDecompress'
 import { accessToken } from './token'
 
 const centerOrigin =  [104, 30] || [0, 0];
