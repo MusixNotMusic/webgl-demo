@@ -115,13 +115,11 @@ void main(){
 
             nSpeed = length(vec3(nu.r, nv.r, nw.r));
 
-            speed = (speed + nSpeed) / 2.0;
+            speed = mix(speed, nSpeed, scale);
 
-            // speed = mix(speed, nSpeed, scale);
-
-            // speed = nSpeed;
-            
-            break;
+            if (speed >= threshold0 && speed < threshold) {
+                break;
+            }
  		}
         p += rayDir * delta;
     }
@@ -129,8 +127,8 @@ void main(){
     if (speed >= threshold0 && speed < threshold) {
         color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
     } else {
-        color = vec4(0.0, 0.0, 0.0, 0.5);
+        // color = vec4(0.0, 0.0, 0.0, 0.5);
     }
 
-    // if (color.a == 0.0) discard;
+    if (color.a == 0.0) discard;
 }

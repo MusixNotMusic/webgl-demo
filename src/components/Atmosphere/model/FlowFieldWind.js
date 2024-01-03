@@ -38,7 +38,8 @@ export default class FlowFeildWind {
         this.api = {
             depthSampleCount: 512,
             threshold0: 20,
-            threshold: 40
+            threshold: 40,
+            offset: 0.0,
         };
 
         this.uniforms = {
@@ -98,6 +99,7 @@ export default class FlowFeildWind {
         this.gui.add( this.api, 'depthSampleCount', 0, 2048 ).step( 2 ).onChange( this.updateUniformsBind );
         this.gui.add( this.api, 'threshold0', 0, 256 ).step( 0.01 ).onChange( this.updateUniformsBind );
         this.gui.add( this.api, 'threshold', 0, 256 ).step( 0.01).onChange( this.updateUniformsBind );
+        this.gui.add( this.api, 'offset', -1, 1 ).step( 0.005).onChange( this.updateUniformsBind );
 
         this.guiStatsEl = document.createElement( 'div' );
         this.guiStatsEl.classList.add( 'gui-stats' );
@@ -144,6 +146,7 @@ export default class FlowFeildWind {
             this.material.uniforms.depthSampleCount.value = this.api.depthSampleCount;
             this.material.uniforms.threshold0.value = this.api.threshold0;
             this.material.uniforms.threshold.value = this.api.threshold;
+            this.material.uniforms.offset.value = this.api.offset;
         }
     }
 
@@ -168,6 +171,7 @@ export default class FlowFeildWind {
             depthSampleCount: { value: this.api.depthSampleCount },
             threshold0: { value: this.api.threshold0 },
             threshold: { value: this.api.threshold},
+            offset: { value: this.api.offset},
             iTime: { value: this.time },
 		}
 
@@ -186,7 +190,7 @@ export default class FlowFeildWind {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.scale.set(50, 50, 20)
+        mesh.scale.set(50, 50, 50)
 
         mesh.rotateX(Math.PI / 2);
 

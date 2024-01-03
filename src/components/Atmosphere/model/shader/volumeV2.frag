@@ -7,7 +7,6 @@ out vec4 color;
 uniform float threshold0;
 uniform float threshold;
 uniform float depthSampleCount;
-uniform float offset;
 
 // uniform sampler3D tex;
 uniform sampler3D u_U;
@@ -62,7 +61,7 @@ void main(){
     ivec3 iSize = textureSize(u_U, 0);
     vec3 size = vec3(float(iSize.x), float(iSize.y), float(iSize.z));
 
-    // vec3 size = vec3(30.0);
+    // vec3 size = vec3(100.0);
     vec3 inv_size = 1.0 / size;
 
     float speed = 0.0;
@@ -73,7 +72,7 @@ void main(){
 
     float d = 0.0;
 
-    float r = 0.0005;
+    float r = 0.001;
 
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
@@ -83,20 +82,16 @@ void main(){
         v = texture(u_V, np);
         w = texture(u_W, np);
 
-        direction3 = vec3(u.r, v.r, w.r * 5.0);
+        direction3 = vec3(u.r, v.r, w.r);
 
-        // vec3 _offset = vec3(offset, offset, 0) * inv_size * scale;
-        vec3 _offset = vec3(direction3) * inv_size * scale;
+        vec3 offset = vec3(direction3) * inv_size * scale * 5.0;
 
         speed= length(direction3);
 
-        np = np + _offset;
-
-        vec3 center = floor(np * size) * inv_size + inv_size * 0.5;
+        vec3 center = floor((np + offset) * size) * inv_size + inv_size * 0.5 - offset;
 
         d = sdSphere(np - center, r);
         if (d < r) {
-            // break;
             if (speed >= threshold0 && speed < threshold) {
                 break;
             }
@@ -105,8 +100,10 @@ void main(){
         p += rayDir * delta;
     }
 
-    if (speed >= threshold0 && speed < threshold) {
-        color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
+    if (d < r) {
+        if (speed >= threshold0 && speed < threshold) {
+            color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
+        }
     }
 
     if (color.a == 0.0) discard;
