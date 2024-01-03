@@ -105,7 +105,7 @@ void main(){
         p += rayDir * delta;
     }
 
-    if (speed >= threshold0 && speed < threshold) {
+    if (speed >= threshold0 && speed < threshold && d < r) {
         color = texture(u_map, vec2(clamp(0.0, 1.0, speed / 100.0), 0.0));
     }
 
