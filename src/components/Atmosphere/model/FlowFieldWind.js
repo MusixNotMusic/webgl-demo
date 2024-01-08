@@ -8,7 +8,7 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { colorMap  } from './colorMap';
 
 import vertexShader from './shader/volume.vert';
-import fragmentShader from './shader/volume.frag';
+import fragmentShader from './shader/volumeV1.frag';
 
 import { getColorSystem } from '../../utils/color/constants';
 

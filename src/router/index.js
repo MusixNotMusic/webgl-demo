@@ -97,6 +97,11 @@ const routes= [
         name: "GeoJsonIO",
         component: () => import("../components/GeoJsonIO/GeoJsonIO.vue"),
       },
+      {
+        path: "/FlowFiled",
+        name: "FlowFiled",
+        component: () => import("../components/Emulation/FlowFiled.vue"),
+      },
     ],
   }
 ];
