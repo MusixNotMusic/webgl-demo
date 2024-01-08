@@ -45,7 +45,7 @@ export default class WebGLContent {
 
       noiseTex.wrapS = THREE.RepeatWrapping;
       noiseTex.wrapT = THREE.RepeatWrapping;
-      noiseTex.format = THREE.RGBFormat;
+      noiseTex.format = THREE.RGBAFormat;
       noiseTex.type = THREE.FloatType;
       noiseTex.minFilter = THREE.NearestFilter;
       noiseTex.magFilter = THREE.NearestFilter;

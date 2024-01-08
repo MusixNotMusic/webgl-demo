@@ -61,7 +61,7 @@ export default class Mover extends THREE.InstancedMesh {
     const delayArray = [];
     const massArray = [];
 
-    for (var i = 0; i < this.count * 3; i+= 3) {
+    for (var i = 0; i < this.count * 4; i+= 4) {
       const radian1 = MathEx.radians(Math.random() * 360);
       const radian2 = MathEx.radians(Math.random() * 360);
       const radius = 5;
@@ -70,26 +70,32 @@ export default class Mover extends THREE.InstancedMesh {
       aArrayBase[i + 0] = spherical[0] * 0.02;
       aArrayBase[i + 1] = spherical[1] * 0.02;
       aArrayBase[i + 2] = spherical[2] * 0.02;
+      aArrayBase[i + 3] = spherical[3] * 0.02;
 
       vArrayBase[i + 0] = spherical[0];
       vArrayBase[i + 1] = spherical[1];
       vArrayBase[i + 2] = spherical[2];
+      vArrayBase[i + 3] = spherical[3];
 
       aFirstArray[i + 0] = aArrayBase[i + 0] * 0.3;
       aFirstArray[i + 1] = aArrayBase[i + 1] * 0.3;
       aFirstArray[i + 2] = aArrayBase[i + 2] * 0.3;
+      aFirstArray[i + 3] = aArrayBase[i + 3] * 0.3;
 
       vFirstArray[i + 0] = vArrayBase[i + 0];
       vFirstArray[i + 1] = vArrayBase[i + 1];
       vFirstArray[i + 2] = vArrayBase[i + 2];
+      vFirstArray[i + 3] = vArrayBase[i + 3];
 
       delayArray[i + 0] = 0;
       delayArray[i + 1] = 0;
       delayArray[i + 2] = 0;
+      delayArray[i + 3] = 0;
 
       massArray[i + 0] = Math.random();
       massArray[i + 1] = 0;
       massArray[i + 2] = 0;
+      massArray[i + 3] = 0;
     }
 
     this.physicsRenderer = new PhysicsRenderer(vsa, fsa, vsv, fsv);

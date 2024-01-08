@@ -69,7 +69,7 @@ export default class PhysicsRenderer {
     window.PhysicsRenderer = this;
   }
   start(renderer, aArrayBase, vArrayBase, aAttrBase, vAttrBase) {
-    this.side = this.vUniforms.side.value = Math.ceil(Math.sqrt(vArrayBase.length / 3));
+    this.side = this.vUniforms.side.value = Math.ceil(Math.sqrt(vArrayBase.length / 4));
     this.camera.top = this.side * 0.5;
     this.camera.bottom = this.side * -0.5;
     this.camera.right = this.side * 0.5;
@@ -80,16 +80,18 @@ export default class PhysicsRenderer {
     const aArray = [];
     const vArray = [];
 
-    for (var i = 0; i < Math.pow(this.side, 2) * 3; i += 3) {
+    for (var i = 0; i < Math.pow(this.side, 2) * 4; i += 4) {
       // set acceleration values from arguments.
       if (aArrayBase && aArrayBase[i] != undefined) {
         aArray[i + 0] = aArrayBase[i + 0];
         aArray[i + 1] = aArrayBase[i + 1];
         aArray[i + 2] = aArrayBase[i + 2];
+        aArray[i + 3] = aArrayBase[i + 3];
       } else {
         aArray[i + 0] = 0;
         aArray[i + 1] = 0;
         aArray[i + 2] = 0;
+        aArray[i + 3] = 0;
       }
 
       // set velocity values from arguments.
@@ -97,10 +99,12 @@ export default class PhysicsRenderer {
         vArray[i + 0] = vArrayBase[i + 0];
         vArray[i + 1] = vArrayBase[i + 1];
         vArray[i + 2] = vArrayBase[i + 2];
+        vArray[i + 3] = vArrayBase[i + 3];
       } else {
         vArray[i + 0] = 0;
         vArray[i + 1] = 0;
         vArray[i + 2] = 0;
+        vArray[i + 3] = 0;
       }
 
       // define UV to allow other objects to see the velocity value.
@@ -156,11 +160,11 @@ export default class PhysicsRenderer {
       new Float32Array(aArray),
       this.side,
       this.side,
-      THREE.RGBFormat,
+      THREE.RGBAFormat,
       THREE.FloatType
     );
 
-    aInitData.format = THREE.RGBFormat;
+    aInitData.format = THREE.RGBAFormat;
     aInitData.type = THREE.FloatType;
     aInitData.magFilter = THREE.NearestFilter;
     aInitData.minFilter = THREE.NearestFilter;
@@ -193,7 +197,7 @@ export default class PhysicsRenderer {
       this.side
     );
 
-    vInitData.format = THREE.RGBFormat;
+    vInitData.format = THREE.RGBAFormat;
     vInitData.type = THREE.FloatType;
     vInitData.magFilter = THREE.NearestFilter;
     vInitData.minFilter = THREE.NearestFilter;
@@ -262,15 +266,17 @@ export default class PhysicsRenderer {
   createDataTexture(arrayBase) {
     const array = [];
 
-    for (var i = 0; i < Math.pow(this.side, 2) * 3; i += 3) {
+    for (var i = 0; i < Math.pow(this.side, 2) * 4; i += 4) {
       if (arrayBase[i] != undefined) {
         array[i + 0] = arrayBase[i + 0];
         array[i + 1] = arrayBase[i + 1];
         array[i + 2] = arrayBase[i + 2];
+        array[i + 3] = arrayBase[i + 3];
       } else {
         array[i + 0] = 0;
         array[i + 1] = 0;
         array[i + 2] = 0;
+        array[i + 3] = 0;
       }
     }
 
@@ -278,7 +284,7 @@ export default class PhysicsRenderer {
       new Float32Array(array),
       this.side,
       this.side,
-      THREE.RGBFormat,
+      THREE.RGBAFormat,
       THREE.FloatType
     );
   }
