@@ -108,8 +108,8 @@ export default class PhysicsRenderer {
       }
 
       // define UV to allow other objects to see the velocity value.
-      this.uvs[i / 3 * 2 + 0] = (i / 3) % this.side / (this.side - 1);
-      this.uvs[i / 3 * 2 + 1] = Math.floor((i / 3) / this.side) / (this.side - 1);
+      this.uvs[i / 4 * 2 + 0] = (i / 4) % this.side / (this.side - 1);
+      this.uvs[i / 4 * 2 + 1] = Math.floor((i / 4) / this.side) / (this.side - 1);
     }
 
     // set the buffer attribute of acceleration.
@@ -266,7 +266,7 @@ export default class PhysicsRenderer {
   createDataTexture(arrayBase) {
     const array = [];
 
-    for (var i = 0; i < Math.pow(this.side, 2) * 4; i += 4) {
+    for (var i = 0; i < Math.pow(this.side, 2) * 3; i += 3) {
       if (arrayBase[i] != undefined) {
         array[i + 0] = arrayBase[i + 0];
         array[i + 1] = arrayBase[i + 1];
