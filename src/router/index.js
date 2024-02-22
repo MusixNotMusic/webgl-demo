@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/WindField",
+    redirect: "/FlowFieldWindNext",
     component: () => import("../components/Index.vue"),
     children: [
       {
@@ -65,9 +65,14 @@ const routes= [
         component: () => import("../components/Atmosphere/Weather.vue"),
       },
       {
-        path: "/WindField",
-        name: "WindField",
+        path: "/WindFieldArrows",
+        name: "WindFieldArrows",
         component: () => import("../components/Atmosphere/WindFieldArrows.vue"),
+      },
+      {
+        path: "/FlowFieldWindNext",
+        name: "FlowFieldWindNext",
+        component: () => import("../components/Atmosphere/FlowFieldWindNext/FlowFieldWindNext.vue"),
       },
       {
         path: "/Isosurface",
