@@ -107,6 +107,12 @@ const routes= [
         name: "FlowFiled",
         component: () => import("../components/Emulation/FlowFiled.vue"),
       },
+
+      {
+        path: "/Terrain",
+        name: "Terrain",
+        component: () => import("../components/Map/Terrain/Terrain.vue"),
+      },
     ],
   }
 ];

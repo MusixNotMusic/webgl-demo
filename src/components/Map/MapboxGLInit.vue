@@ -21,6 +21,10 @@ export default {
         center: {
             type: Array,
             default: () => [104, 30]
+        },
+        zoom: {
+            type: Number,
+            default: 10
         }
     },
 
@@ -30,7 +34,7 @@ export default {
                 container: props.id,
                 // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
                 style: 'mapbox://styles/mapbox/streets-v12',
-                zoom: 10,
+                zoom: props.zoom,
                 center: props.center,
                 pitch: 45,
                 projection: 'mercator',
