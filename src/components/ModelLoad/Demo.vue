@@ -18,9 +18,9 @@ window.mapboxgl = mapboxgl;
 const mapboxGLLoadedFunc = (map) => {
     window.mapIns = map;
     console.log('mapboxGLLoadedFunc ==>', map)
-    addDemoModelLayer(map);
+    // addDemoModelLayer(map);
 
-    // addThreeBoxModelLayer(map);
+    addThreeBoxModelLayer(map);
 }
 
 const center = ref([104.1465432836781, 30.867102559661133]);

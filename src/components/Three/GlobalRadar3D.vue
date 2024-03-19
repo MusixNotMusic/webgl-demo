@@ -292,7 +292,8 @@ function init(map) {
     };
 
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xocjRvM2VsMGFkdzNqc2l3NHhxM285eCJ9.9TK1C4mjpPMG5wNx8m1KmA';
+    mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xwM29ldXpuMTYyMzJvcXU3ZWRyZHMzeCJ9.NLAhXDinvYbqHq2fPg4z6A';
+
     let map;
     const initMapbox = () => {
         map = new mapboxgl.Map({

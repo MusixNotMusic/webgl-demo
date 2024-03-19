@@ -271,7 +271,7 @@ let renderer,
     };
 
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xiYWZybGowMGFlYTN2bzFtaWRrcmR5OCJ9.Qvl9IQUEuWq2eD3GvkJ5AQ';
+    mapboxgl.accessToken = 'pk.eyJ1IjoibXVzaXgiLCJhIjoiY2xwM29ldXpuMTYyMzJvcXU3ZWRyZHMzeCJ9.NLAhXDinvYbqHq2fPg4z6A';
 
     const initMapbox = () => {
         const map = new mapboxgl.Map({
