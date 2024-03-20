@@ -1,5 +1,5 @@
 <template>
-    <MapboxGLInit @mapboxGLLoaded="mapboxGLLoadedFunc" :center="center" :zoom="zoom"></MapboxGLInit>
+    <MapboxGLInit @mapboxGLLoaded="mapboxGLLoadedFunc" :center="center" :zoom="zoom" :loadDEM="true"></MapboxGLInit>
 </template>
 
 <script setup>

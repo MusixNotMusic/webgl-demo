@@ -89,7 +89,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
           custom.userData = {
             lon: item.lon,
             lat: item.lat,
-            alt: item.alt1,
+            alt: item.alt,
             name: item.name,
             scale: 5
           }

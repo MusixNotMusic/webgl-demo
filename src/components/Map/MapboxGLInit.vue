@@ -25,10 +25,26 @@ export default {
         zoom: {
             type: Number,
             default: 10
+        },
+        loadDEM: {
+            type: Boolean,
+            default: false
         }
     },
 
     setup (props, { emit }) {
+
+        const addDemLayer = (map) => {
+            map.addSource('mapbox-dem', {
+                'type': 'raster-dem',
+                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                'tileSize': 512,
+                'maxzoom': 14
+            });
+            // add the DEM source as a terrain layer with exaggerated height
+            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+        }
+
         const initMapbox = () => {
             const map = new mapboxgl.Map({
                 container: props.id,
@@ -44,6 +60,9 @@ export default {
 
 
             map.on('style.load', () => {
+                if (props.loadDEM) {
+                    addDemLayer(map);
+                }
                 emit('mapboxGLLoaded', map)
             });
         }
