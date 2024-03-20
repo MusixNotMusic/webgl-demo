@@ -88,168 +88,17 @@ const radarTestSet = [
     }
 ]
 
-const testDateSet = [
-    {
+const testDateSet = new Array(10).fill(0).map((item, index) => {
+    return {
         "lon": 104,
-        "lat": 30,
-        "alt": 800,
+        "lat": 30 + index * 0.1,
+        "alt": 1000,
         "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 31,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 32,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 33,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 34,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 35,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 36,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 37,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 38,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 39,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 40,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 41,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 42,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 43,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 44,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 45,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 46,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 47,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 48,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
-    },
-    {
-        "lon": 104,
-        "lat": 49,
-        "alt": 800,
-        "height": 1000,
-        "name": "radar-1",
-        "radius": 75
+        "name": "radar-"+index,
+        "radius": 75,
     }
-]
+    
+})
 
 
 /**

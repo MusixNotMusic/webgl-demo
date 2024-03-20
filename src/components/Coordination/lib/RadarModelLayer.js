@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { LightProbeHelper } from 'three/addons/helpers/LightProbeHelper.js';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
@@ -8,7 +9,7 @@ import mapboxgl from "mapbox-gl";
 
 import {chengdu, generateRadarPoint, lasa} from "./Constants";
 
-
+import { WGS84Object3D } from './WGS84Object3D'
 
 /***
  * 矩形立方体的 等值面结构
@@ -28,6 +29,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.zoomBind = this.zoom.bind(this);
 
     window.radarModel = this;
+    window.THREE = THREE;
 
     this.addEventListener();
   }
@@ -57,8 +59,11 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
   render () {
     return this.initMesh().then(() => {
-      this.addLight();
+      // this.addLight();
       this.drawLayer();
+      // this.initLightHelper();
+      this.initPointLightHelper();
+      this.initDemoMesh();
       return null;
     })
   }
@@ -106,6 +111,62 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
         resolve(model);
       });
     })
+  }
+
+
+  initDemoMesh () {
+    const loader = new FBXLoader();
+
+    return new Promise((resolve) => {
+      loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
+        const object = new WGS84Object3D(model);
+
+        object.WGS84Position = new THREE.Vector3(100, 30, 400);
+
+        object.rotation.x = Math.PI / 2;
+
+        object.scale.set(10, 10, 10);
+
+        object.add(new THREE.AxesHelper(1000))
+
+        this.demoModel = object;
+
+        this.addCSS2Object(object, 'demo', null, [0, 500, 0]);
+
+        this.scene.add(object)
+
+        resolve(model);
+      });
+    })
+  }
+
+  initLightHelper () {
+
+    const light = new THREE.DirectionalLight( 0xFFFFFF );
+    const helper = new THREE.DirectionalLightHelper( light, 1000, 0x0f0fcc );
+
+    const object = new WGS84Object3D(helper);
+    object.WGS84Position = new THREE.Vector3(100, 30.05, 4400);
+
+    object.add(new THREE.AxesHelper(1000));
+    object.add(light);
+
+    this.scene.add( object );
+  }
+
+
+  initPointLightHelper () {
+    const pointLight = new THREE.PointLight( 0xff0000, 10, 10000 );
+    const lightObject = new WGS84Object3D(pointLight);
+    lightObject.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
+    this.scene.add( lightObject );
+
+    const sphereSize = 100;
+    const pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+    const helper = new WGS84Object3D(pointLightHelper);
+    helper.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
+    helper.add(new THREE.AxesHelper(1000));
+    this.scene.add( helper );
   }
 
 

@@ -221,7 +221,7 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
     updateWorldPosition(lnglat) {
         const { lng, lat, alt } = lnglat;
         const mercator = mapboxgl.MercatorCoordinate.fromLngLat([lng, lat], alt);
-        this.world.position.set(-meterApplyX(mercator.x), -meterApplyY(mercator.y), alt || 0);
+        this.scene.position.set(-meterApplyX(mercator.x), -meterApplyY(mercator.y), alt || 0);
     }
 
     /**
@@ -229,7 +229,7 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
      * @param {*} object
      */
     addNewScene(object) {
-        this.world.add(object);
+        this.scene.add(object);
     }
 
 
