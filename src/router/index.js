@@ -5,7 +5,7 @@ const routes= [
   {
     path: "/index",
     name: "index",
-    redirect: "/FlowFieldWindNext",
+    redirect: "/Coordination",
     component: () => import("../components/Index.vue"),
     children: [
       {
@@ -112,6 +112,12 @@ const routes= [
         path: "/Terrain",
         name: "Terrain",
         component: () => import("../components/Map/Terrain/Terrain.vue"),
+      },
+
+      {
+        path: "/Coordination",
+        name: "Coordination",
+        component: () => import("../components/Coordination/Coordination.vue"),
       },
     ],
   }
