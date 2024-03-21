@@ -205,6 +205,12 @@ class TransformControls extends Object3D {
 
 		this.camera.updateMatrixWorld();
 		this.camera.matrixWorld.decompose( this.cameraPosition, this.cameraQuaternion, this._cameraScale );
+		// console.log('this.cameraPosition ==>', this.cameraPosition);
+
+		// this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.invert());
+
+		// console.log('this.cameraPosition ==>', this.cameraPosition);
+		// console.log('this.worldPosition ==>', this.worldPosition);
 
 		if ( this.camera.isOrthographicCamera ) {
 
@@ -242,8 +248,6 @@ class TransformControls extends Object3D {
 	}
 
 	pointerDown( pointer ) {
-
-		console.log('pointerDown ==>', pointer);
 
 		if ( this.object === undefined || this.dragging === true || pointer.button !== 0 ) return;
 
@@ -710,7 +714,6 @@ function onPointerHover( event ) {
 }
 
 function onPointerDown( event ) {
-	console.log('onPointerDown ==>', event)
 	if ( ! this.enabled ) return;
 
 	if ( ! document.pointerLockElement ) {
@@ -727,6 +730,7 @@ function onPointerDown( event ) {
 }
 
 function onPointerMove( event ) {
+	
 	if ( ! this.enabled ) return;
 
 	this.pointerMove( this._getPointer( event ) );

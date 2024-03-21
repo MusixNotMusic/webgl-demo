@@ -148,9 +148,13 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
         this.control.attach(this.demoModel);
 
+        // this.scene.add( this.control );
+
         const control = new WGS84Object3D(this.control);
 
         control.WGS84Position = new THREE.Vector3(100, 30, 400);
+
+        window.controlObject = control;
 
         this.scene.add( control );
 
