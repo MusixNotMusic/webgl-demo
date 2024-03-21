@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { LightProbeHelper } from 'three/addons/helpers/LightProbeHelper.js';
+
+// import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TransformControls } from './TransformControls';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
@@ -29,6 +31,9 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.zoomBind = this.zoom.bind(this);
     this.clickBind = this.click.bind(this);
 
+    this.control = new TransformControls(this.camera, this.renderer.domElement );
+
+    window.control = this.control;
     window.radarModel = this;
     window.THREE = THREE;
   }
@@ -141,6 +146,14 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
         this.scene.add(object)
 
+        this.control.attach(this.demoModel);
+
+        const control = new WGS84Object3D(this.control);
+
+        control.WGS84Position = new THREE.Vector3(100, 30, 400);
+
+        this.scene.add( control );
+
         resolve(model);
       });
     })
@@ -236,6 +249,18 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     if (x) mesh.rotateX(x);
     if (z) mesh.rotateZ(z);
     if (y) mesh.rotateY(y);
+  }
+
+  disableAll() {
+    this.map.dragPan.disable();
+    // this.map.dragRotate.disable();
+    this.map.doubleClickZoom.disable();
+  }
+
+  enableAll() {
+    this.map.dragPan.enable();
+    // this.map.dragRotate.enable();
+    this.map.doubleClickZoom.enable();
   }
 
 

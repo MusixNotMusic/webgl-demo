@@ -1,3 +1,4 @@
+import { point } from '@turf/turf';
 import {
 	BoxGeometry,
 	BufferGeometry,
@@ -19,7 +20,6 @@ import {
 	TorusGeometry,
 	Vector3
 } from 'three';
-
 
 const _raycaster = new Raycaster();
 
@@ -63,14 +63,6 @@ class TransformControls extends Object3D {
 		const _plane = new TransformControlsPlane();
 		this._plane = _plane;
 		this.add( _plane );
-
-        const boxGeo = new BoxGeometry(1, 1, 1);
-        const material = new MeshBasicMaterial({ color: 'orange' });
-
-        const boxMesh = new Mesh(boxGeo, material);
-
-        this._box = boxMesh;
-        this.add(boxMesh);
 
 		const scope = this;
 
@@ -228,35 +220,14 @@ class TransformControls extends Object3D {
 
 	}
 
-	raycast ( pointer ) {
-		if (!pointer) {
-			console.log('poiner ==>', pointer)
-			return;
-		}
-		_raycaster.setFromCamera(pointer, this.camera);
-	
-		const projectionMatrixInvert = this.camera.projectionMatrix.invert();
-		const cameraPosition =
-				new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
-		const mousePosition =
-				new THREE.Vector3(pointer.x, pointer.y, 1)
-				.applyMatrix4(projectionMatrixInvert);
-		const viewDirection = mousePosition.clone()
-				.sub(cameraPosition).normalize();
-	
-				_raycaster.set(cameraPosition, viewDirection);
-	
-		console.log('raycaster', _raycaster.intersectObjects(this._gizmo.children, true));
-	  }
-
 	pointerHover( pointer ) {
-
 		if ( this.object === undefined || this.dragging === true ) return;
 
-		// _raycaster.setFromCamera( pointer, this.camera );
-		this.raycast(pointer);
+		_raycaster.setFromCamera( pointer, this.camera );
 
-		const intersect = intersectObjectWithRay( this._gizmo.picker[ this.mode ], _raycaster );
+		raycastPatch(pointer, this.camera, _raycaster);
+
+		const intersect = intersectObjectWithRay( this._gizmo.picker[ this.mode ], _raycaster, true );
 
 		if ( intersect ) {
 
@@ -272,14 +243,17 @@ class TransformControls extends Object3D {
 
 	pointerDown( pointer ) {
 
+		console.log('pointerDown ==>', pointer);
+
 		if ( this.object === undefined || this.dragging === true || pointer.button !== 0 ) return;
 
 		if ( this.axis !== null ) {
 
-			// _raycaster.setFromCamera( pointer, this.camera );
-			this.raycast(pointer);
+			_raycaster.setFromCamera( pointer, this.camera );
 
-			const planeIntersect = intersectObjectWithRay( this._plane, _raycaster, true );
+			raycastPatch( pointer, this.camera, _raycaster );
+
+			const planeIntersect = intersectObjectWithRay( this._plane, _raycaster, true);
 
 			if ( planeIntersect ) {
 
@@ -323,8 +297,9 @@ class TransformControls extends Object3D {
 
 		if ( object === undefined || axis === null || this.dragging === false || pointer.button !== - 1 ) return;
 
-		// _raycaster.setFromCamera( pointer, this.camera );
-		this.raycast();
+		_raycaster.setFromCamera( pointer, this.camera );
+
+		raycastPatch( pointer, this.camera, _raycaster );
 
 		const planeIntersect = intersectObjectWithRay( this._plane, _raycaster, true );
 
@@ -721,7 +696,6 @@ function getPointer( event ) {
 }
 
 function onPointerHover( event ) {
-
 	if ( ! this.enabled ) return;
 
 	switch ( event.pointerType ) {
@@ -736,7 +710,7 @@ function onPointerHover( event ) {
 }
 
 function onPointerDown( event ) {
-
+	console.log('onPointerDown ==>', event)
 	if ( ! this.enabled ) return;
 
 	if ( ! document.pointerLockElement ) {
@@ -753,7 +727,7 @@ function onPointerDown( event ) {
 }
 
 function onPointerMove( event ) {
-
+	console.log('onPointerMove ==>', event)
 	if ( ! this.enabled ) return;
 
 	this.pointerMove( this._getPointer( event ) );
@@ -772,7 +746,21 @@ function onPointerUp( event ) {
 
 }
 
+function raycastPatch (mouse, camera, raycaster) {
+	const projectionMatrixInvert = camera.projectionMatrix.invert();
+    const cameraPosition =
+            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    const mousePosition =
+            new THREE.Vector3(mouse.x, mouse.y, 1)
+            .applyMatrix4(projectionMatrixInvert);
+    const viewDirection = mousePosition.clone()
+            .sub(cameraPosition).normalize();
+
+	raycaster.set(cameraPosition, viewDirection);
+}
+
 function intersectObjectWithRay( object, raycaster, includeInvisible ) {
+
 
 	const allIntersections = raycaster.intersectObject( object, true );
 
@@ -1516,7 +1504,7 @@ class TransformControlsPlane extends Mesh {
 
 		super(
 			new PlaneGeometry( 100000, 100000, 2, 2 ),
-			new MeshBasicMaterial( { visible: false, wireframe: true, side: DoubleSide, transparent: true, opacity: 0.5, toneMapped: false, color: '#00ffff' } )
+			new MeshBasicMaterial( { visible: false, wireframe: true, side: DoubleSide, transparent: true, opacity: 0.1, toneMapped: false } )
 		);
 
 		this.isTransformControlsPlane = true;

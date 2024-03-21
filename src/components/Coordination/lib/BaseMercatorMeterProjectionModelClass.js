@@ -65,7 +65,7 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
             renderer.domElement.style.width = mapCanvas.style.width;
             renderer.domElement.style.height = mapCanvas.style.height;
             renderer.domElement.style.position = "absolute";
-            renderer.domElement.style.pointerEvents = "none";
+            // renderer.domElement.style.pointerEvents = "none";
             renderer.setDrawingBufferSize(width, height, 1);
 
             map.getCanvasContainer().appendChild(renderer.domElement);
