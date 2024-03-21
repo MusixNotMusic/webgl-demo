@@ -19,6 +19,7 @@ export class WGS84Object3D extends Object3D {
     constructor(object) {
         super();
         this._WGS84Position = new Vector3();
+        this.isWGS84Object3D = true;
         if (object) {
             this.add(object);
         }

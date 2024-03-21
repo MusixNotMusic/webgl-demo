@@ -27,11 +27,10 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.data = generateRadarPoint(map, chengdu, lasa, 10)
 
     this.zoomBind = this.zoom.bind(this);
+    this.clickBind = this.click.bind(this);
 
     window.radarModel = this;
     window.THREE = THREE;
-
-    this.addEventListener();
   }
 
   zoom() {
@@ -44,16 +43,23 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     }
   }
 
+  click(event) {
+    this.raycast(event)
+  }
+
   addEventListener() {
     if (this.map) {
       this.zoomBind()
       this.map.on('zoom', this.zoomBind);
+
+      this.map.on('click', this.clickBind);
     }
   }
 
   removeEventListener() {
     if (this.map) {
       this.map.off('zoom', this.zoomBind);
+      this.map.off('click', this.clickBind);
     }
   }
 
@@ -61,7 +67,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     return this.initMesh().then(() => {
       // this.addLight();
       this.drawLayer();
-      // this.initLightHelper();
+      this.initDirectionalLightHelper();
       this.initPointLightHelper();
       this.initDemoMesh();
       return null;
@@ -140,13 +146,16 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     })
   }
 
-  initLightHelper () {
+  initDirectionalLightHelper () {
 
     const light = new THREE.DirectionalLight( 0xFFFFFF );
-    const helper = new THREE.DirectionalLightHelper( light, 1000, 0x0f0fcc );
+    const helper = new THREE.DirectionalLightHelper( light.clone(), 1000, 0x0f0fcc );
 
     const object = new WGS84Object3D(helper);
+    object.matrixWorldAutoUpdate = false;
     object.WGS84Position = new THREE.Vector3(100, 30.05, 4400);
+
+    window.DirectionalLight = object;
 
     object.add(new THREE.AxesHelper(1000));
     object.add(light);
@@ -159,13 +168,20 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     const pointLight = new THREE.PointLight( 0xff0000, 10, 10000 );
     const lightObject = new WGS84Object3D(pointLight);
     lightObject.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
+    lightObject.add(new THREE.AxesHelper(1000));
+
+    // const sphere = new THREE.SphereGeometry(200);
+    // const object = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xff00ff }) );
+    // lightObject.add(object);
+
     this.scene.add( lightObject );
 
+    window.PointLight = lightObject;
+
     const sphereSize = 100;
-    const pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+    const pointLightHelper = new THREE.PointLightHelper( pointLight.clone(), sphereSize );
     const helper = new WGS84Object3D(pointLightHelper);
     helper.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
-    helper.add(new THREE.AxesHelper(1000));
     this.scene.add( helper );
   }
 
@@ -190,6 +206,30 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       }
     })
 
+  }
+
+
+  raycast(event) {
+    var mouse = new THREE.Vector2();
+    mouse.x = ( event.point.x / this.map.transform.width ) * 2 - 1;
+    mouse.y = 1 - ( event.point.y / this.map.transform.height ) * 2;
+
+    const raycaster = new THREE.Raycaster();
+
+    raycaster.setFromCamera(mouse, this.camera);
+
+    const projectionMatrixInvert = this.camera.projectionMatrix.invert();
+    const cameraPosition =
+            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    const mousePosition =
+            new THREE.Vector3(mouse.x, mouse.y, 1)
+            .applyMatrix4(projectionMatrixInvert);
+    const viewDirection = mousePosition.clone()
+            .sub(cameraPosition).normalize();
+
+    raycaster.set(cameraPosition, viewDirection);
+
+    console.log('raycaster', raycaster.intersectObjects(this.scene.children, true));
   }
 
   setMeshRotation (mesh, x, y, z) {
