@@ -136,27 +136,27 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
         object.rotation.x = Math.PI / 2;
 
-        object.scale.set(10, 10, 10);
+        object.scale.set(20, 20, 20);
 
         object.add(new THREE.AxesHelper(1000))
 
-        this.demoModel = object;
+        window.demoModel = object;
 
         this.addCSS2Object(object, 'demo', null, [0, 500, 0]);
 
         this.scene.add(object)
 
-        this.control.attach(this.demoModel);
+        this.control.attach(object);
 
-        // this.scene.add( this.control );
+        this.scene.add( this.control );
 
-        const control = new WGS84Object3D(this.control);
+        // const control = new WGS84Object3D(this.control);
 
-        control.WGS84Position = new THREE.Vector3(100, 30, 400);
+        // control.WGS84Position = new THREE.Vector3(100, 30, 400);
 
-        window.controlObject = control;
+        // window.controlObject = control;
 
-        this.scene.add( control );
+        // this.scene.add( control );
 
         resolve(model);
       });
