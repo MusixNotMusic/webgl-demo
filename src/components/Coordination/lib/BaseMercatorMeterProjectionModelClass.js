@@ -267,6 +267,9 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
 
                 camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
 
+                camera.zoom = this.map.getZoom();
+                camera.fov = this.map.transform.fov;
+
                 this.updateWorldPosition(this.map.getCenter())
 
                 if (renderer) {

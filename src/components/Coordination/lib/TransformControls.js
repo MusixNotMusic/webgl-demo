@@ -18,7 +18,8 @@ import {
 	Raycaster,
 	SphereGeometry,
 	TorusGeometry,
-	Vector3
+	Vector3,
+	AxesHelper
 } from 'three';
 
 const _raycaster = new Raycaster();
@@ -63,6 +64,8 @@ class TransformControls extends Object3D {
 		const _plane = new TransformControlsPlane();
 		this._plane = _plane;
 		this.add( _plane );
+
+		this.add(new AxesHelper(100000));
 
 		const scope = this;
 
