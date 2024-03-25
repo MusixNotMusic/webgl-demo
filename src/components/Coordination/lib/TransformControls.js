@@ -210,7 +210,7 @@ class TransformControls extends Object3D {
 		this.camera.matrixWorld.decompose( this.cameraPosition, this.cameraQuaternion, this._cameraScale );
 		// console.log('this.cameraPosition ==>', this.cameraPosition);
 
-		// this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.invert());
+		this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.clone().invert());
 
 		// console.log('this.cameraPosition ==>', this.cameraPosition);
 		// console.log('this.worldPosition ==>', this.worldPosition);
