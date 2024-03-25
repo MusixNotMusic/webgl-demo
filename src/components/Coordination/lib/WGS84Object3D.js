@@ -12,8 +12,8 @@ export const earthRadius = 6371008.8;
  */
 export const earthCircumference = 2 * Math.PI * earthRadius;
 
-const meterApplyX = mx => (mx - 0.5) * earthCircumference
-const meterApplyY = mx => (0.5 - mx) * earthCircumference
+const meterApplyX = mx => mx * earthCircumference
+const meterApplyY = mx => -mx * earthCircumference
 
 export class WGS84Object3D extends Object3D {
     constructor(object) {
@@ -36,6 +36,7 @@ export class WGS84Object3D extends Object3D {
         const mercator = mapboxgl.MercatorCoordinate.fromLngLat([position.x, position.y], position.z);
 
         this.position.set(meterApplyX(mercator.x), meterApplyY(mercator.y), position.z || 0);
+        // this.position.set(mercator.x, mercator.y, position.z || 0);
       
         if (!this._WGS84Position) {
             this._WGS84Position = new Vector3();

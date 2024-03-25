@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-// import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { TransformControls } from './TransformControls';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+// import { TransformControls } from './TransformControls';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
@@ -73,7 +73,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       // this.addLight();
       this.drawLayer();
       this.initDirectionalLightHelper();
-      this.initPointLightHelper();
+      // this.initPointLightHelper();
       this.initDemoMesh();
       return null;
     })
@@ -182,7 +182,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
 
   initPointLightHelper () {
-    const pointLight = new THREE.PointLight( 0xff0000, 10, 10000 );
+    const pointLight = new THREE.PointLight( 0xff0000, 1, 10000 );
     const lightObject = new WGS84Object3D(pointLight);
     lightObject.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
     lightObject.add(new THREE.AxesHelper(1000));
@@ -235,16 +235,16 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     raycaster.setFromCamera(mouse, this.camera);
 
-    const projectionMatrixInvert = this.camera.projectionMatrix.invert();
-    const cameraPosition =
-            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
-    const mousePosition =
-            new THREE.Vector3(mouse.x, mouse.y, 1)
-            .applyMatrix4(projectionMatrixInvert);
-    const viewDirection = mousePosition.clone()
-            .sub(cameraPosition).normalize();
+    // const projectionMatrixInvert = this.camera.projectionMatrix.invert();
+    // const cameraPosition =
+    //         new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    // const mousePosition =
+    //         new THREE.Vector3(mouse.x, mouse.y, 1)
+    //         .applyMatrix4(projectionMatrixInvert);
+    // const viewDirection = mousePosition.clone()
+    //         .sub(cameraPosition).normalize();
 
-    raycaster.set(cameraPosition, viewDirection);
+    // raycaster.set(cameraPosition, viewDirection);
 
     console.log('raycaster', raycaster.intersectObjects(this.scene.children, true));
   }

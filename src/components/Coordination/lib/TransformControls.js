@@ -210,7 +210,7 @@ class TransformControls extends Object3D {
 		this.camera.matrixWorld.decompose( this.cameraPosition, this.cameraQuaternion, this._cameraScale );
 		// console.log('this.cameraPosition ==>', this.cameraPosition);
 
-		this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.clone().invert());
+		// this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.invert());
 
 		// console.log('this.cameraPosition ==>', this.cameraPosition);
 		// console.log('this.worldPosition ==>', this.worldPosition);
@@ -753,16 +753,16 @@ function onPointerUp( event ) {
 }
 
 function raycastPatch (mouse, camera, raycaster) {
-	const projectionMatrixInvert = camera.projectionMatrix.invert();
-    const cameraPosition =
-            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
-    const mousePosition =
-            new THREE.Vector3(mouse.x, mouse.y, 1)
-            .applyMatrix4(projectionMatrixInvert);
-    const viewDirection = mousePosition.clone()
-            .sub(cameraPosition).normalize();
+	// const projectionMatrixInvert = camera.projectionMatrix.invert();
+    // const cameraPosition =
+    //         new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    // const mousePosition =
+    //         new THREE.Vector3(mouse.x, mouse.y, 1)
+    //         .applyMatrix4(projectionMatrixInvert);
+    // const viewDirection = mousePosition.clone()
+    //         .sub(cameraPosition).normalize();
 
-	raycaster.set(cameraPosition, viewDirection);
+	// raycaster.set(cameraPosition, viewDirection);
 }
 
 function intersectObjectWithRay( object, raycaster, includeInvisible ) {
