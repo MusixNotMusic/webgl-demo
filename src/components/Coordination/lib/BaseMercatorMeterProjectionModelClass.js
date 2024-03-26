@@ -45,6 +45,8 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
 
         this.resizeBind = this.resize.bind(this);
 
+        this.raycastCamera = new THREE.PerspectiveCamera();
+
         this.scene.add(this.world);
 
         this.once = true;
@@ -314,7 +316,8 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
             //         this.map.triggerRepaint();
             //     }
             // },
-
+            // 2.4981121214570498e-8
+            // 2.884571411578189e-8
 
             render: (gl, matrix) => {
                 const { renderer, scene, camera } = this;
@@ -323,9 +326,15 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
                 const scale = mercator.meterInMercatorCoordinateUnits();
 
                 const translateScaleMatrix = new THREE.Matrix4().scale(new THREE.Vector3(scale, -scale, scale))
-                // console.log('render ==>', matrix,  scale);
+                // console.log('render ==>',  scale);
+                if(this.once) {
+                    console.log('render ==>',  scale);
+                    console.log('render ==>',  matrix);
+                    this.once = false;
+                }
 
-                const { _fov, _nearZ, _farZ, width, height } = this.map.transform;
+                const { _fov, _nearZ, _farZ, width, height, _camera } = this.map.transform;
+                
 
                 const projection = mat4.perspective(new Float32Array(16), _fov, width / height, _nearZ, _farZ);
 
@@ -335,19 +344,21 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
 
                 const viewMatrix = invProjectionMatrix.clone().multiply(viewProjectionMatrix.clone());
 
-                const invViewMatrix = viewMatrix.clone().invert();
+                const invViewMatrix = viewMatrix.clone().invert()
 
-                // console.log('projection', projection );
-                // console.log('viewProjectionMatrix x invCameraProjection = viewMatrix', viewMatrix );
-
-                // const translateScaleMatrix = new THREE.Matrix4().scale(new THREE.Vector3(scale, -scale, scale))
+                const position = _camera.position;
+                invViewMatrix.elements[12] = position[0] / scale;
+                invViewMatrix.elements[13] = -position[1] / scale;
+                invViewMatrix.elements[14] = position[2] / scale;
 
                 camera.projectionMatrix = projectionMatrix;
+
                 camera.matrix = invViewMatrix;
                 camera.matrix.decompose(camera.position, camera.quaternion, camera.scale);
+                camera.fov = _fov / Math.PI * 180;
 
 
-
+                this.raycastCamera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).clone().multiply(translateScaleMatrix);
                 // ====================================================
                 if (renderer) {
                     renderer.resetState();

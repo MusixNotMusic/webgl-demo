@@ -40,7 +40,7 @@ const _objectChangeEvent = { type: 'objectChange' };
 
 class TransformControls extends Object3D {
 
-	constructor( camera, domElement ) {
+	constructor( camera, domElement, raycastCamera ) {
 
 		super();
 
@@ -68,6 +68,8 @@ class TransformControls extends Object3D {
 		this.add(new AxesHelper(100000));
 
 		const scope = this;
+
+		this.raycastCamera = raycastCamera;
 
 		// Defined getter, setter and store for a property
 		function defineProperty( propName, defaultValue ) {
@@ -110,6 +112,7 @@ class TransformControls extends Object3D {
 		// Defined properties are passed down to gizmo and plane
 
 		defineProperty( 'camera', camera );
+		// defineProperty( 'raycastCamera', raycastCamera );
 		defineProperty( 'object', undefined );
 		defineProperty( 'enabled', true );
 		defineProperty( 'axis', null );
@@ -208,12 +211,6 @@ class TransformControls extends Object3D {
 
 		this.camera.updateMatrixWorld();
 		this.camera.matrixWorld.decompose( this.cameraPosition, this.cameraQuaternion, this._cameraScale );
-		// console.log('this.cameraPosition ==>', this.cameraPosition);
-
-		// this.cameraPosition = new THREE.Vector3().applyMatrix4(this.camera.projectionMatrix.invert());
-
-		// console.log('this.cameraPosition ==>', this.cameraPosition);
-		// console.log('this.worldPosition ==>', this.worldPosition);
 
 		if ( this.camera.isOrthographicCamera ) {
 
@@ -234,7 +231,7 @@ class TransformControls extends Object3D {
 
 		_raycaster.setFromCamera( pointer, this.camera );
 
-		raycastPatch(pointer, this.camera, _raycaster);
+		raycastPatch(pointer, this.raycastCamera, _raycaster);
 
 		const intersect = intersectObjectWithRay( this._gizmo.picker[ this.mode ], _raycaster, true );
 
@@ -258,7 +255,7 @@ class TransformControls extends Object3D {
 
 			_raycaster.setFromCamera( pointer, this.camera );
 
-			raycastPatch( pointer, this.camera, _raycaster );
+			raycastPatch( pointer, this.raycastCamera, _raycaster );
 
 			const planeIntersect = intersectObjectWithRay( this._plane, _raycaster, true);
 
@@ -306,7 +303,7 @@ class TransformControls extends Object3D {
 
 		_raycaster.setFromCamera( pointer, this.camera );
 
-		raycastPatch( pointer, this.camera, _raycaster );
+		raycastPatch( pointer, this.raycastCamera, _raycaster );
 
 		const planeIntersect = intersectObjectWithRay( this._plane, _raycaster, true );
 
@@ -753,15 +750,20 @@ function onPointerUp( event ) {
 }
 
 function raycastPatch (mouse, camera, raycaster) {
-	// const projectionMatrixInvert = camera.projectionMatrix.invert();
-    // const cameraPosition =
-    //         new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
-    // const mousePosition =
-    //         new THREE.Vector3(mouse.x, mouse.y, 1)
-    //         .applyMatrix4(projectionMatrixInvert);
-    // const viewDirection = mousePosition.clone()
-    //         .sub(cameraPosition).normalize();
+	const projectionMatrixInvert = camera.projectionMatrix.clone().invert();
+    const cameraPosition =
+            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    const mousePosition =
+            new THREE.Vector3(mouse.x, mouse.y, 1)
+            .applyMatrix4(projectionMatrixInvert);
+    const viewDirection = mousePosition.clone()
+            .sub(cameraPosition).normalize();
 
+	raycaster.set(cameraPosition, viewDirection);
+
+	// const cameraPosition = camera.position.clone();
+	// const viewDirection = new THREE.Vector3();
+    // viewDirection.set(mouse.x, mouse.y, 1).unproject(camera).sub(cameraPosition).normalize();
 	// raycaster.set(cameraPosition, viewDirection);
 }
 

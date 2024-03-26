@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
-// import { TransformControls } from './TransformControls';
+// import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { TransformControls } from './TransformControls';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
@@ -12,6 +12,9 @@ import mapboxgl from "mapbox-gl";
 import {chengdu, generateRadarPoint, lasa} from "./Constants";
 
 import { WGS84Object3D } from './WGS84Object3D'
+import { Mesh } from 'threebox-plugin/src/three';
+import material from 'threebox-plugin/src/utils/material';
+import { point } from '@turf/turf';
 
 /***
  * 矩形立方体的 等值面结构
@@ -31,7 +34,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.zoomBind = this.zoom.bind(this);
     this.clickBind = this.click.bind(this);
 
-    this.control = new TransformControls(this.camera, this.renderer.domElement );
+    this.control = new TransformControls(this.camera, this.renderer.domElement, this.raycastCamera );
 
     window.control = this.control;
     window.radarModel = this;
@@ -50,6 +53,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
   click(event) {
     this.raycast(event)
+    console.log('click===>', event)
   }
 
   addEventListener() {
@@ -73,7 +77,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       // this.addLight();
       this.drawLayer();
       this.initDirectionalLightHelper();
-      // this.initPointLightHelper();
+      this.initPointLightHelper();
       this.initDemoMesh();
       return null;
     })
@@ -132,7 +136,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
         const object = new WGS84Object3D(model);
 
-        object.WGS84Position = new THREE.Vector3(100, 30, 400);
+        object.WGS84Position = new THREE.Vector3(104, 30, 400);
 
         object.rotation.x = Math.PI / 2;
 
@@ -146,20 +150,42 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
         this.scene.add(object)
 
-        this.control.attach(object);
+        // this.control.attach(object);
 
-        this.scene.add( this.control );
-
-        // const control = new WGS84Object3D(this.control);
-
-        // control.WGS84Position = new THREE.Vector3(100, 30, 400);
-
-        // window.controlObject = control;
-
-        // this.scene.add( control );
+        // this.scene.add( this.control );
 
         resolve(model);
       });
+
+      const sphere = new THREE.SphereGeometry(500);
+      const material = new THREE.MeshNormalMaterial();
+      sphere.computeVertexNormals();
+
+      const mesh = new Mesh(sphere, material);
+
+      const sphereObject = new WGS84Object3D(mesh);
+
+      sphereObject.WGS84Position = new THREE.Vector3(104, 31, 400);
+
+      window.sphere = sphereObject;
+
+      this.scene.add(sphereObject);
+
+      // this.control.attach(sphereObject);
+
+      this.scene.add( this.control );
+
+
+      // add line 
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x0000ff,
+        linewidth: 10000
+      });
+      const geometry = new THREE.BufferGeometry().setFromPoints( [new THREE.Vector3(31579402.786323346,  16515480.162589593,  400), new THREE.Vector3()] );
+
+      const line = new THREE.LineSegments( geometry, lineMaterial );
+      this.lineGeometry = geometry
+      this.scene.add( line );
     })
   }
 
@@ -170,7 +196,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     const object = new WGS84Object3D(helper);
     object.matrixWorldAutoUpdate = false;
-    object.WGS84Position = new THREE.Vector3(100, 30.05, 4400);
+    object.WGS84Position = new THREE.Vector3(104, 30.05, 4400);
 
     window.DirectionalLight = object;
 
@@ -184,7 +210,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   initPointLightHelper () {
     const pointLight = new THREE.PointLight( 0xff0000, 1, 10000 );
     const lightObject = new WGS84Object3D(pointLight);
-    lightObject.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
+    lightObject.WGS84Position = new THREE.Vector3(104, 29.95, 4400);
     lightObject.add(new THREE.AxesHelper(1000));
 
     // const sphere = new THREE.SphereGeometry(200);
@@ -198,7 +224,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     const sphereSize = 100;
     const pointLightHelper = new THREE.PointLightHelper( pointLight.clone(), sphereSize );
     const helper = new WGS84Object3D(pointLightHelper);
-    helper.WGS84Position = new THREE.Vector3(100, 29.95, 4400);
+    helper.WGS84Position = new THREE.Vector3(104, 29.95, 4400);
     this.scene.add( helper );
   }
 
@@ -235,18 +261,49 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     raycaster.setFromCamera(mouse, this.camera);
 
-    // const projectionMatrixInvert = this.camera.projectionMatrix.invert();
-    // const cameraPosition =
-    //         new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
-    // const mousePosition =
-    //         new THREE.Vector3(mouse.x, mouse.y, 1)
-    //         .applyMatrix4(projectionMatrixInvert);
-    // const viewDirection = mousePosition.clone()
-    //         .sub(cameraPosition).normalize();
 
-    // raycaster.set(cameraPosition, viewDirection);
+    //   this.raycastCamera
+    const projectionMatrixInvert = this.raycastCamera.projectionMatrix.invert();
+    const cameraPosition =
+            new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+    const mousePosition =
+            new THREE.Vector3(mouse.x, mouse.y, 1)
+            .applyMatrix4(projectionMatrixInvert);
+    const viewDirection = mousePosition.clone()
+            .sub(cameraPosition).normalize();
 
-    console.log('raycaster', raycaster.intersectObjects(this.scene.children, true));
+    raycaster.set(cameraPosition, viewDirection);
+
+    if (this.lineGeometry) {
+      const points = [];
+      points.push(cameraPosition);
+      points.push(mousePosition);
+
+      this.lineGeometry.setFromPoints(points);
+    }
+
+
+    // camera
+    // if (this.lineGeometry) {
+    //   const points = [];
+    //   const origin = this.camera.position.clone();
+    //   const dist = new THREE.Vector3().set(mouse.x, mouse.y, 1).unproject(this.camera);
+    //   // dist.z = 0;
+    //   points.push(origin);
+    //   points.push(dist);
+
+    //   this.lineGeometry.setFromPoints(points);
+    // }
+
+    const inersectObjects = raycaster.intersectObjects(this.scene.children, true)
+    console.log('raycaster', inersectObjects);
+    if (inersectObjects.length > 0) {
+      this.control.attach(inersectObjects[0].object);
+      this.disableAll();
+    } else {
+      this.control.detach();
+      this.enableAll();
+    }
   }
 
   setMeshRotation (mesh, x, y, z) {
