@@ -71,6 +71,7 @@ class TransformControls extends Object3D {
 
 		this.raycastCamera = raycastCamera;
 
+
 		// Defined getter, setter and store for a property
 		function defineProperty( propName, defaultValue ) {
 

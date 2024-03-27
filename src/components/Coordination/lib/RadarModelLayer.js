@@ -177,15 +177,17 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
 
       // add line 
-      const lineMaterial = new THREE.LineBasicMaterial({
-        color: 0x0000ff,
-        linewidth: 10000
-      });
-      const geometry = new THREE.BufferGeometry().setFromPoints( [new THREE.Vector3(31579402.786323346,  16515480.162589593,  400), new THREE.Vector3()] );
+      // const lineMaterial = new THREE.LineBasicMaterial({
+      //   color: 0x0000ff,
+      //   linewidth: 10000
+      // });
+      // const geometry = new THREE.BufferGeometry().setFromPoints( [new THREE.Vector3(31579402.786323346,  16515480.162589593,  400), new THREE.Vector3()] );
 
-      const line = new THREE.LineSegments( geometry, lineMaterial );
-      this.lineGeometry = geometry
-      this.scene.add( line );
+      // const line = new THREE.LineSegments( geometry, lineMaterial );
+      // this.lineGeometry = geometry
+
+      // line.name = 'raycaster-helper'
+      // this.scene.add( line );
     })
   }
 
@@ -274,31 +276,36 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     raycaster.set(cameraPosition, viewDirection);
 
-    if (this.lineGeometry) {
-      const points = [];
-      points.push(cameraPosition);
-      points.push(mousePosition);
-
-      this.lineGeometry.setFromPoints(points);
-    }
-
-
-    // camera
     // if (this.lineGeometry) {
     //   const points = [];
-    //   const origin = this.camera.position.clone();
-    //   const dist = new THREE.Vector3().set(mouse.x, mouse.y, 1).unproject(this.camera);
-    //   // dist.z = 0;
-    //   points.push(origin);
-    //   points.push(dist);
+    //   points.push(cameraPosition);
+    //   points.push(mousePosition);
 
     //   this.lineGeometry.setFromPoints(points);
     // }
 
     const inersectObjects = raycaster.intersectObjects(this.scene.children, true)
-    console.log('raycaster', inersectObjects);
-    if (inersectObjects.length > 0) {
-      this.control.attach(inersectObjects[0].object);
+
+    const excludesList = ['raycaster-helper', 'TransformControlsPlane'];
+
+    const isTransformControls = (object) => {
+        let target = object;
+        while(target) {
+          if (target.isTransformControls) {
+            return true;
+          }
+          target = target.parent;
+        }
+        return false;
+    }
+
+    // this.isTransformControls
+    let filterObjects = inersectObjects.filter(({ object }) => !isTransformControls(object))
+
+    console.log('raycaster', filterObjects);
+
+    if (filterObjects.length > 0) {
+      this.control.attach(filterObjects[0].object);
       this.disableAll();
     } else {
       this.control.detach();
