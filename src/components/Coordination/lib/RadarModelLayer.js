@@ -36,6 +36,10 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     this.control = new TransformControls(this.camera, this.renderer.domElement, this.raycastCamera );
 
+    this.control.addEventListener('dragging-changed', (event) => {
+        event.value ? this.disableAll() : this.enableAll()
+    })
+
     window.control = this.control;
     window.radarModel = this;
     window.THREE = THREE;
@@ -306,10 +310,10 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     if (filterObjects.length > 0) {
       this.control.attach(filterObjects[0].object);
-      this.disableAll();
+      // this.disableAll();
     } else {
       this.control.detach();
-      this.enableAll();
+      // this.enableAll();
     }
   }
 
