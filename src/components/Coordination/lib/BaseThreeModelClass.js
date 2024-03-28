@@ -7,6 +7,10 @@ import mapboxgl from "mapbox-gl";
 export default class BaseThreeModelClass {
     constructor() {
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        this.renderer.shadowMap.enabled = true;
+        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // this.renderer.shadowMap.autoUpdate = true;
+        // this.renderer.shadowMap.needsUpdate = true;
 
         this.scene = new THREE.Scene();
 

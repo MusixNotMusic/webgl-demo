@@ -9,8 +9,8 @@ import MapboxGLInit from '../Map/MapboxGLInit.vue';
 import RadarModelLayer from './lib/RadarModelLayer';
 
 let instance;
-const center = ref([104.1465432836781, 30.867102559661133]);
-const zoom = ref(5);
+const center = ref([103.8, 30]);
+const zoom = ref(12);
 
 window.mapboxgl = mapboxgl;
 

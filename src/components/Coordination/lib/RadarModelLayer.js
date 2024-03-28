@@ -11,7 +11,8 @@ import mapboxgl from "mapbox-gl";
 
 import {chengdu, generateRadarPoint, lasa} from "./Constants";
 
-import { WGS84Object3D } from './WGS84Object3D'
+import { WGS84Object3D } from './WGS84Object3D';
+import { OrthogonalShadow } from './OrthogonalShadow';
 import { Mesh } from 'threebox-plugin/src/three';
 import material from 'threebox-plugin/src/utils/material';
 import { point } from '@turf/turf';
@@ -38,7 +39,16 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     this.control.addEventListener('dragging-changed', (event) => {
         event.value ? this.disableAll() : this.enableAll()
+        this.orthogonalShadow.follow();
     })
+
+    this.control.addEventListener('objectChange', (event) => {
+      this.orthogonalShadow.follow();
+    })
+
+    this.orthogonalShadow = new OrthogonalShadow(this.scene);
+
+    this.scene.add( this.control );
 
     window.control = this.control;
     window.radarModel = this;
@@ -77,12 +87,13 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   }
 
   render () {
-    return this.initMesh().then(() => {
-      // this.addLight();
+    return this.initRadarModel().then(() => {
       this.drawLayer();
-      this.initDirectionalLightHelper();
-      this.initPointLightHelper();
-      this.initDemoMesh();
+      // this.initDirectionalLightHelper();
+      // this.initPointLightHelper();
+      this.initSphere();
+      this.initPlaneShadow();
+      // this.initDirectionalLightHelper();
       return null;
     })
   }
@@ -133,18 +144,19 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   }
 
 
-  initDemoMesh () {
+  initRadarModel () {
     const loader = new FBXLoader();
 
     return new Promise((resolve) => {
       loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
+
         const object = new WGS84Object3D(model);
 
-        object.WGS84Position = new THREE.Vector3(104, 30, 400);
+        object.WGS84Position = new THREE.Vector3(104, 30, 3000);
 
         object.rotation.x = Math.PI / 2;
 
-        object.scale.set(20, 20, 20);
+        object.scale.set(10, 10, 10);
 
         object.add(new THREE.AxesHelper(1000))
 
@@ -154,62 +166,80 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
         this.scene.add(object)
 
-        // this.control.attach(object);
-
-        // this.scene.add( this.control );
-
         resolve(model);
       });
+    
+    })
+  }
 
+  initSphere () {
       const sphere = new THREE.SphereGeometry(500);
       const material = new THREE.MeshNormalMaterial();
       sphere.computeVertexNormals();
 
       const mesh = new Mesh(sphere, material);
 
+      mesh.castShadow = true;
+      mesh.receiveShadow = false;
+
       const sphereObject = new WGS84Object3D(mesh);
 
-      sphereObject.WGS84Position = new THREE.Vector3(104, 31, 400);
+      sphereObject.WGS84Position = new THREE.Vector3(103.8, 30, 2000);
 
       window.sphere = sphereObject;
 
       this.scene.add(sphereObject);
+  }
 
-      // this.control.attach(sphereObject);
+  initPlaneShadow() {
+    const geometryP = new THREE.PlaneGeometry(10000, 10000);
+    const materialP = new THREE.MeshStandardMaterial({ color:0xffffff, transparent: true, opacity: 0.5 })
+    const plane = new THREE.Mesh(geometryP, materialP);
 
-      this.scene.add( this.control );
+    plane.receiveShadow = true;
 
+    const planeWrap = new WGS84Object3D(plane);
 
-      // add line 
-      // const lineMaterial = new THREE.LineBasicMaterial({
-      //   color: 0x0000ff,
-      //   linewidth: 10000
-      // });
-      // const geometry = new THREE.BufferGeometry().setFromPoints( [new THREE.Vector3(31579402.786323346,  16515480.162589593,  400), new THREE.Vector3()] );
+    planeWrap.WGS84Position = new THREE.Vector3(104, 30, 0);
 
-      // const line = new THREE.LineSegments( geometry, lineMaterial );
-      // this.lineGeometry = geometry
-
-      // line.name = 'raycaster-helper'
-      // this.scene.add( line );
-    })
+    this.scene.add(planeWrap);
   }
 
   initDirectionalLightHelper () {
 
-    const light = new THREE.DirectionalLight( 0xFFFFFF );
-    const helper = new THREE.DirectionalLightHelper( light.clone(), 1000, 0x0f0fcc );
+    const light = new THREE.DirectionalLight( 0xffffff );
 
-    const object = new WGS84Object3D(helper);
-    object.matrixWorldAutoUpdate = false;
-    object.WGS84Position = new THREE.Vector3(104, 30.05, 4400);
+    light.castShadow = true;
+
+    light.shadow.mapSize.width = 512; // default
+    light.shadow.mapSize.height = 512; // default
+    light.shadow.camera.near = 0.5; // default
+    light.shadow.camera.far = 50000; // default
+
+    light.shadow.camera.right = 512;
+    light.shadow.camera.left = - 512;
+    light.shadow.camera.top	= 512;
+    light.shadow.camera.bottom = - 512;
+
+    light.position.set( 0, 1, 0 ); 
+
+    light.target = window.demoModel;
+    const helper = new THREE.DirectionalLightHelper( light, 1000, 0x0f0fcc );
+
+    const object = new WGS84Object3D(light);
+    object.WGS84Position = new THREE.Vector3(104, 30, 10000);
 
     window.DirectionalLight = object;
 
     object.add(new THREE.AxesHelper(1000));
-    object.add(light);
+    object.add(helper);
 
     this.scene.add( object );
+
+    // const helper = new THREE.CameraHelper( light.shadow.camera );
+    // const cameraHelper = new WGS84Object3D(helper);
+    // cameraHelper.WGS84Position = new THREE.Vector3(104, 30, 10000);
+    // this.scene.add(cameraHelper);
   }
 
 
@@ -280,14 +310,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     raycaster.set(cameraPosition, viewDirection);
 
-    // if (this.lineGeometry) {
-    //   const points = [];
-    //   points.push(cameraPosition);
-    //   points.push(mousePosition);
-
-    //   this.lineGeometry.setFromPoints(points);
-    // }
-
     const inersectObjects = raycaster.intersectObjects(this.scene.children, true)
 
     const excludesList = ['raycaster-helper', 'TransformControlsPlane'];
@@ -310,10 +332,10 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
     if (filterObjects.length > 0) {
       this.control.attach(filterObjects[0].object);
-      // this.disableAll();
+      this.orthogonalShadow.attach(filterObjects[0].object)
     } else {
       this.control.detach();
-      // this.enableAll();
+      this.orthogonalShadow.detach();
     }
   }
 
