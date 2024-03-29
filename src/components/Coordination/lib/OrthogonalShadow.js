@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { WGS84Object3D } from './WGS84Object3D';
+import vertexShader from './glsl/shadow/shadow.vert'
+import fragmentShader from './glsl/shadow/shadow.frag'
 
 export class OrthogonalShadow {
     constructor(scene) {
         this.scene = scene;
         this.lightWrap = null;
         this.planeWrap = null;
-
-        this.k = 16;
 
         this.initDirectionalLight();
         this.initPlaneShadow();
@@ -21,6 +21,7 @@ export class OrthogonalShadow {
     
         light.position.set( 0, 1, 0 ); 
 
+        this.light = light;
     
         const lightWrap = new WGS84Object3D(light);
 
@@ -38,7 +39,10 @@ export class OrthogonalShadow {
     initPlaneShadow() {
         const geometry = new THREE.PlaneGeometry(1, 1);
 
-        const material = new THREE.MeshStandardMaterial({ color:0xffffff, transparent: true, opacity: 1 })
+        // const material = new THREE.MeshStandardMaterial({ color:0xffffff, alphaTest:0.5 })
+        const material = new THREE.ShadowMaterial({
+            opacity: 0.5
+          });
         
         const plane = new THREE.Mesh(geometry, material);
 
@@ -65,7 +69,7 @@ export class OrthogonalShadow {
 
         const { x, y, z } = this.object.scale;
 
-        const maxScale = Math.max(x, y, z);
+        const maxScale = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
 
         light.shadow.camera.scale.set(maxScale, maxScale, maxScale );
 
@@ -73,27 +77,14 @@ export class OrthogonalShadow {
 
         light.shadow.camera.far = this.lightWrap.position.z + 1e6; // default
 
-
-        const scale = 1 || (x ** 2 + y ** 2 + z ** 2);
-
-        // light.shadow.camera.right = maxSize;
-        // light.shadow.camera.left = -maxSize;
-        // light.shadow.camera.top	= maxSize;
-        // light.shadow.camera.bottom = -maxSize;
-
         light.shadow.camera.right = size.x;
         light.shadow.camera.left = -size.x;
         light.shadow.camera.top	= size.y;
         light.shadow.camera.bottom = -size.y;
         
         if (light.shadow.map) {
-
-            // this.k <<= 2;
-		    // if( this.k > 32 ) this.k = 16;
-            let maxSize = Math.max(size.x, size.y, size.z);
-            if (maxSize > 1024) maxSize = 1024;
-            light.shadow.mapSize.set( maxSize, maxSize);
-		    light.shadow.map.setSize( maxSize, maxSize );	
+            light.shadow.mapSize.set( 512, 512);
+		    light.shadow.map.setSize( 512, 512 );	
         }
     }
 
@@ -119,7 +110,7 @@ export class OrthogonalShadow {
         
         const positionLight = position.clone().setZ(position.z + 1e6);
 
-        const positionPlane = position.clone().setZ(0);
+        const positionPlane = position.clone().setZ(-1);
 
         this.lightWrap.position.set(positionLight.x, positionLight.y, positionLight.z);
 
