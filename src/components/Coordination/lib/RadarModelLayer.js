@@ -9,13 +9,12 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 import mapboxgl from "mapbox-gl";
 
-import {chengdu, generateRadarPoint, lasa} from "./Constants";
-
 import { WGS84Object3D } from './WGS84Object3D';
 import { OrthogonalShadow } from './OrthogonalShadow';
 import { Mesh } from 'threebox-plugin/src/three';
 import material from 'threebox-plugin/src/utils/material';
 import { point } from '@turf/turf';
+// import { OutlineEffect } from './tool/OutlineEffect';
 
 /***
  * 矩形立方体的 等值面结构
@@ -28,14 +27,14 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.modelSize = { x: 2000, y: 2000, z: 4000 }
-
-    this.data = generateRadarPoint(map, chengdu, lasa, 10)
 
     this.zoomBind = this.zoom.bind(this);
+
     this.clickBind = this.click.bind(this);
 
     this.control = new TransformControls(this.camera, this.renderer.domElement, this.raycastCamera );
+
+    // this.outline = new OutlineEffect(this.renderer, this.scene, this.camera);
 
     this.control.addEventListener('dragging-changed', (event) => {
         event.value ? this.disableAll() : this.enableAll()
@@ -95,51 +94,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       this.initPlaneShadow();
       // this.initDirectionalLightHelper();
       return null;
-    })
-  }
-
-  initMesh () {
-    const loader = new FBXLoader();
-
-    return new Promise((resolve) => {
-      loader.load( '/model/fbx/radar2.fbx',  ( model ) => {
-        const object = new THREE.Object3D();
-
-        object.add(model);
-
-        object.rotation.x = Math.PI / 2;
-
-        this.setObjectCenter(model);
-
-        const size = this.getObjectSize(model);
-
-        model.position.y += size.y / 2;
-
-        this.data.forEach((item) => {
-
-          const mesh = object.clone();
-
-          const custom = new THREE.Object3D();
-
-          custom.userData = {
-            lon: item.lon,
-            lat: item.lat,
-            alt: item.alt,
-            name: item.name,
-            scale: 5
-          }
-
-          custom.add(mesh)
-
-          this.setObjectCoords(custom);
-
-          this.addNewScene(custom);
-
-          this.addCSS2Object(custom, item.name, null, [0, 0, 500]);
-        })
-
-        resolve(model);
-      });
     })
   }
 
@@ -235,11 +189,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     object.add(helper);
 
     this.scene.add( object );
-
-    // const helper = new THREE.CameraHelper( light.shadow.camera );
-    // const cameraHelper = new WGS84Object3D(helper);
-    // cameraHelper.WGS84Position = new THREE.Vector3(104, 30, 10000);
-    // this.scene.add(cameraHelper);
   }
 
 
@@ -248,10 +197,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     const lightObject = new WGS84Object3D(pointLight);
     lightObject.WGS84Position = new THREE.Vector3(104, 29.95, 4400);
     lightObject.add(new THREE.AxesHelper(1000));
-
-    // const sphere = new THREE.SphereGeometry(200);
-    // const object = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xff00ff }) );
-    // lightObject.add(object);
 
     this.scene.add( lightObject );
 
@@ -333,11 +278,20 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     if (filterObjects.length > 0) {
       this.control.attach(filterObjects[0].object);
       this.orthogonalShadow.attach(filterObjects[0].object)
+
+      // this.outline.selectedObjects(filterObjects[0].object)
     } else {
       this.control.detach();
       this.orthogonalShadow.detach();
+      // this.outline.selectedObjects([]);
     }
   }
+
+  // renderHook() {
+  //   if (this.outline && this.outline.composer) {
+  //     this.outline.composer.render();
+  //   }
+  // }
 
   setMeshRotation (mesh, x, y, z) {
     if (x) mesh.rotateX(x);

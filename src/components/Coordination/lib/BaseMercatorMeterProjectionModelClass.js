@@ -256,69 +256,6 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
                 this.addEventListener();
             },
 
-            // render: (gl, matrix) => {
-            //     const { renderer, scene, camera } = this;
-
-            //     const mercator = mapboxgl.MercatorCoordinate.fromLngLat([0, 0]);
-            //     const center = mapboxgl.MercatorCoordinate.fromLngLat(this.map.getCenter());
-            //     const scale = mercator.meterInMercatorCoordinateUnits();
-
-            //     // console.log('render ==>', matrix,  scale)
-
-            //     // const translateScaleMatrix = new THREE.Matrix4();
-            //     const translateScaleMatrix = new THREE.Matrix4()
-            //         // .makeTranslation(
-            //         //     center.x,
-            //         //     center.y,
-            //         //     center.z
-            //         // )
-            //         .scale(new THREE.Vector3(scale, -scale, scale))
-            //     // .makeRotationAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2)
-
-            //     camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(translateScaleMatrix)
-
-            //     camera.zoom = this.map.getZoom();
-            //     camera.fov = this.map.transform.fov;
-
-            //     const cameraPosition = new THREE.Vector3();
-            //     const cameraQuaternion = new THREE.Quaternion();
-            //     const cameraScale = new THREE.Vector3();
-
-            //     const worldMatrix = new THREE.Matrix4();
-            //     worldMatrix.elements = this.map.transform._camera._transform;            
-            //     worldMatrix.decompose(cameraPosition, cameraQuaternion, cameraScale);
-
-            //     // const cameraPosition = new THREE.Vector3().applyMatrix4(camera.projectionMatrix.clone().invert());
-
-            //     const mercator2 = new mapboxgl.MercatorCoordinate(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-            //     const alititude = mercator2.toAltitude();
-
-            //     // camera.position.set(meterApplyX(cameraPosition.x), meterApplyY(cameraPosition.y), alititude);
-            //     // camera.position.set(cameraPosition.x - 0.5 * earthCircumference, 0.5 * earthCircumference - cameraPosition.y, cameraPosition.z);
-            //     camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-            //     // camera.quaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z, cameraQuaternion.w);
-            //     // camera.scale.set(cameraScale.x, cameraScale.y, cameraScale.z);
-
-            //     // this.updateWorldPosition(this.map.getCenter())
-
-            //     if (renderer) {
-            //         renderer.resetState();
-            //         renderer.render(scene, camera);
-            //     }
-
-            //     if (this.css2DRenderer) {
-            //         this.css2DRenderer.render( this.scene, this.camera );
-            //     }
-
-
-            //     if (this.map) {
-            //         this.map.triggerRepaint();
-            //     }
-            // },
-            // 2.4981121214570498e-8
-            // 2.884571411578189e-8
-
             render: (gl, matrix) => {
                 const { renderer, scene, camera } = this;
 
@@ -365,6 +302,10 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
                     renderer.render(scene, camera);
                 }
 
+                if (this.renderHook) {
+                    this.renderHook()
+                }
+
                 if (this.css2DRenderer) {
                     this.css2DRenderer.render( this.scene, this.camera );
                 }
@@ -386,6 +327,10 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
         if (!this.map.getLayer(this.id)) {
             this.map.addLayer(customLayer)
         }
+    }
+
+    renderHook () {
+
     }
 
 

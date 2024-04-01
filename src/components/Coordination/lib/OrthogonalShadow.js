@@ -100,6 +100,8 @@ export class OrthogonalShadow {
 
         const size = this.getObjectSize(object);
 
+        // get object position quaternion scale
+
         const position = new THREE.Vector3();
 
         const quaternion = new THREE.Quaternion();
@@ -107,6 +109,8 @@ export class OrthogonalShadow {
         const scale = new THREE.Vector3();
 
         object.matrixWorld.decompose( position, quaternion, scale );
+
+        // set light plane position
         
         const positionLight = position.clone().setZ(position.z + 1e6);
 
@@ -114,15 +118,15 @@ export class OrthogonalShadow {
 
         this.lightWrap.position.set(positionLight.x, positionLight.y, positionLight.z);
 
-        // this.lightWrap.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-        
         this.planeWrap.position.set(positionPlane.x, positionPlane.y, positionPlane.z);
 
         // update plane
+
         const plane = this.planeWrap.children[0];
 
         plane.scale.set(size.x, size.y, 1);
 
+        // update light 
         this.setDirectionalLightCamera(size);
     }
 
