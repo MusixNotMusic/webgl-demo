@@ -65,7 +65,7 @@ export class OrthogonalShadow {
     }
 
     setDirectionalLightCamera(size) {
-        const light = this.lightWrap.children[0];
+        const light = this.light;
 
         const { x, y, z } = this.object.scale;
 
@@ -143,9 +143,7 @@ export class OrthogonalShadow {
 
         object.castShadow = true;
 
-        const light = this.lightWrap.children[0];
-
-        light.target = object;
+        this.light.target = object;
 
         this.follow();
 
@@ -155,19 +153,15 @@ export class OrthogonalShadow {
     detach () {
         if (!this.object) return;
 
-        const light = this.lightWrap.children[0];
+        this.light.target = null;
 
-        light.target = null;
+        this.object.castShadow = false;
 
-        const object = this.object;
-
-        object.traverse(obj => {
+        this.object.traverse(obj => {
             if (obj.isMesh) {
                 obj.castShadow = false;
             }
         })
-
-        object.castShadow = false;
 
         this.object = null;
 

@@ -65,10 +65,9 @@ export class OutlineEffectTool {
             blendFunction: BlendFunction.SCREEN,
             patternScale: 40,
             edgeStrength: 7,
-            pulseSpeed: 0.1,
             visibleEdgeColor: 'orangered',
             hiddenEdgeColor: 'orangered',
-            resolutionScale: 0.3,
+            resolutionScale: 0.75,
             blur: true,
             xRay: true,
             multisampling
