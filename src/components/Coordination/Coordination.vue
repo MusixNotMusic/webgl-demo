@@ -15,6 +15,7 @@ let instance;
 const center = ref([103.8, 30]);
 const zoom = ref(12);
 const modeList = ref([
+    { name: '选定', value: 'default' },
     { name: '平移', value: 'translate' },
     { name: '伸缩', value: 'scale' },
     { name: '旋转', value: 'rotate' },
@@ -37,7 +38,9 @@ const addRadarLayer = (map) => {
 
 const changeTransfromMode = (item) => {
     if (instance && instance.control) {
-        instance.control.setMode(item.value);
+        if (item.value) {
+            instance.setMode(item.value);
+        }
     }
 }
 

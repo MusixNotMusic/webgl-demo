@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
-// import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { TransformControls } from './TransformControls';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
+
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
@@ -23,6 +23,8 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.id = id;
     
     this.map = map;
+
+    // this.emitter = new EventEmitter();
 
     this.zoomBind = this.zoom.bind(this);
 
@@ -276,15 +278,32 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     console.log('raycaster', filterObjects);
 
     if (filterObjects.length > 0) {
-      this.control.attach(filterObjects[0].object);
-      this.orthogonalShadow.attach(filterObjects[0].object)
+      this.focusObject = filterObjects[0].object;
+      if (this.isTransformMode())  this.control.attach(this.focusObject);
+      this.orthogonalShadow.attach(this.focusObject)
       this.outlineEffect.clear();
-      this.outlineEffect.add(filterObjects[0].object)
+      this.outlineEffect.add(this.focusObject)
     } else {
+      this.focusObject = null;
       this.control.detach();
       this.orthogonalShadow.detach();
       this.outlineEffect.clear();
     }
+  }
+
+  isTransformMode () {
+    const mode = this.mode;
+    return mode === 'translate' || mode === 'rotate' || mode === 'scale'
+  }
+
+  setMode (mode) {
+    this.mode = mode;
+    if (mode === 'default') {
+      this.control.detach();
+    } else if (this.isTransformMode()){
+      this.control.setMode(mode);
+      this.control.attach(this.focusObject);
+    } 
   }
 
   renderHook() {

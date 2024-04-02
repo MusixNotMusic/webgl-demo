@@ -88,17 +88,15 @@ export class OrthogonalShadow {
         }
     }
 
-    getObjectSize (object) {
+    getObjectSize (object, scale) {
         const aabb = new THREE.Box3().setFromObject(object, true);
         const size = new THREE.Vector3();
         aabb.getSize(size);
-        return size;
+        return size.multiply(scale);
     }
 
     follow () {
         const object = this.object;
-
-        const size = this.getObjectSize(object);
 
         // get object position quaternion scale
 
@@ -109,6 +107,9 @@ export class OrthogonalShadow {
         const scale = new THREE.Vector3();
 
         object.matrixWorld.decompose( position, quaternion, scale );
+
+        // size 
+        const size = this.getObjectSize(object, scale);
 
         // set light plane position
         
