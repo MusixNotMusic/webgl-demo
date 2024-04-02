@@ -755,7 +755,7 @@ function raycastPatch (mouse, camera, raycaster) {
     const cameraPosition =
             new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
     const mousePosition =
-            new THREE.Vector3(mouse.x, mouse.y, 1)
+            new THREE.Vector3(mouse.x, mouse.y, 0.99)
             .applyMatrix4(projectionMatrixInvert);
     const viewDirection = mousePosition.clone()
             .sub(cameraPosition).normalize();

@@ -254,6 +254,10 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
                 }
                 this._addEventListener()
                 this.addEventListener();
+
+                if (this.onBeforeRender) {
+                    this.onBeforeRender();
+                }
             },
 
             render: (gl, matrix) => {

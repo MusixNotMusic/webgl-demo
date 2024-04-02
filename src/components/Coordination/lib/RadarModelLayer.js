@@ -11,10 +11,7 @@ import mapboxgl from "mapbox-gl";
 
 import { WGS84Object3D } from './WGS84Object3D';
 import { OrthogonalShadow } from './OrthogonalShadow';
-import { Mesh } from 'threebox-plugin/src/three';
-import material from 'threebox-plugin/src/utils/material';
-import { point } from '@turf/turf';
-// import { OutlineEffect } from './tool/OutlineEffect';
+import { OutlineEffectTool } from './tool/OutlineEffectTool';
 
 /***
  * 矩形立方体的 等值面结构
@@ -27,14 +24,13 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-
     this.zoomBind = this.zoom.bind(this);
 
     this.clickBind = this.click.bind(this);
 
     this.control = new TransformControls(this.camera, this.renderer.domElement, this.raycastCamera );
 
-    // this.outline = new OutlineEffect(this.renderer, this.scene, this.camera);
+    this.outlineEffect = null;
 
     this.control.addEventListener('dragging-changed', (event) => {
         event.value ? this.disableAll() : this.enableAll()
@@ -52,6 +48,11 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     window.control = this.control;
     window.radarModel = this;
     window.THREE = THREE;
+  }
+
+
+  onBeforeRender() {
+    this.outlineEffect = new OutlineEffectTool(this.map, this.scene, this.camera);
   }
 
   zoom() {
@@ -88,7 +89,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   render () {
     return this.initRadarModel().then(() => {
       this.drawLayer();
-      // this.initDirectionalLightHelper();
       // this.initPointLightHelper();
       this.initSphere();
       this.initPlaneShadow();
@@ -131,7 +131,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       const material = new THREE.MeshNormalMaterial();
       sphere.computeVertexNormals();
 
-      const mesh = new Mesh(sphere, material);
+      const mesh = new THREE.Mesh(sphere, material);
 
       mesh.castShadow = true;
       mesh.receiveShadow = false;
@@ -278,20 +278,20 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     if (filterObjects.length > 0) {
       this.control.attach(filterObjects[0].object);
       this.orthogonalShadow.attach(filterObjects[0].object)
-
-      // this.outline.selectedObjects(filterObjects[0].object)
+      this.outlineEffect.clear();
+      this.outlineEffect.add(filterObjects[0].object)
     } else {
       this.control.detach();
       this.orthogonalShadow.detach();
-      // this.outline.selectedObjects([]);
+      this.outlineEffect.clear();
     }
   }
 
-  // renderHook() {
-  //   if (this.outline && this.outline.composer) {
-  //     this.outline.composer.render();
-  //   }
-  // }
+  renderHook() {
+    if (this.outlineEffect && this.outlineEffect.composer) {
+      this.outlineEffect.composer.render();
+    }
+  }
 
   setMeshRotation (mesh, x, y, z) {
     if (x) mesh.rotateX(x);
