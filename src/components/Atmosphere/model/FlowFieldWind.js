@@ -8,7 +8,9 @@ import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUti
 import { colorMap  } from './colorMap';
 
 import vertexShader from './shader/volume.vert';
-import fragmentShader from './shader/volumeV1.frag';
+// import fragmentShader from './shader/volumeV1.frag';
+import fragmentShader from './shader/volumePosition.frag';
+// import fragmentShader from './shader/volumeV2.frag';
 
 import { getColorSystem } from '../../utils/color/constants';
 
@@ -140,6 +142,7 @@ export default class FlowFeildWind {
         texture.needsUpdate = true;
         return texture;
     }
+    
 
     updateUniforms() {
         if (this.material) {
@@ -148,6 +151,40 @@ export default class FlowFeildWind {
             this.material.uniforms.threshold.value = this.api.threshold;
             this.material.uniforms.offset.value = this.api.offset;
         }
+    }
+
+    generatePositionTexture(width, height, depth) {
+        let dx = 1 / width;
+        let dy = 1 / height;
+        let dz = 1 / depth;
+
+        let data = new Float32Array(width * height * depth * 4);
+
+        let i = 0;
+        for(let z = 0; z < depth; z++) {
+            for(let y = 0; y < height; y++) {
+                for(let x = 0; x < width; x++) {
+                    data[i + 0] = x;
+                    data[i + 1] = y;
+                    data[i + 2] = z;
+                    data[i + 3] = 255;
+                 
+                    
+                    i += 4;
+                    
+                }
+            }
+        }
+
+        console.log('data =>', data);
+        const texture = new THREE.Data3DTexture( data, width, height, depth );
+        texture.format = THREE.RGBAFormat ;
+        texture.type = THREE.FloatType;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
+        return texture;
+
     }
 
 
@@ -167,6 +204,8 @@ export default class FlowFeildWind {
             u_U:   { value: this.getTextureData( U, widthSize, heightSize, depthSize) },
             u_V:   { value: this.getTextureData( V, widthSize, heightSize, depthSize) },
             u_W:   { value: this.getTextureData( W, widthSize, heightSize, depthSize) },
+
+            u_pos: { value: this.generatePositionTexture(widthSize, heightSize, depthSize) },
 
             depthSampleCount: { value: this.api.depthSampleCount },
             threshold0: { value: this.api.threshold0 },

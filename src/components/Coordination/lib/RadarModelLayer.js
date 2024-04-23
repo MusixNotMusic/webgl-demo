@@ -302,7 +302,9 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       this.control.detach();
     } else if (this.isTransformMode()){
       this.control.setMode(mode);
-      this.control.attach(this.focusObject);
+      if (!this.control.object) {
+        this.control.attach(this.focusObject);
+      }
     } 
   }
 

@@ -10,8 +10,10 @@
             <label for="">是否添加头:</label>
             <input type="checkbox" v-model="head" @change="headChange">
         </div>
+
         <input type="file" id="uploadInput" @change="uploadFileChange">
         <button @click="pickDataClick">下载数据</button>
+        <button @click="pickDataClick2">下载V2数据</button>
     </div>
 </template>
 
@@ -29,6 +31,8 @@ import vertexGobalShader from '../shaderThree/global.vert'
 import VolumeRenderClass from './VolumeRenderClass'
 import { decompress } from '../utils/decompress/ZstdDecompress'
 import { accessToken } from './token'
+
+import pako from 'pako';
 
 const centerOrigin =  [104, 30] || [0, 0];
 
@@ -278,6 +282,65 @@ const cutCenterData = (volume, centerOffset, width, height, depth) => {
 }
 
 
+const cutCenterData2 = (volume, centerOffset, width, height, depth) => {
+
+    const { offsetX, offsetY } = centerOffset;
+
+    const top = Math.ceil(offsetY - height / 2);
+    const bottom = Math.ceil(offsetY + height / 2);
+    const left = Math.ceil(offsetX - width / 2);
+    const right = Math.ceil(offsetX + width / 2);
+
+    const min = index2Lnglat2(volume, left, bottom);
+    const max = index2Lnglat2(volume, right, top);
+
+    let data;
+    // debugger;
+    if (head.value) {
+
+        data = new Uint8Array(width * height * depth + 40);
+        const dv = new DataView(data.buffer);
+
+        dv.setUint32(0,  1)
+        dv.setUint32(4,  min.lng * 10000 | 0)
+        dv.setUint32(8,  max.lat * 10000 | 0)
+        dv.setUint32(12, max.lng * 10000 | 0)
+        dv.setUint32(16, min.lat * 10000 | 0)
+
+        dv.setUint32(20, 0)
+        dv.setUint32(24, 500.0)
+        dv.setUint32(28, width)
+        dv.setUint32(32, height)
+        dv.setUint32(36, depth)
+    } else {
+        data = new Uint8Array(width * height * depth);
+    }
+
+    const faceSize = width * height;
+
+    const apply = (x, y, z) => volume.data[ volume.width * volume.height * z + volume.width * (bottom - y) + (right - x)]
+
+    for(let z = 0; z < depth; z++) {
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                data[z * faceSize + y * width + x + 40] = apply(x, y, z);
+            }
+        }
+    }
+
+    const result = pako.deflateRaw(data);
+
+    const elem = window.document.createElement('a');
+    elem.href = window.URL.createObjectURL(new Blob([result], {type: "application/octet-stream"}));
+    elem.download = `cut_${width}x${height}x${depth}_uint8.zip`;
+    document.body.appendChild(elem);
+    elem.click();        
+    document.body.removeChild(elem);
+
+    return new File([new Blob([data])], 'data1');
+}
+
+
 const renderVolume = (volume, centerOffset, width, height, depth, lnglat, radius) => {
     let volumeData = {};
     const data = new Uint8Array(width * height * depth);
@@ -411,6 +474,10 @@ const headChange = () => {
 
 const pickDataClick = () => {
     cutCenterData(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, radius.value, radius.value, 32)
+}
+
+const pickDataClick2 = () => {
+    cutCenterData2(volumeRenderGlobal.volume, {offsetX: xIndex, offsetY: yIndex}, radius.value, radius.value, 32)
 }
     
 </script>
