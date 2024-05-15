@@ -25,23 +25,24 @@ export default class TerrainRenderClass{
             depthSampleCount: 128
         };
 
-
         this.bounds = {
-            minX: 72.524,
-            minY: 14.545,
+            minX: 72.346,
+            minY: 14.373,
             maxX: 136.757,
-            maxY: 55.558,
+            maxY: 55.625,
         };
 
         this.uniforms = {
             cameraPosition:   { value: new THREE.Vector3() },
-            tex:          { value: null },
+            tex:              { value: null },
             depthSampleCount: { value: 256 },
-            scale:       { value: 1 },
+            scale:            { value: 1 },
             threshold:        { value: 1 },
             maxLat:           { value: 50 },
             minLat:           { value: 20 },
         };
+
+        window.TerrainRenderClass = this;
     }
    
     initGui () {
@@ -64,7 +65,7 @@ export default class TerrainRenderClass{
     init() {
         const loader = new THREE.TextureLoader();
     
-        loader.load('/texture/china-terrain-600dpi.png', 
+        loader.load('/texture/china-terrain-300dpi.png', 
             (texture) => { 
                 // 清除场景
                 this.clearScene();
@@ -112,15 +113,15 @@ export default class TerrainRenderClass{
     initMesh() {
         const texture = this.texture;
 
-        texture.format = THREE.RedFormat;
+        // texture.format = THREE.RedFormat;
+        // texture.type = THREE.UnsignedByteType;
+        // texture.minFilter = texture.magFilter = THREE.LinearFilter;
+        // texture.unpackAlignment = 1;
+        // texture.needsUpdate = true;
+
+        texture.format = THREE.RGBAFormat;
         texture.type = THREE.UnsignedByteType;
         texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        texture.unpackAlignment = 1;
-        texture.needsUpdate = true;
-
-        // texture.format = THREE.RGBAFormat;
-        // texture.type = THREE.FloatType;
-        // texture.minFilter = texture.magFilter = THREE.LinearFilter;
         // texture.unpackAlignment = 4;
         // texture.needsUpdate = true;
 

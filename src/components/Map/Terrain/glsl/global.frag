@@ -47,6 +47,20 @@ float sample1( vec2 p ) {
     return texture( tex, p ).r;
 }
 
+float epsilon = 0.0005;
+float sample2( vec2 p ) {
+    vec2 top = vec2(0.0, epsilon);
+    vec2 right = vec2(epsilon, 0.0);
+
+    float c = texture( tex, p ).r;
+    float t = texture( tex, p + top).r;
+    float b = texture( tex, p - top).r;
+    float l = texture( tex, p - right ).r;
+    float r = texture( tex, p + right).r;
+    
+    return (c + t + b + l + r) * 0.2;
+}
+
 // vec4 colorSimple( float val ) {
 //     return texture(colorMap, vec2(val, 0.0));
 // }
@@ -77,45 +91,39 @@ void main(){
     float maxHeight = 0.0;
     float th1 = threshold * scale;
 
+    vec4 surface = vec4(0.0);
+    vec4 other = vec4(0.0);
+
     vec3 center = vec3(0.5, 0.5, 0.2);
+
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
-        // vec4 data = sample1(p.xy + 0.5);
+        float h = sample1(p.xy + 0.5);
 
-        vec4 data = texture( tex, p.xy + 0.5 );
+        if ( h < 0.01 || h > 0.99) {
+            p += rayDir * delta;
+            continue;
+        };
 
-        if (data.r == 1.0) discard;
+        height = pow(h * scale, 0.5);
 
-        height = data.r * scale;
+        float d = 0.5 + p.z - h;
 
-		// height = clamp(0.02, 0.5, height);
-
-        if(0.5 + p.z <= height && height < th1) {
-            break;
+        if(d < 0.01) {
+            other = vec4(0.0, 0.0, 0.0, 1.0);
+            if (abs(d) < 0.01) {
+                // color = vec4(height, height, height, clamp(0.6, 0.9, height));
+                surface = vec4(height, height, height,  clamp(height, 0.8, 0.99));
+                maxHeight = max(maxHeight, height);
+                break;
+            }
         }
-
-        if(abs(0.5 + p.z - height) < 0.01 && height < th1) {
-            break;
-        } else {
-            color = vec4(1.0, 1.0, 1.0, 0.7);
-        }
-
-        // if (sdSphere(p, 0.01) < 0.01) {
-        //     color = vec4(1.0, 0.0, 0.0, 0.7);
-        // }
 
         p += rayDir * delta;
     }
 
-    if (height > 0.0 && height < 0.9) {
-        color = vec4(height, height, height, clamp(0.1, 0.9, height));
-    } 
-    // else if(height == 0.0) {
-    //     color = vec4(0.5, 0.1, 0.3, 1.0);
-    // } 
-    // else if(height >= 0.9 && height < th1 ) {
-    //     color = vec4(0.5, 0.1, 0.3, 1.0);
-    // }
-
+    
+    color = max(surface, other);
+    
     if ( color.a == 0.0 ) discard;
 }
