@@ -2,6 +2,7 @@ precision highp float;
 precision highp sampler2D;
 in vec3 vOrigin;
 in vec3 vDirection;
+in vec3 vPosition;
 
 in vec3 normal;
 
@@ -79,16 +80,24 @@ void main(){
     vec3 center = vec3(0.5, 0.5, 0.2);
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
-        height = sample1(p.xy + 0.5) * scale;
+        // vec4 data = sample1(p.xy + 0.5);
+
+        vec4 data = texture( tex, p.xy + 0.5 );
+
+        if (data.r == 1.0) discard;
+
+        height = data.r * scale;
 
 		// height = clamp(0.02, 0.5, height);
 
-        // if(0.5 + p.z <= height && height < th1) {
-        //     break;
-        // }
+        if(0.5 + p.z <= height && height < th1) {
+            break;
+        }
 
         if(abs(0.5 + p.z - height) < 0.01 && height < th1) {
             break;
+        } else {
+            color = vec4(1.0, 1.0, 1.0, 0.7);
         }
 
         // if (sdSphere(p, 0.01) < 0.01) {

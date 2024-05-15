@@ -27,10 +27,10 @@ export default class TerrainRenderClass{
 
 
         this.bounds = {
-            minX: 71.798,
-            minY: 14.68,
-            maxX: 136.268,
-            maxY: 55.928,
+            minX: 72.524,
+            minY: 14.545,
+            maxX: 136.757,
+            maxY: 55.558,
         };
 
         this.uniforms = {
@@ -117,6 +117,12 @@ export default class TerrainRenderClass{
         texture.minFilter = texture.magFilter = THREE.LinearFilter;
         texture.unpackAlignment = 1;
         texture.needsUpdate = true;
+
+        // texture.format = THREE.RGBAFormat;
+        // texture.type = THREE.FloatType;
+        // texture.minFilter = texture.magFilter = THREE.LinearFilter;
+        // texture.unpackAlignment = 4;
+        // texture.needsUpdate = true;
 
         // Material
 
