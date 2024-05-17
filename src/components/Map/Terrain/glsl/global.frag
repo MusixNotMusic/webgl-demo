@@ -76,6 +76,38 @@ float sdBox( vec3 p, vec3 b )
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
+vec2 iBox( vec3 ro, vec3 rd, vec3 boxSize ) 
+{
+    vec3 m = 1.0/rd; // can precompute if traversing a set of aligned boxes
+    vec3 n = m*ro;   // can precompute if traversing a set of aligned boxes
+    vec3 k = abs(m)*boxSize;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    float tN = max( max( t1.x, t1.y ), t1.z );
+    float tF = min( min( t2.x, t2.y ), t2.z );
+    if( tN>tF || tF<0.0) return vec2(-1.0); // no intersection
+    // outNormal = (tN>0.0) ? step(vec3(tN),t1) : // ro ouside the box
+    //                        step(t2,vec3(tF));  // ro inside the box
+    // outNormal *= -sign(rd);
+    return vec2( tN, tF );
+}
+
+float sdSolidAngle(vec3 p, vec2 c, float ra)
+{
+    vec2 q = vec2( length(p.xz), p.y );
+    
+    float l = length(q) - ra;
+	float m = length(q - c*clamp(dot(q,c),0.0,ra) );
+    return max(l,m*sign(c.y*q.x-c.x*q.y));
+}
+
+float map( in vec3 pos )
+{
+    pos.xy = (mat2(4,3,-3,4)/5.0)*pos.xy;
+    
+    return sdSolidAngle(pos, vec2(3,4)/5.0, 0.7 );
+}
+
 void main(){
     vec3 rayDir = normalize( vDirection );
     vec2 bounds = hitBox( vOrigin, rayDir );
@@ -86,6 +118,7 @@ void main(){
     vec3 inc = 1.0 / abs( rayDir );
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= depthSampleCount;
+    // float delta = 0.0002;
 
     float height = 0.0;
     float maxHeight = 0.0;
@@ -94,7 +127,9 @@ void main(){
     vec4 surface = vec4(0.0);
     vec4 other = vec4(0.0);
 
-    vec3 center = vec3(0.5, 0.5, 0.2);
+    ivec2 size = textureSize(tex, 0);
+
+    vec3 inv_size = float(size.x) / vec3(size, size.x);
 
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
 
@@ -119,11 +154,48 @@ void main(){
             }
         }
 
+
+        p += rayDir * delta;
+    }
+
+    vec3 outNormal = vec3(0.0);
+    
+    vec3 center = vec3(0.5, 0.35, 0.0);
+
+    float h = sample1(center.xy + 0.5);
+    vec3 box = vec3(0.01, 0.01, 0.1) * inv_size;
+    center.z = 1.0 - pow(h * scale, 0.5) + box.z;
+    vec2 NF = iBox(vOrigin + 0.5 - center, rayDir, box);
+    vec4 boxColor = vec4(0.0);
+
+    p = vOrigin + NF.x * rayDir + 0.5;
+    
+    for ( float t = NF.x; t < NF.y; t += delta ) {
+
+        float h = sample1(p.xy);
+        if (h > p.z) {
+            boxColor = vec4(1.0, 0.0, 0.0, 1.0);
+        } else {
+            // boxColor = vec4(0.0, 1.0, 0.0, 1.0);
+        }
+
+        // if(length(p - center) < 0.005) {
+        //      boxColor = vec4(0.0, 1.0, 0.0, 1.0);
+        // }
+       
+
+
+        // if (map(p - center) < 0.001) {
+        //     boxColor = vec4(1.0, 0.0, 0.0, 1.0);
+        // }
+
         p += rayDir * delta;
     }
 
     
-    color = max(surface, other);
+    color = max(max(surface, other), boxColor);
+
+    // color = sphere;
     
     if ( color.a == 0.0 ) discard;
 }
