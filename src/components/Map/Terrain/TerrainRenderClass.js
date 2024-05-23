@@ -1,10 +1,12 @@
 import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
+import Stats from 'three/examples/jsm/libs/stats.module'
 import mapboxgl from 'mapbox-gl'
 import { isEmpty } from 'lodash'
 
 import vertexShader from './glsl/global.vert'
 import fragmentShader from './glsl/global.frag'
+// import fragmentShader from './glsl/globalV2.frag'
 
 export default class TerrainRenderClass{
     constructor(id, map) {
@@ -22,14 +24,30 @@ export default class TerrainRenderClass{
         this.parameters = {
             scale: 1.0,
             threshold:  1.0,
-            depthSampleCount: 128
+            depthSampleCount: 128,
+            showTerrain: true,
+            showBox: true,
+            pickUpPoint: true,
+            terrainPoint: new THREE.Vector3(0.5, 0.3, 0.0),
+            pitch1: 0.1,
+            pitch2: 0.3,
+            radius: 0.01
         };
 
         this.bounds = {
-            minX: 72.346,
-            minY: 14.373,
-            maxX: 136.757,
-            maxY: 55.625,
+            minX: 72.167,
+            minY: 14.861,
+            maxX: 136.519,
+            maxY: 55.909,
+        };
+
+        this.terrainResolution = new THREE.Vector2();
+
+        this.localBounds = {
+            minX: 104,
+            minY: 30,
+            maxX: 114,
+            maxY: 40,
         };
 
         this.uniforms = {
@@ -38,9 +56,22 @@ export default class TerrainRenderClass{
             depthSampleCount: { value: 256 },
             scale:            { value: 1 },
             threshold:        { value: 1 },
+            boxResolution:    { value: new THREE.Vector3() },
             maxLat:           { value: 50 },
             minLat:           { value: 20 },
+            showTerrain:      { value: this.parameters.showTerrain },
+            showBox:          { value: this.parameters.showBox },
+            pickUpPoint:      { value: this.parameters.pickUpPoint },
+            terrainPoint:     { value: this.parameters.terrainPoint },
+            pitchRange:       { value: new THREE.Vector2(this.parameters.pitch1, this.parameters.pitch2) },
+            radius:           { value: this.parameters.radius },
         };
+
+        this.stats = new Stats()
+
+        document.body.appendChild(this.stats.dom)
+
+        this.setTerrainPointBind = this.setTerrainPoint.bind(this);
 
         window.TerrainRenderClass = this;
     }
@@ -53,24 +84,65 @@ export default class TerrainRenderClass{
         gui.add( this.parameters, 'scale', 0, 1, 0.01 ).onChange( updateUniforms );
         gui.add( this.parameters, 'threshold', 0, 1, 0.01 ).onChange( updateUniforms );
         gui.add( this.parameters, 'depthSampleCount', 0, 1024, 1 ).onChange( updateUniforms );
+        gui.add( this.parameters, 'showTerrain' ).onChange( updateUniforms );
+        gui.add( this.parameters, 'showBox' ).onChange( updateUniforms );
+        gui.add( this.parameters, 'pickUpPoint' ).onChange( updateUniforms );
+        gui.add( this.parameters, 'pitch1', 0, 2, 0.01 ).onChange( updateUniforms );
+        gui.add( this.parameters, 'pitch2', 0, 5, 0.01 ).onChange( updateUniforms );
+        gui.add( this.parameters, 'radius', 0.005, 0.05, 0.005 ).onChange( updateUniforms );
+
+        if (this.parameters.pickUpPoint) {
+            this.map.on('click', this.setTerrainPointBind);
+        } else {
+            this.map.off('click', this.setTerrainPointBind);
+        }
     }
 
     updateUniforms() {
         this.material.uniforms.threshold.value = this.parameters.threshold;
         this.material.uniforms.scale.value = this.parameters.scale;
         this.material.uniforms.depthSampleCount.value = this.parameters.depthSampleCount;
+        this.material.uniforms.showTerrain.value = this.parameters.showTerrain;
+        this.material.uniforms.showBox.value = this.parameters.showBox;
+        this.material.uniforms.pitchRange.value = new THREE.Vector2(this.parameters.pitch1, this.parameters.pitch2);
+        this.material.uniforms.radius.value = this.parameters.radius;
+
+        if (this.parameters.pickUpPoint) {
+            this.map.on('click', this.setTerrainPointBind);
+        } else {
+            this.map.off('click', this.setTerrainPointBind);
+        }
     }
 
+    setTerrainPoint (e) {
+        console.log('setTerrainPoint ==>', e.lngLat)
+        const lngLat = e.lngLat;
+        const { minX, maxX, minY, maxY } = this.bounds;
+
+        const mm1 = mapboxgl.MercatorCoordinate.fromLngLat([minX, minY]);
+        const mm2 = mapboxgl.MercatorCoordinate.fromLngLat([maxX, maxY]);
+        const tt = mapboxgl.MercatorCoordinate.fromLngLat([lngLat.lng, lngLat.lat]);
+
+        const tx = (tt.x - mm1.x) / (mm2.x - mm1.x);
+        const ty = (tt.y - mm1.y) / (mm2.y - mm1.y);
+
+        console.log('tx, ty ==>', tx, ty);
+
+        this.material.uniforms.terrainPoint.value = new THREE.Vector3(tx, ty, 0.0);
+    }
 
     init() {
         const loader = new THREE.TextureLoader();
     
+        // loader.load('/texture/china-terrain-2.png', 
         loader.load('/texture/china-terrain-300dpi.png', 
             (texture) => { 
                 // 清除场景
                 this.clearScene();
 
                 this.texture = texture;
+
+                this.terrainResolution.set(texture.source.data.width, texture.source.data.height);
 
                 this.initGui();
 
@@ -84,6 +156,7 @@ export default class TerrainRenderClass{
     
     render () {
         this.initMesh();
+
         this.drawLayer()
     }
 
@@ -113,18 +186,9 @@ export default class TerrainRenderClass{
     initMesh() {
         const texture = this.texture;
 
-        // texture.format = THREE.RedFormat;
-        // texture.type = THREE.UnsignedByteType;
-        // texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        // texture.unpackAlignment = 1;
-        // texture.needsUpdate = true;
-
         texture.format = THREE.RGBAFormat;
         texture.type = THREE.UnsignedByteType;
         texture.minFilter = texture.magFilter = THREE.LinearFilter;
-        // texture.unpackAlignment = 4;
-        // texture.needsUpdate = true;
-
         // Material
 
         this.uniforms.tex.value =  texture
@@ -152,6 +216,10 @@ export default class TerrainRenderClass{
 
         this.scene.add(mesh)
 
+        this.setMeshPosition(mesh, this.bounds);
+
+        this.material.uniforms.boxResolution.value = new THREE.Vector3(1, mesh.scale.x / mesh.scale.y, mesh.scale.x / mesh.scale.z);
+
         // box
         const edgesGeometry = new THREE.EdgesGeometry(geometry);
         const materialHL = new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.9, transparent: true });
@@ -161,26 +229,26 @@ export default class TerrainRenderClass{
 
         this.scene.add(meshHL)
 
-        const bounds = this.bounds;
-
-        this.setScenePosition(this.scene, bounds);
+        this.setMeshPosition(this.meshHL, this.bounds);
 
         this.renderer.render( this.scene, this.camera );
     }
 
-    setScenePosition (scene, bounds) {
+
+
+    setMeshPosition (mesh, bounds) {
         const min = mapboxgl.MercatorCoordinate.fromLngLat([bounds.minX, bounds.minY], 0);
         const max = mapboxgl.MercatorCoordinate.fromLngLat([bounds.maxX, bounds.maxY], this.altitude || 80000);
 
         const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ];
 
-        scene.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
-        scene.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
-        scene.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
+        mesh.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2;
+        mesh.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2;
+        mesh.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2;
 
-        scene.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
-        scene.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
-        scene.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
+        mesh.scale.x = (boundScaleBox[3] - boundScaleBox[0]);
+        mesh.scale.y = (boundScaleBox[4] - boundScaleBox[1]);
+        mesh.scale.z = (boundScaleBox[5] - boundScaleBox[2]);
     }
 
 
@@ -245,7 +313,7 @@ export default class TerrainRenderClass{
 
             render: (gl, matrix) => {
                 const { renderer, scene, camera } = this;
-
+                this.stats.begin();
 
                 camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix)
 
@@ -265,6 +333,8 @@ export default class TerrainRenderClass{
                 if (this.map) {
                     this.map.triggerRepaint();
                 }
+
+                this.stats.end();
             },
 
 
@@ -282,22 +352,21 @@ export default class TerrainRenderClass{
         if (this.scene && this.scene.children.length > 0) {
             this.scene.children.forEach(mesh => {
                 if (mesh) {
-                    if (mesh.material && mesh.material.uniforms) {
-                        if (mesh.material.uniforms.tex.value) {
-                            mesh.material.uniforms.tex.value.dispose();
-                            mesh.material.uniforms.tex.value.source.data = null;
-                            mesh.material.uniforms.tex.value.source = null;
-                        }
-                        mesh.material.uniforms.tex.value = null;
-                    }
 
                     if (mesh.material) {
+                        Object.values(mesh.material.uniforms).forEach(uniform => {
+                            if (uniform.value && uniform.value.isTexture) {
+                                uniform.value.dispose();
+                            }
+                        })
                         mesh.material.dispose();
                     }
 
                     if (mesh.geometry) {
                         mesh.geometry.dispose();
                     }
+                    this.scene.remove(mesh);
+                    mesh.clear();
                     mesh = null;
                 }
             })
@@ -324,9 +393,10 @@ export default class TerrainRenderClass{
     destroy () {
         this.removeLayer()
 
+        this.clearScene();
+
         if (this.renderer) {
             this.renderer.domElement.remove();
-            this.renderer.dispose();
         }
 
         this.id = null;
