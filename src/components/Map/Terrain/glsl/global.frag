@@ -147,7 +147,7 @@ void main(){
     }
 
     vec3 center = terrainPoint;
-    center.z = sampleTerrain(center.xy) + 0.05;
+    center.z = sampleTerrain(center.xy) + 0.01;
 
     float rr = radius;
 
@@ -169,7 +169,6 @@ void main(){
         float step = (NF.y - NF.x) / total;
         p = vOrigin + 0.5 + NF.x * rayDir;
 
-
         for (float t = NF.x; t < NF.y; t += step) {
             vec3 pc = (p - center) / boxResolution;
 
@@ -183,21 +182,26 @@ void main(){
 
                 vec3 ref = reflect(sun, normal);
                 float light = dot(ref, rayDir);
+                float dpc = length(p - center);
 
-                bool occ = castRay(center, normalize(p - center), 0.0, rr * 20.0, 256.0);
+                bool occ = castRay(center, normalize(p - center), 0.0, dpc, 64.0);
 
                 if(occ) {
-                    outColor = vec4(vec3(1.0, 0.0, 0.5), light);
+                    outColor = vec4(vec3(1.0, 0.0, 0.0), light);
                 } else {
-                    outColor = vec4(vec3(p.z), 0.5 + light);
+                    outColor = vec4(vec3(1.0), 1.0 - light);
                 }
 
                 if (abs(mod(pc.x, rr * 0.4)) < rr * 0.02)
-                    outColor = vec4(1.0, 0.0, 0.0, light + 0.7);
+                    outColor = vec4(1.0, 0.0, 0.0, 0.3);
 
                 if (abs(mod(pc.y, rr * 0.4)) < rr * 0.02)
-                    outColor = vec4(0.0, 1.0, 0.0, light + 0.7);
+                    outColor = vec4(0.0, 1.0, 0.0, 0.3);
 
+
+                // if (abs(dpc - rr) < 0.0002)
+                //     outColor = vec4(0.0, 0.0, 0.0, 1.0);
+                
                 break;
             }
             p = p + step * rayDir;
@@ -211,6 +215,7 @@ void main(){
 
     if (showBox) {
         color = color + outColor; 
+        // color = max(color, outColor); 
     }
 
     
