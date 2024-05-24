@@ -189,7 +189,7 @@ void main(){
                 if(occ) {
                     outColor = vec4(vec3(1.0, 0.0, 0.0), light);
                 } else {
-                    outColor = vec4(vec3(1.0), 1.0 - light);
+                    outColor = vec4(vec3(0.7), 1.0 - light);
                 }
 
                 if (abs(mod(pc.x, rr * 0.4)) < rr * 0.02)
