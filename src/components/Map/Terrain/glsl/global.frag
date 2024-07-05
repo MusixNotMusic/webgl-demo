@@ -192,11 +192,11 @@ void main(){
                     outColor = vec4(vec3(0.7), 1.0 - light);
                 }
 
-                if (abs(mod(pc.x, rr * 0.4)) < rr * 0.02)
-                    outColor = vec4(1.0, 0.0, 0.0, 0.3);
+                if (abs(mod(pc.x, rr * 0.04)) < rr * 0.005)
+                    outColor = vec4(0.0, 0.0, 0.0, 0.3);
 
-                if (abs(mod(pc.y, rr * 0.4)) < rr * 0.02)
-                    outColor = vec4(0.0, 1.0, 0.0, 0.3);
+                if (abs(mod(pc.y, rr * 0.04)) < rr * 0.005)
+                    outColor = vec4(0.0, 0.0, 0.0, 0.3);
 
 
                 // if (abs(dpc - rr) < 0.0002)
