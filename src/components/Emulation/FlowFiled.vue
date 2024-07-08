@@ -1,5 +1,5 @@
 <template>
-  <div class="flow-feild-wrap">
+  <div class="flow-field-wrap">
     <canvas class="canvas" id="canvas-webgl"></canvas>
     <div class="p-preloader"></div>
   </div>
@@ -20,7 +20,7 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-.flow-feild-wrap {
+.flow-field-wrap {
 }
 
 .canvas{
