@@ -56,7 +56,7 @@ export default class HorizonClouds {
         const height = this.container.innerHeight || this.container.clientHeight;
 
         // camera
-        this.camera = new THREE.PerspectiveCamera( 70, width / height, 1, 1000 );
+        this.camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
         this.camera.position.set(50, 50, 50);
         // renderer
 
@@ -137,41 +137,6 @@ export default class HorizonClouds {
         }
     }
 
-    generatePositionTexture(width, height, depth) {
-        let dx = 1 / width;
-        let dy = 1 / height;
-        let dz = 1 / depth;
-
-        let data = new Float32Array(width * height * depth * 4);
-
-        let i = 0;
-        for(let z = 0; z < depth; z++) {
-            for(let y = 0; y < height; y++) {
-                for(let x = 0; x < width; x++) {
-                    data[i + 0] = x;
-                    data[i + 1] = y;
-                    data[i + 2] = z;
-                    data[i + 3] = 255;
-                 
-                    
-                    i += 4;
-                    
-                }
-            }
-        }
-
-        console.log('data =>', data);
-        const texture = new THREE.Data3DTexture( data, width, height, depth );
-        texture.format = THREE.RGBAFormat ;
-        texture.type = THREE.FloatType;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
-        return texture;
-
-    }
-
-
     initMesh() {
         this.clean();
 
@@ -202,9 +167,10 @@ export default class HorizonClouds {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.scale.set(50, 50, 50)
+        const scale = 1000.0;
+        mesh.scale.set(scale, scale, scale)
 
-        mesh.rotateX(Math.PI / 2);
+        // mesh.rotateX(Math.PI / 2);
 
         this.scene.add(mesh);
 

@@ -30,7 +30,7 @@ uniform float iTime;
 #define FAKE_LIGHT
 #define SUN_DIR			normalize(vec3(0, abs(sin(u_time * .3)), -1))
 
-#define STEPS			25
+#define STEPS			65
 /******************************************************************************/
 
 #if defined(__cplusplus) || defined(SHADERTOY)
@@ -580,12 +580,10 @@ vec4 render_clouds(
 	return vec4(C, alpha);
 }
 
-#define fragColor color;
-#define fragCoord gl_FragCoord;
 
 void main(){
 	vec3 col = vec3(0.0);
-
+	
     vec3 direction = normalize( vDirection );
     ray_t eye_ray = ray_t (
         vOrigin,
