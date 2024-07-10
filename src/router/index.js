@@ -119,6 +119,12 @@ const routes= [
         name: "Coordination",
         component: () => import("../components/Coordination/Coordination.vue"),
       },
+
+      {
+        path: "/ParticleGrid",
+        name: "ParticleGrid",
+        component: () => import("../components/Particle/Index.vue"),
+      },
     ],
   }
 ];
