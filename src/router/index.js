@@ -125,6 +125,11 @@ const routes= [
         name: "ParticleGrid",
         component: () => import("../components/Particle/Index.vue"),
       },
+      {
+        path: "/HorizonClouds",
+        name: "HorizonClouds",
+        component: () => import("../components/HorizonClouds/Index.vue"),
+      },
     ],
   }
 ];
