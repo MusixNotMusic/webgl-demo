@@ -5,8 +5,8 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-import vertexShader from './shader/volume.vert';
-import fragmentShader from './shader/volumePosition.frag';
+import vertexShader from './shader/grid/grid.vert';
+import fragmentShader from './shader/grid/grid.frag';
 
 import { getColorSystem } from '../../utils/color/constants';
 
@@ -45,6 +45,7 @@ export default class ParticleGrid {
             u_U: { value: null },
             u_V: { value: null },
             u_W: { value: null },
+            gridSize: { value: null }
         };
 
         this.textureColor =  getColorSystem().colorMapTexture['rainbows']
@@ -200,7 +201,7 @@ export default class ParticleGrid {
             u_U:   { value: this.getTextureData( U, widthSize, heightSize, depthSize) },
             u_V:   { value: this.getTextureData( V, widthSize, heightSize, depthSize) },
             u_W:   { value: this.getTextureData( W, widthSize, heightSize, depthSize) },
-
+            u_size: { value: [widthSize, heightSize, depthSize] },
             u_pos: { value: this.generatePositionTexture(widthSize, heightSize, depthSize) },
 
             depthSampleCount: { value: this.api.depthSampleCount },
