@@ -6,36 +6,31 @@ out vec4 color;
 
 uniform float threshold0;
 uniform float threshold;
+uniform float depthSampleCount;
 
 uniform vec3 u_size;
 
 uniform float iTime;
-uniform sampler2D iChannel0;
-
-uniform float COVERAGE;
-uniform float THICKNESS;
-uniform int STEPS;
-uniform float FBM_FREQ;
 
 /**** SHADERTOY *****************************************************************/
 #define SHADERTOY
 
 /**** TWEAK *****************************************************************/
-// #define COVERAGE		.26
-// #define THICKNESS		50.
+#define COVERAGE		.50
+#define THICKNESS		15.
 #define ABSORPTION		1.030725
 #define WIND			vec3(0, 0, -u_time * .2)
 
-// #define FBM_FREQ		2.76434
+#define FBM_FREQ		2.76434
 #define NOISE_VALUE
-//#define NOISE_WORLEY
+#define NOISE_WORLEY
 //#define NOISE_PERLIN
 
 //#define SIMULATE_LIGHT
 #define FAKE_LIGHT
 #define SUN_DIR			normalize(vec3(0, abs(sin(u_time * .3)), -1))
 
-// #define STEPS			25
+#define STEPS			65
 /******************************************************************************/
 
 #if defined(__cplusplus) || defined(SHADERTOY)
@@ -477,7 +472,6 @@ _constant(vec3) sun_color = vec3(1., .7, .55);
 _constant(sphere_t) atmosphere = _begin(sphere_t)
 	vec3(0, -450, 0), 500., 0
 _end;
-
 _constant(sphere_t) atmosphere_2 = _begin(sphere_t)
 	atmosphere.origin, atmosphere.radius + 50., 0
 _end;
@@ -539,6 +533,7 @@ float light(
 	return T;
 }
 
+
 vec4 render_clouds(
 	_in(ray_t) eye
 ){
@@ -547,9 +542,9 @@ vec4 render_clouds(
 	//hit_t hit_2 = no_hit;
 	//intersect_sphere(eye, atmosphere_2, hit_2);
 
-	float thickness = THICKNESS; // length(hit_2.origin - hit.origin);
+	const float thickness = THICKNESS; // length(hit_2.origin - hit.origin);
 	//const float r = 1. - ((atmosphere_2.radius - atmosphere.radius) / thickness);
-	int steps = STEPS; // +int(32. * r);
+	const int steps = STEPS; // +int(32. * r);
 	float march_step = thickness / float(steps);
 
 	vec3 dir_step = eye.direction / eye.direction.y * march_step;
@@ -585,135 +580,74 @@ vec4 render_clouds(
 	return vec4(C, alpha);
 }
 
-vec2 hitBox( vec3 orig, vec3 dir ) {
-    const vec3 box_min = vec3( - 0.5 );
-    const vec3 box_max = vec3( 0.5 );
-    vec3 inv_dir = 1.0 / dir;
-    vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
-    vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
-    vec3 tmin = min( tmin_tmp, tmax_tmp );
-    vec3 tmax = max( tmin_tmp, tmax_tmp );
-    float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
-    float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
-    return vec2( t0, t1 );
-}
-
-
-vec4 render_clouds_other(vec3 ro, vec3 rd){
-
-	//=================================
-	float thickness = THICKNESS; // length(hit_2.origin - hit.origin);
-	int steps = STEPS; // +int(32. * r);
-	float march_step = thickness / float(steps);
-
-	vec3 dir_step = ro / rd.y * march_step;
-
-    vec2 bounds = hitBox( ro, rd );
-    
-    if ( bounds.x > bounds.y ) discard;
-    
-    bounds.x = max( bounds.x, 0.0 );
-    
-    vec3 pos = ro + 0.5 + bounds.x * rd;
-
-	dir_step = 1.0 / rd;
-
-	float T = 1.; // transmitance
-	vec3 C = vec3(0, 0, 0); // color
-	float alpha = 0.;
-
-	for (int i = 0; i < steps; i++) {
-		float h = float(i) / float(steps);
-		float dens = density (pos * 100.0, vec3(0.0), 1.0 / h);
-
-
-		if (dens > 0.0) {
-			C = vec3(dens);
-			alpha = dens;
-
-				float T_i = exp(-ABSORPTION * dens * march_step);
-			T *= T_i;
-			if (T < .01) break;
-		}
-
-		// float T_i = exp(-ABSORPTION * dens * march_step);
-		// T *= T_i;
-		// if (T < .01) break;
-
-// 		C += T * 
-// #ifdef SIMULATE_LIGHT
-// 			light(pos) *
-// #endif
-// #ifdef FAKE_LIGHT
-// 			(exp(h) / 1.75) *
-// #endif
-// 			dens * march_step;
-// 		alpha += (1. - T_i) * (1. - alpha);
-
-		pos += march_step;
-		// if (length(pos) > 1e3) break;
-	}
-
-	return vec4(C, alpha);
-}
 
 void main(){
-    // vec3 rayDir = normalize( vDirection );
-    
-    // vec2 bounds = hitBox( vOrigin, rayDir );
-    
-    // if ( bounds.x > bounds.y ) discard;
-    
-    // bounds.x = max( bounds.x, 0.0 );
-    
-    // vec3 p = vOrigin + bounds.x * rayDir;
-
-    // vec3 inc = 1.0 / abs( rayDir );
-
-    // float delta = min( inc.x, min( inc.y, inc.z ) );
-
-    // delta /= depthSampleCount;
-
-    // for ( float t = bounds.x; t < bounds.y; t += delta ) {
-
-    //     vec3 pos = (p + 0.5);
-
-	// 	float dens = density (pos * vec3(50.0), vec3(0.5, 0.5, 0.6), 0.0);
-
-	// 	if (dens > 0.0) {
-	// 		color = vec4(0.3, 0.3, 0.3, clamp(p.y, 0.4, 0.9));
-	// 		break;
-	// 	}
-
-	// 	// float dens = get_noise(pos * 10000.0);
-
-	// 	// if (dens > 0.0) {
-	// 	// 	color = vec4(0.0, 0.3, 1.0, p.y);
-	// 	// 	break;
-	// 	// }
-
-    //     p += rayDir * delta;
-    // }
-
-	vec3 rayDir = normalize( vDirection );
+	vec3 col = vec3(0.0);
 	
-	ray_t eye_ray = ray_t (
+    vec3 direction = normalize( vDirection );
+    ray_t eye_ray = ray_t (
         vOrigin,
-        rayDir
+        direction
     );
 
-	// vec3 sky = render_sky_color(eye_ray);
-	// vec4 cld = render_clouds(eye_ray);
-	// vec3 col = mix(sky, cld.rgb/(0.000001+cld.a), cld.a);
+	hit_t hit = no_hit;
+	intersect_plane(eye_ray, ground, hit);
 
-	// color = vec4(col, 1);
-
-	vec3 sky = render_sky_color(eye_ray);
-	vec4 cld = render_clouds_other(vOrigin, rayDir);
-	vec3 col = mix(sky, cld.rgb/(0.000001+cld.a), cld.a);
+	if (hit.material_id == 1) {
+		float cb = checkboard_pattern(hit.origin.xz, .5);
+		col = mix(vec3(.6, .6, .6), vec3(.75, .75, .75), cb);
+	} else {
+#if 1
+		vec3 sky = render_sky_color(eye_ray);
+		vec4 cld = render_clouds(eye_ray);
+		col = mix(sky, cld.rgb/(0.000001+cld.a), cld.a);
+#else
+		intersect_sphere(eye_ray, atmosphere, hit);
+		vec3 d = hit.normal;
+		float u = .5 + atan(d.z, d.x) / (2. * PI);
+		float v = .5 - asin(d.y) / PI;
+		float cb = checkboard_pattern(vec2(u, v), 50.);
+		col = vec3(cb, cb, cb);
+#endif
+	}
 
 	color = vec4(col, 1);
-	// color = cld;
-    
-    if (color.a == 0.0) discard;
 }
+
+
+// vec2 hitBox( vec3 orig, vec3 dir ) {
+//     const vec3 box_min = vec3( - 0.5 );
+//     const vec3 box_max = vec3( 0.5 );
+//     vec3 inv_dir = 1.0 / dir;
+//     vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
+//     vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
+//     vec3 tmin = min( tmin_tmp, tmax_tmp );
+//     vec3 tmax = max( tmin_tmp, tmax_tmp );
+//     float t0 = max( tmin.x, max( tmin.y, tmin.z ) );
+//     float t1 = min( tmax.x, min( tmax.y, tmax.z ) );
+//     return vec2( t0, t1 );
+// }
+
+// void main(){
+//     vec3 rayDir = normalize( vDirection );
+    
+//     vec2 bounds = hitBox( vOrigin, rayDir );
+    
+//     if ( bounds.x > bounds.y ) discard;
+    
+//     bounds.x = max( bounds.x, 0.0 );
+    
+//     vec3 p = vOrigin + bounds.x * rayDir;
+
+//     vec3 pMax = vOrigin + bounds.x * rayDir;
+    
+//     vec3 inc = 1.0 / abs( rayDir );
+
+//     float delta = min( inc.x, min( inc.y, inc.z ) );
+
+//     delta /= depthSampleCount;
+
+    
+    
+//     if (color.a == 0.0) discard;
+// }

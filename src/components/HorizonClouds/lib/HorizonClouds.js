@@ -28,11 +28,11 @@ export default class HorizonClouds {
         this.clock = new THREE.Clock();
         this.time = 0;
 
-        this.api = {
-            depthSampleCount: 512,
-            threshold0: 20,
-            threshold: 40,
-            offset: 0.0,
+        this.params = {
+            STEPS: 128,
+            COVERAGE: 0.5,
+            THICKNESS: 5,
+            FBM_FREQ: 2.76434
         };
 
         this.uniforms = {};
@@ -44,7 +44,6 @@ export default class HorizonClouds {
         this.updateUniformsBind = this.updateUniforms.bind(this);
 
         this.init();
-        this.addLight();
 		this.initMesh();
 		this.animate();
 
@@ -62,6 +61,7 @@ export default class HorizonClouds {
 
         this.renderer = new THREE.WebGLRenderer( { antialias: true } );
         this.renderer.setPixelRatio( window.devicePixelRatio );
+        this.renderer.clearColor = 'blue'
         this.renderer.setSize( width, height );
         this.container.appendChild( this.renderer.domElement );
 
@@ -82,10 +82,10 @@ export default class HorizonClouds {
         // gui
 
         this.gui = new GUI();
-        this.gui.add( this.api, 'depthSampleCount', 0, 2048 ).step( 2 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.api, 'threshold0', 0, 256 ).step( 0.01 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.api, 'threshold', 0, 256 ).step( 0.01).onChange( this.updateUniformsBind );
-        this.gui.add( this.api, 'offset', -1, 1 ).step( 0.005).onChange( this.updateUniformsBind );
+        this.gui.add( this.params, 'STEPS', 0, 2048 ).step( 2 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.params, 'COVERAGE', 0, 1.0 ).step( 0.01 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.params, 'THICKNESS', 0, 100.0 ).step( 1.0).onChange( this.updateUniformsBind );
+        this.gui.add( this.params, 'FBM_FREQ', 1.0, 4.0).step( 0.01).onChange( this.updateUniformsBind );
 
         this.guiStatsEl = document.createElement( 'div' );
         this.guiStatsEl.classList.add( 'gui-stats' );
@@ -99,41 +99,16 @@ export default class HorizonClouds {
         const ambientLight = new THREE.AmbientLight(0xffffff);
     
         this.scene.add(ambientLight);
-
-        const ratio = 1e10;
-        const intensity = 1;
-        const light1 = new THREE.DirectionalLight( 0xffffff, intensity );
-        // light1.position.set( 10 * ratio, 10 * ratio, 10 * ratio );
-        light1.position.set( -0.5 * ratio, -0.5 * ratio, -1  * ratio );
-        this.scene.add( light1 );
-    
-        const light2 = new THREE.DirectionalLight( 0xffffff, intensity );
-        light2.position.set( 0, 0, -1 * ratio );
-        this.scene.add( light2 );
-    
-        const light3 = new THREE.DirectionalLight( 0xffffff, intensity );
-        light3.position.set( 0.5  * ratio, 0.5  * ratio, -1 * ratio );
-        this.scene.add( light3 );
-      }
-
-
-    getTextureData(data, width, height, depth) {
-        const texture = new THREE.Data3DTexture( data, width, height, depth );
-        texture.format = THREE.RedFormat;
-        texture.type = THREE.FloatType;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.needsUpdate = true;
-        return texture;
     }
-    
+
+
 
     updateUniforms() {
         if (this.material) {
-            this.material.uniforms.depthSampleCount.value = this.api.depthSampleCount;
-            this.material.uniforms.threshold0.value = this.api.threshold0;
-            this.material.uniforms.threshold.value = this.api.threshold;
-            this.material.uniforms.offset.value = this.api.offset;
+            this.material.uniforms.STEPS.value = this.params.STEPS;
+            this.material.uniforms.COVERAGE.value = this.params.COVERAGE;
+            this.material.uniforms.THICKNESS.value = this.params.THICKNESS;
+            this.material.uniforms.FBM_FREQ.value = this.params.FBM_FREQ;
         }
     }
 
@@ -145,11 +120,12 @@ export default class HorizonClouds {
         this.time =  this.clock.getElapsedTime();
 
         const uniforms =  {
-            depthSampleCount: { value: this.api.depthSampleCount },
-            threshold0: { value: this.api.threshold0 },
-            threshold: { value: this.api.threshold},
-            offset: { value: this.api.offset},
+            STEPS: { value: this.params.STEPS },
+            COVERAGE: { value: this.params.COVERAGE },
+            THICKNESS: { value: this.params.THICKNESS},
+            FBM_FREQ: { value: this.params.FBM_FREQ},
             iTime: { value: this.time },
+            iChannel0: { value: new THREE.TextureLoader().load( '/texture/noise.jpg' ) }
 		}
 
 
@@ -167,10 +143,9 @@ export default class HorizonClouds {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        const scale = 1000.0;
-        mesh.scale.set(scale, scale, scale)
+        const scale = 50.0;
 
-        // mesh.rotateX(Math.PI / 2);
+        mesh.scale.set(scale, scale, scale)
 
         this.scene.add(mesh);
 
