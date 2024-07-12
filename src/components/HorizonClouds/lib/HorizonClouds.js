@@ -6,7 +6,8 @@ import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import vertexShader from './shader/cloud/cloud.vert';
-import fragmentShader from './shader/cloud/cloud.frag';
+// import fragmentShader from './shader/cloud/cloud.frag';
+import fragmentShader from './shader/cloud/noise.frag';
 
 export default class HorizonClouds {
     constructor(container, dataInstance) {
@@ -29,7 +30,7 @@ export default class HorizonClouds {
         this.time = 0;
 
         this.params = {
-            STEPS: 128,
+            STEPS: 32,
             COVERAGE: 0.5,
             THICKNESS: 5,
             FBM_FREQ: 2.76434
@@ -66,9 +67,8 @@ export default class HorizonClouds {
         this.container.appendChild( this.renderer.domElement );
 
         // scene
-
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color( 0xffffff );
+        this.scene.background = new THREE.Color( 0x000 );
 
         // controls
 
@@ -82,7 +82,7 @@ export default class HorizonClouds {
         // gui
 
         this.gui = new GUI();
-        this.gui.add( this.params, 'STEPS', 0, 2048 ).step( 2 ).onChange( this.updateUniformsBind );
+        this.gui.add( this.params, 'STEPS', 0, 256 ).step( 2 ).onChange( this.updateUniformsBind );
         this.gui.add( this.params, 'COVERAGE', 0, 1.0 ).step( 0.01 ).onChange( this.updateUniformsBind );
         this.gui.add( this.params, 'THICKNESS', 0, 100.0 ).step( 1.0).onChange( this.updateUniformsBind );
         this.gui.add( this.params, 'FBM_FREQ', 1.0, 4.0).step( 0.01).onChange( this.updateUniformsBind );
@@ -145,7 +145,7 @@ export default class HorizonClouds {
 
         const scale = 50.0;
 
-        mesh.scale.set(scale, scale, scale)
+        mesh.scale.set(scale, 20, scale)
 
         this.scene.add(mesh);
 
