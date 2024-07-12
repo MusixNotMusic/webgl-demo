@@ -30,11 +30,22 @@ export default class HorizonClouds {
         this.time = 0;
 
         this.params = {
+            STEPS: { value: 32, min: 0, max: 512, step: 1 },
+            COVERAGE: { value: 0.5, min: 0, max: 4, step: 0.1 },
+            THICKNESS: { value: 5, min: 0, max: 100, step: 1 },
+            FBM_FREQ: { value: 2.76434, min: 0, max: 5, step: 0.1 },
+            OFFSET: { value: 1, min: 0, max: 4, step: 0.1 },
+            WIND: { value: 0.2, min: 0, max: 5, step: 0.1 },
+        };
+
+        this.values = {
             STEPS: 32,
             COVERAGE: 0.5,
             THICKNESS: 5,
-            FBM_FREQ: 2.76434
-        };
+            FBM_FREQ: 2.76434,
+            OFFSET: 1,
+            WIND: 0.2,
+        }
 
         this.uniforms = {};
 
@@ -82,10 +93,16 @@ export default class HorizonClouds {
         // gui
 
         this.gui = new GUI();
-        this.gui.add( this.params, 'STEPS', 0, 256 ).step( 2 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.params, 'COVERAGE', 0, 1.0 ).step( 0.01 ).onChange( this.updateUniformsBind );
-        this.gui.add( this.params, 'THICKNESS', 0, 100.0 ).step( 1.0).onChange( this.updateUniformsBind );
-        this.gui.add( this.params, 'FBM_FREQ', 1.0, 4.0).step( 0.01).onChange( this.updateUniformsBind );
+        // this.gui.add( this.params, 'STEPS', 0, 256 ).step( 2 ).onChange( this.updateUniformsBind );
+        // this.gui.add( this.params, 'COVERAGE', 0, 5.0 ).step( 0.01 ).onChange( this.updateUniformsBind );
+        // this.gui.add( this.params, 'THICKNESS', 0, 100.0 ).step( 1.0).onChange( this.updateUniformsBind );
+        // this.gui.add( this.params, 'FBM_FREQ', 1.0, 4.0).step( 0.01).onChange( this.updateUniformsBind );
+        // this.gui.add( this.params, 'OFFSET', 0.0, 4.0).step( 0.1).onChange( this.updateUniformsBind );
+
+
+        Object.entries(this.params).forEach(([key, obj]) => {
+            this.gui.add(this.values, key, obj.min, obj.max).step( obj.step ).onChange( this.updateUniformsBind );
+        })
 
         this.guiStatsEl = document.createElement( 'div' );
         this.guiStatsEl.classList.add( 'gui-stats' );
@@ -105,10 +122,15 @@ export default class HorizonClouds {
 
     updateUniforms() {
         if (this.material) {
-            this.material.uniforms.STEPS.value = this.params.STEPS;
-            this.material.uniforms.COVERAGE.value = this.params.COVERAGE;
-            this.material.uniforms.THICKNESS.value = this.params.THICKNESS;
-            this.material.uniforms.FBM_FREQ.value = this.params.FBM_FREQ;
+            // this.material.uniforms.STEPS.value = this.params.STEPS;
+            // this.material.uniforms.COVERAGE.value = this.params.COVERAGE;
+            // this.material.uniforms.THICKNESS.value = this.params.THICKNESS;
+            // this.material.uniforms.FBM_FREQ.value = this.params.FBM_FREQ;
+            // this.material.uniforms.OFFSET.value = this.params.OFFSET;
+
+            Object.entries(this.params).forEach(([key, obj]) => {
+                this.material.uniforms[key].value = this.values[key];
+            })
         }
     }
 
@@ -120,10 +142,12 @@ export default class HorizonClouds {
         this.time =  this.clock.getElapsedTime();
 
         const uniforms =  {
-            STEPS: { value: this.params.STEPS },
-            COVERAGE: { value: this.params.COVERAGE },
-            THICKNESS: { value: this.params.THICKNESS},
-            FBM_FREQ: { value: this.params.FBM_FREQ},
+            STEPS: { value: this.values.STEPS },
+            COVERAGE: { value: this.values.COVERAGE },
+            THICKNESS: { value: this.values.THICKNESS},
+            FBM_FREQ: { value: this.values.FBM_FREQ},
+            OFFSET: { value: this.values.OFFSET},
+            WIND: { valie: this.values.WIND },
             iTime: { value: this.time },
             iChannel0: { value: new THREE.TextureLoader().load( '/texture/noise.jpg' ) }
 		}
