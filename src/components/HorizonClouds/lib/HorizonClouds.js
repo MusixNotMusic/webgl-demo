@@ -30,21 +30,23 @@ export default class HorizonClouds {
         this.time = 0;
 
         this.params = {
-            STEPS: { value: 32, min: 0, max: 512, step: 1 },
-            COVERAGE: { value: 0.5, min: 0, max: 4, step: 0.1 },
-            THICKNESS: { value: 5, min: 0, max: 100, step: 1 },
-            FBM_FREQ: { value: 2.76434, min: 0, max: 5, step: 0.1 },
-            OFFSET: { value: 1, min: 0, max: 4, step: 0.1 },
-            WIND: { value: 0.2, min: 0, max: 5, step: 0.1 },
+            STEPS: { min: 0, max: 512, step: 1 },
+            COVERAGE: { min: 0, max: 2, step: 0.01 },
+            THICKNESS: { min: 0, max: 100, step: 1 },
+            FBM_FREQ: { min: 0, max: 5, step: 0.1 },
+            OFFSET: { min: 0, max: 4, step: 0.1 },
+            windU: { min: -1, max: 1, step: 0.01 },
+            windV: { min: -1, max: 1, step: 0.01 },
         };
 
         this.values = {
-            STEPS: 32,
-            COVERAGE: 0.5,
+            STEPS: 30,
+            COVERAGE: 0.3,
             THICKNESS: 5,
             FBM_FREQ: 2.76434,
-            OFFSET: 1,
-            WIND: 0.2,
+            OFFSET: 2.3,
+            windU: 0.1,
+            windV: 0.1,
         }
 
         this.uniforms = {};
@@ -141,15 +143,19 @@ export default class HorizonClouds {
         
         this.time =  this.clock.getElapsedTime();
 
+        const texture = new THREE.TextureLoader().load( '/texture/noise256.png' );
+        texture.flipY = false;
+
         const uniforms =  {
             STEPS: { value: this.values.STEPS },
             COVERAGE: { value: this.values.COVERAGE },
             THICKNESS: { value: this.values.THICKNESS},
             FBM_FREQ: { value: this.values.FBM_FREQ},
             OFFSET: { value: this.values.OFFSET},
-            WIND: { valie: this.values.WIND },
+            windU: { value: this.values.windU },
+            windV: { value: this.values.windV },
             iTime: { value: this.time },
-            iChannel0: { value: new THREE.TextureLoader().load( '/texture/noise.jpg' ) }
+            iChannel0: { value: texture }
 		}
 
 
@@ -169,7 +175,7 @@ export default class HorizonClouds {
 
         const scale = 50.0;
 
-        mesh.scale.set(scale, 20, scale)
+        mesh.scale.set(scale, 10, scale)
 
         this.scene.add(mesh);
 

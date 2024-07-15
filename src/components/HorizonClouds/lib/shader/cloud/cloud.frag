@@ -200,7 +200,7 @@ float noise_iq(
 	vec3 f = fract(x);
 	f = f*f*(3.0 - 2.0*f);
 
-#if 1
+#if 0
     float n = p.x + p.y*157.0 + 113.0*p.z;
     return mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
                    mix( hash(n+157.0), hash(n+158.0),f.x),f.y),
@@ -220,7 +220,7 @@ float noise_iq(
 vec3 hash_w(
 	_in(vec3) x
 ){
-#if 1
+#if 0
 	vec3 xx = vec3(dot(x, vec3(127.1, 311.7, 74.7)),
 		dot(x, vec3(269.5, 183.3, 246.1)),
 		dot(x, vec3(113.5, 271.9, 124.6)));
