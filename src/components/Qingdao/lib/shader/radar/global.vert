@@ -3,7 +3,6 @@ uniform mat4 modelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec3 cameraPosition;
-uniform vec3 radarPosition;
 
 out vec3 vOrigin;
 out vec3 vDirection;

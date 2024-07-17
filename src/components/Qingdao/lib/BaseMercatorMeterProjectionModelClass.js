@@ -41,13 +41,9 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
 
         this.exaggeration = this.map.getTerrain() ? this.map.getTerrain().exaggeration : 1;
 
-        this.world = new THREE.Object3D();
-
         this.resizeBind = this.resize.bind(this);
 
         this.raycastCamera = new THREE.PerspectiveCamera();
-
-        this.scene.add(this.world);
 
         this.once = true;
     }

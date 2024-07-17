@@ -11,7 +11,7 @@ uniform vec3 cameraPosition;
 
 uniform vec2 pitchRange;
 
-// uniform float radius;
+uniform float radius;
 
 /**
  * 球体相交
@@ -41,6 +41,22 @@ vec2 eliIntersect( in vec3 ro, in vec3 rd, in vec3 ra )
     return vec2(-b-h,-b+h)/a;
 }
 
+float sdCone( vec3 p, vec2 c, float h )
+{
+  // c is the sin/cos of the angle, h is height
+  // Alternatively pass q instead of (c,h),
+  // which is the point at the base in 2D
+  vec2 q = h*vec2(c.x/c.y,-1.0);
+    
+  vec2 w = vec2( length(p.xz), p.y );
+  vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
+  vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
+  float k = sign( q.y );
+  float d = min(dot( a, a ),dot(b, b));
+  float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
+  return sqrt(d)*sign(s);
+}
+
 
 
 void main(){
@@ -48,27 +64,26 @@ void main(){
     
     vec3 p = vec3(0.0);
 
-    vec3 center = vec3(0.5, 0.5, 0.5);
+    vec3 center = vec3(0.0, 0.0, -radius);
 
-    float rr = 0.5;
+    float rr = radius;
 
     // vec3 ra = vec3(rr) * boxResolution;
     
-    // vec2 NF = eliIntersect(vOrigin + 0.5 - center, rayDir, ra);
+    // vec2 NF = eliIntersect(vOrigin + center, rayDir, vec3(rr));
 
-    vec2 NF = iSphere(vOrigin + 0.5, rayDir, center, rr);
+    vec2 NF = iSphere(vOrigin, rayDir, center, rr);
 
     vec4 outColor = vec4(0.0);
 
-    vec3 dir = normalize((vOrigin + 0.5 + rayDir * NF.x - center));
+    vec3 dir = normalize(vOrigin + rayDir * NF.x - center);
 
-    vec3 sun = vec3(0.3);
+    vec3 sun = vec3(0.0, 0.5, -0.5);
 
     if (NF.x != -1.0 && dir.z > 0.0) {
-
-        float total = 128.0;
-        float step = (NF.y - NF.x) / total;
-        p = vOrigin + 0.5 + NF.x * rayDir;
+        float total = depthSampleCount;
+        float step = NF.y - NF.x / total;
+        p = vOrigin + NF.x * rayDir;
 
         for (float t = NF.x; t < NF.y; t += step) {
             vec3 pc = (p - center);
@@ -76,34 +91,40 @@ void main(){
             float pitch =  pc.z / length(pc.xy);
             float bearing = pc.x / pc.y;
 
-            if (pitch > pitchRange.x && pitch < pitchRange.y) {
+            if (pitch >= pitchRange.x && pitch <= pitchRange.y) {
 
                 vec3 left = cross(pc, p);
                 vec3 normal = normalize(cross(pc, left));
 
                 vec3 ref = reflect(sun, normal);
-                float light = dot(ref, rayDir);
-
+                float light = abs(dot(ref, rayDir));
              
-                // outColor = vec4(vec3(0.7), 1.0 - light);
-                outColor = vec4(vec3(0.7), 1.0);
 
-                if (abs(mod(pc.x, rr * 0.04)) < rr * 0.005)
-                    outColor = vec4(0.0, 0.0, 0.0, 0.3);
+                outColor = vec4(vec3(0.7), 0.8 - light);
+                // outColor = vec4(light);
 
-                if (abs(mod(pc.y, rr * 0.04)) < rr * 0.005)
-                    outColor = vec4(0.0, 0.0, 0.0, 0.3);
+                // if (length(pc) < radius * 0.9999) {
+                //     if (abs(mod(pc.x, rr * 0.1)) < rr * 0.005)
+                //     outColor = vec4(1.0, 1.0, 1.0, 0.5);
 
-                
-                break;
+                //     if (abs(mod(pc.y, rr * 0.1)) < rr * 0.005)
+                //         outColor = vec4(1.0, 1.0, 1.0, 0.5);
+                // }
+
+                // if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
+                //     outColor = vec4(1.0, 1.0, 1.0, 0.5);
+                // }
+
+                // break;
             }
+           
             p = p + step * rayDir;
         }
     }
 
     color = outColor;
-
-    // color= vec4(1.0, 1.0, 0.0, 1.0);
+    // color = mix(outColor, vec4(rayDir, 1.0), 0.5);
+    // color = vec4(rayDir, 1.0);
     
     if ( color.a == 0.0 ) discard;
 }

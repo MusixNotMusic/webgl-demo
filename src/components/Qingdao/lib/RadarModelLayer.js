@@ -74,17 +74,18 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   render () {
     return this.initRadarModel().then(() => {
       this.drawLayer();
-      this.initPointLightHelper();
+      // this.initPointLightHelper();
       this.initRadarDetectionZone();
+      // this.initRadarDetectionZone2(radarInfoList[0]);
       // this.initRadarCone();
-      this.initDirectionalLightHelper();
+      // this.initDirectionalLightHelper();
       return null;
     })
   }
 
   setCenter(object) {
     const box = new THREE.Box3().setFromObject(object);
-    object.translateY(box.min.y);
+    object.translateY(-box.max.z);
   }
 
 
@@ -94,7 +95,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     return new Promise((resolve) => {
       loader.load( '/model/fbx/radar2.fbx',  ( _model ) => {
         const model = new WGS84Object3D(_model);
-        this.setCenter(model);
         this.radarList.forEach(radar => {
 
           const object = model.clone();
@@ -129,11 +129,11 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
         cameraPosition:   { value: new THREE.Vector3() },
         depthSampleCount: { value: 256 },
         boxResolution:    { value: new THREE.Vector3() },
-        pitchRange:       { value: new THREE.Vector2(0.1, 0.3) },
+        pitchRange:       { value: new THREE.Vector2(0.0, 1) },
         radius:           { value:  radius },
       };
       
-      const geometry = new THREE.BoxGeometry( radius, radius, radius );
+      const geometry = new THREE.BoxGeometry( radius * 2, radius * 2, radius * 2 );
 
       const material = new THREE.RawShaderMaterial( {
           glslVersion: THREE.GLSL3,
@@ -141,12 +141,14 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.DoubleSide
+          side: THREE.DoubleSide,
       });
 
       const mesh = new THREE.Mesh( geometry, material );
 
       mesh.name = 'radar-detection-zone-'+radar.id
+
+      mesh.translateZ(radius);
 
       const object = new WGS84Object3D(mesh);
 
@@ -157,12 +159,87 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
   }
 
+
+  initRadarDetectionZone2 (radar) {
+    // const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+    const geometry = new THREE.BoxGeometry( radar.radius, radar.radius, radar.radius );
+
+    const uniforms = {
+      cameraPosition:   { value: new THREE.Vector3() },
+      depthSampleCount: { value: 256 },
+      boxResolution:    { value: new THREE.Vector3() },
+      pitchRange:       { value: new THREE.Vector2(0.0, 0.3) },
+      radius:           { value: 0.5 },
+    };
+    
+
+    // const material = new THREE.RawShaderMaterial( {
+    //     glslVersion: THREE.GLSL3,
+    //     uniforms: uniforms,
+    //     vertexShader: vertexShader,
+    //     fragmentShader: fragmentShader,
+    //     transparent: true,
+    //     side: THREE.DoubleSide,
+    //     wireframe: true
+    // });
+
+    const material = new THREE.MeshBasicMaterial( {
+      color: 'red',
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    // THREE.Mesh
+    const mesh = new THREE.Mesh( geometry, material );
+
+    mesh.name = 'radar-detection-zone-'+radar.id;
+
+    this.scene.add(mesh)
+
+    const ll = new mapboxgl.LngLat(radar.lngLat[0], radar.lngLat[1]);
+
+    const bounds = ll.toBounds(radar.radius).toArray();
+
+    const _bounds = {
+      minX:  bounds[0][0],
+      minY:  bounds[0][1],
+      maxX:  bounds[1][0],
+      maxY:  bounds[1][1]
+    }
+    console.log(_bounds);
+    this.setMeshPosition(mesh, _bounds);
+  }
+
+
+  setMeshPosition (mesh, bounds) {
+    const min = mapboxgl.MercatorCoordinate.fromLngLat([bounds.minX, bounds.minY], 0);
+    const max = mapboxgl.MercatorCoordinate.fromLngLat([bounds.maxX, bounds.maxY], this.altitude || 80000);
+
+    const boundScaleBox = [  min.x, min.y, min.z, max.x, max.y, max.z ];
+
+    const unit = 1;
+
+    mesh.position.x = (boundScaleBox[0] + boundScaleBox[3]) / 2 * unit;
+    mesh.position.y = (boundScaleBox[1] + boundScaleBox[4]) / 2 * unit;
+    mesh.position.z = (boundScaleBox[2] + boundScaleBox[5]) / 2 * unit
+
+    mesh.scale.x = (boundScaleBox[3] - boundScaleBox[0]) * unit;
+    mesh.scale.y = (boundScaleBox[4] - boundScaleBox[1]) * unit;
+    mesh.scale.z = (boundScaleBox[5] - boundScaleBox[2]) * unit;
+  }
+
   updateRadarDetectionZoneCameraPosition() {
-    const camera = this.map.getFreeCameraOptions();
-    const cameraPosition = camera._position;
+    // const projectionMatrixInvert = this.raycastCamera.projectionMatrix.invert();
+    // const cameraPosition = new THREE.Vector3().applyMatrix4(projectionMatrixInvert);
+
+    const cameraPosition = this.camera.position;
+
+    // const camera = this.map.getFreeCameraOptions();
+    // const cameraPosition = camera._position
+
     this.radarList.forEach(radar => {
       const name = 'radar-detection-zone-' + radar.id;
-      const object = this.scene.getObjectByName();
+      const object = this.scene.getObjectByName(name);
       if (object && object.material.uniforms && object.material.uniforms.cameraPosition) {
         object.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
       }
