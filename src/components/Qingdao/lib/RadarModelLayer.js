@@ -24,7 +24,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.radarList = radarList || radarInfoList.slice(0, 1);
+    this.radarList = radarList || radarInfoList.slice(0, 3);
 
     this.zoomBind = this.zoom.bind(this);
 
@@ -39,6 +39,9 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
   renderHook() {
     this.updateRadarDetectionZoneCameraPosition();
+
+    const { renderer, scene, camera } = this;
+    renderer.render(scene, camera);
   }
 
   zoom() {
@@ -127,13 +130,13 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
       const uniforms = {
         cameraPosition:   { value: new THREE.Vector3() },
-        depthSampleCount: { value: 256 },
+        depthSampleCount: { value: 128 },
         boxResolution:    { value: new THREE.Vector3() },
-        pitchRange:       { value: new THREE.Vector2(0.0, 1) },
+        pitchRange:       { value: new THREE.Vector2(0.0, 0.5) },
         radius:           { value:  radius },
       };
       
-      const geometry = new THREE.BoxGeometry( radius * 2, radius * 2, radius * 2 );
+      const geometry = new THREE.BoxGeometry( radius * 2.0, radius * 2.0, radius * 2.0 );
 
       const material = new THREE.RawShaderMaterial( {
           glslVersion: THREE.GLSL3,
@@ -141,7 +144,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.DoubleSide,
+          side: THREE.BackSide,
       });
 
       const mesh = new THREE.Mesh( geometry, material );
