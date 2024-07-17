@@ -24,7 +24,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.radarList = radarList || radarInfoList.slice(0, 3);
+    this.radarList = radarList || radarInfoList.slice(0, 1);
 
     this.zoomBind = this.zoom.bind(this);
 
@@ -131,7 +131,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       const uniforms = {
         cameraPosition:   { value: new THREE.Vector3() },
         depthSampleCount: { value: 128 },
-        boxResolution:    { value: new THREE.Vector3() },
         pitchRange:       { value: new THREE.Vector2(0.0, 0.5) },
         radius:           { value:  radius },
       };
