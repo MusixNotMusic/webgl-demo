@@ -130,6 +130,11 @@ const routes= [
         name: "HorizonClouds",
         component: () => import("../components/HorizonClouds/Index.vue"),
       },
+      {
+        path: "/Qingdao",
+        name: "Qingdao",
+        component: () => import("../components/Qingdao/Index.vue"),
+      },
     ],
   }
 ];

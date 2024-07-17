@@ -4,7 +4,6 @@ import { TransformControls } from './TransformControls';
 
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
-
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 import mapboxgl from "mapbox-gl";
@@ -23,8 +22,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     this.id = id;
     
     this.map = map;
-
-    // this.emitter = new EventEmitter();
 
     this.zoomBind = this.zoom.bind(this);
 

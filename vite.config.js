@@ -22,5 +22,9 @@ export default defineConfig({
     port: 8088,
     // Load proxy configuration from .env
     proxy: 'http://192.168.20.104',
+    watch: {
+      usePolling: true,   // 修复HMR热更新失效
+    }
   },
+
 })
