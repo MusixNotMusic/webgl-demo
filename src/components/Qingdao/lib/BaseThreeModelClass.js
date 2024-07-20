@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import mapboxgl from "mapbox-gl";
 
 /**
  * BaseThreeModel 挤压模型

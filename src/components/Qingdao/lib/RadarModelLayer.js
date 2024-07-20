@@ -79,7 +79,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       this.drawLayer();
       // this.initPointLightHelper();
       this.initRadarDetectionZone();
-      // this.initRadarDetectionZone2(radarInfoList[0]);
       // this.initRadarCone();
       // this.initDirectionalLightHelper();
       return null;
@@ -159,57 +158,6 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
       this.scene.add(object);
     })
     
-  }
-
-
-  initRadarDetectionZone2 (radar) {
-    // const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-    const geometry = new THREE.BoxGeometry( radar.radius, radar.radius, radar.radius );
-
-    const uniforms = {
-      cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 256 },
-      boxResolution:    { value: new THREE.Vector3() },
-      pitchRange:       { value: new THREE.Vector2(0.0, 0.3) },
-      radius:           { value: 0.5 },
-    };
-    
-
-    // const material = new THREE.RawShaderMaterial( {
-    //     glslVersion: THREE.GLSL3,
-    //     uniforms: uniforms,
-    //     vertexShader: vertexShader,
-    //     fragmentShader: fragmentShader,
-    //     transparent: true,
-    //     side: THREE.DoubleSide,
-    //     wireframe: true
-    // });
-
-    const material = new THREE.MeshBasicMaterial( {
-      color: 'red',
-      transparent: true,
-      side: THREE.DoubleSide
-    });
-
-    // THREE.Mesh
-    const mesh = new THREE.Mesh( geometry, material );
-
-    mesh.name = 'radar-detection-zone-'+radar.id;
-
-    this.scene.add(mesh)
-
-    const ll = new mapboxgl.LngLat(radar.lngLat[0], radar.lngLat[1]);
-
-    const bounds = ll.toBounds(radar.radius).toArray();
-
-    const _bounds = {
-      minX:  bounds[0][0],
-      minY:  bounds[0][1],
-      maxX:  bounds[1][0],
-      maxY:  bounds[1][1]
-    }
-    console.log(_bounds);
-    this.setMeshPosition(mesh, _bounds);
   }
 
 

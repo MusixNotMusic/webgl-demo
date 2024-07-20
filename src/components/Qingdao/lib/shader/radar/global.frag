@@ -100,6 +100,119 @@ vec4 iCappedCone( in vec3  ro, in vec3  rd,
     return vec4(-1.0);
 }
 
+vec4 coneIntersect( in vec3 ro, in vec3 rd, in vec3 pa, in vec3 pb, in float ra, in float rb )
+{
+    vec3  ba = pb - pa;
+    vec3  oa = ro - pa;
+    vec3  ob = ro - pb;
+    float m0 = dot(ba,ba);
+    float m1 = dot(oa,ba);
+    float m2 = dot(rd,ba);
+    float m3 = dot(rd,oa);
+    float m5 = dot(oa,oa);
+    float m9 = dot(ob,ba); 
+    
+    // caps
+    if( m1<0.0 )
+    {
+        if( dot2(oa*m2-rd*m1)<(ra*ra*m2*m2) ) // delayed division
+            return vec4(-m1/m2,-ba*inversesqrt(m0));
+    }
+    else if( m9>0.0 )
+    {
+    	float t = -m9/m2;                     // NOT delayed division
+        if( dot2(ob+rd*t)<(rb*rb) )
+            return vec4(t,ba*inversesqrt(m0));
+    }
+    
+    // body
+    float rr = ra - rb;
+    float hy = m0 + rr*rr;
+    float k2 = m0*m0    - m2*m2*hy;
+    float k1 = m0*m0*m3 - m1*m2*hy + m0*ra*(rr*m2*1.0        );
+    float k0 = m0*m0*m5 - m1*m1*hy + m0*ra*(rr*m1*2.0 - m0*ra);
+    float h = k1*k1 - k2*k0;
+    // if( h<0.0 ) return vec4(-1.0); //no intersection
+    float t = (-k1-sqrt(h))/k2;
+    float y = m1 + t*m2;
+    // if( y<0.0 || y>m0 ) return vec4(-1.0); //no intersection
+    return vec4(t, normalize(m0*(m0*(oa+t*rd)+rr*ba*ra)-ba*hy*y));
+}
+
+// axis aligned box centered at the origin, with size boxSize
+vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize, out vec3 outNormal ) 
+{
+    vec3 m = 1.0/rd; // can precompute if traversing a set of aligned boxes
+    vec3 n = m*ro;   // can precompute if traversing a set of aligned boxes
+    vec3 k = abs(m)*boxSize;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    float tN = max( max( t1.x, t1.y ), t1.z );
+    float tF = min( min( t2.x, t2.y ), t2.z );
+    if( tN>tF || tF<0.0) return vec2(-1.0); // no intersection
+    outNormal = (tN>0.0) ? step(vec3(tN),t1) : // ro ouside the box
+                           step(t2,vec3(tF));  // ro inside the box
+    outNormal *= -sign(rd);
+    return vec2( tN, tF );
+}
+
+// capsule defined by extremes pa and pb, and radious ra
+// Note that only ONE of the two spherical caps is checked for intersections,
+// which is a nice optimization
+float capIntersect( in vec3 ro, in vec3 rd, in vec3 pa, in vec3 pb, in float ra )
+{
+    vec3  ba = pb - pa;
+    vec3  oa = ro - pa;
+    float baba = dot(ba,ba);
+    float bard = dot(ba,rd);
+    float baoa = dot(ba,oa);
+    float rdoa = dot(rd,oa);
+    float oaoa = dot(oa,oa);
+    float a = baba      - bard*bard;
+    float b = baba*rdoa - baoa*bard;
+    float c = baba*oaoa - baoa*baoa - ra*ra*baba;
+    float h = b*b - a*c;
+    if( h >= 0.0 )
+    {
+        float t = (-b-sqrt(h))/a;
+        float y = baoa + t*bard;
+        // body
+        if( y>0.0 && y<baba ) return t;
+        // caps
+        vec3 oc = (y <= 0.0) ? oa : ro - pb;
+        b = dot(rd,oc);
+        c = dot(oc,oc) - ra*ra;
+        h = b*b - c;
+        if( h>0.0 ) return -b - sqrt(h);
+    }
+    return -1.0;
+}
+
+// https://iquilezles.org/articles/distfunctions
+float sdCone(vec3 p, vec3 a, vec3 b, float ra, float rb)
+{
+    float rba  = rb-ra;
+    float baba = dot(b-a,b-a);
+    float papa = dot(p-a,p-a);
+    float paba = dot(p-a,b-a)/baba;
+
+    float x = sqrt( papa - paba*paba*baba );
+
+    float cax = max(0.0,x-((paba<0.5)?ra:rb));
+    float cay = abs(paba-0.5)-0.5;
+
+    float k = rba*rba + baba;
+    float f = clamp( (rba*(x-ra)+paba*baba)/k, 0.0, 1.0 );
+
+    float cbx = x-ra - f*rba;
+    float cby = paba - f;
+    
+    float s = (cbx < 0.0 && cay < 0.0) ? -1.0 : 1.0;
+    
+    return s*sqrt( min(cax*cax + cay*cay*baba,
+                       cbx*cbx + cby*cby*baba) );
+}
+
 vec3 pattern( in vec2 uv )
 {
     vec3 col = vec3(0.6);
@@ -127,9 +240,9 @@ void main(){
     vec4 col = vec4(0.0);
 
 
-    float step = (NF.y - NF.x) / depthSampleCount;
+    // float step = (NF.y - NF.x) / depthSampleCount;
 
-    p = ro + NF.x * rd;
+    // p = ro + NF.x * rd;
 
     // for (float t = NF.x; t < NF.y; t += step) {
     //     vec3 pc = (p - center);
@@ -180,37 +293,64 @@ void main(){
         vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
         vec3  pb = center;
         float ra = 10000.0;
-        float rb = 1000.0;
+        float rb = 10000.0;
 
 
         // raytrace
-        vec4 tnor = iCappedCone( ro, rd, pa, pb, ra, rb );
+        vec4 tnor = coneIntersect( ro, rd, pa, pb, ra, rb );
 
-        float t = tnor.x / r;
+        float t = tnor.x;
 
         if (t > 0.0 ) {
-            // vec3 pos = ro + t*rd;
+            vec3 pos = ro + t*rd;
             vec3 nor = tnor.yzw;
             // vec3 lig = SUN;
-            // vec3 lig = normalize(vec3(0.7,0.6,0.3));
-            // vec3 hal = normalize(-rd+lig);
-            // float dif = clamp( dot(nor,lig), 0.0, 1.0 );
-            // float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
+            vec3 lig = normalize(vec3(0.7,0.6,0.3));
+            vec3 hal = normalize(-rd+lig);
+            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
+            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
             
-            // vec3 w = normalize(pb-pa);
-            // vec3 u = normalize(cross(w,vec3(0,0,1)));
-            // vec3 v = normalize(cross(u,w) );
-            // vec3 q = (pos-pa)*mat3(u,v,w);
-            // col.rgb = pattern( vec2(16.0,64.0)*vec2(atan(q.y,q.x),q.z) );
+            vec3 w = normalize(pb-pa);
+            vec3 u = normalize(cross(w,vec3(0,0,1)));
+            vec3 v = normalize(cross(u,w) );
+            vec3 q = (pos-pa)*mat3(u,v,w);
+            col.rgb = pattern( vec2(16.0,64.0)*vec2(atan(q.y,q.x),q.z) );
 
-            // col.rgb *= vec3(0.2,0.3,0.4)*amb + vec3(1.0,0.9,0.7)*dif;
+            col.rgb *= vec3(0.2,0.3,0.4)*amb + vec3(1.0,0.9,0.7)*dif;
             
-            // col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
-            // col.a = 1.0;
+            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
+            col.a = 1.0;
 
             // col = vec4(0.28, 0.64, 0.91, 1.0);
             // col = vec4(nor, 1.0);
-            col = vec4(vec3( t), 1.0);
+        }
+    }
+
+    vec3 boxNormal = vec3(0.0);
+    // box 
+    for( int m=0; m<AA; m++ )
+    for( int n=0; n<AA; n++ )
+    {
+        // raytrace
+        vec2 NF = boxIntersection( ro, rd, vec3(10000.0), boxNormal);
+        float t = NF.x;
+        vec3 nor = boxNormal;
+        if (t > 0.0 ) {
+            col = vec4(boxNormal, 1.0);
+        }
+    }
+
+    vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
+    vec3  pb = center;
+    float crr = 100.0;
+    // box 
+    for( int m=0; m<AA; m++ )
+    for( int n=0; n<AA; n++ )
+    {
+        // raytrace
+        float t = capIntersect( ro, rd, pa, pb, crr);
+        if (t > 0.0 ) {
+            col = vec4(vec3(0.3), 1.0);
         }
     }
 
