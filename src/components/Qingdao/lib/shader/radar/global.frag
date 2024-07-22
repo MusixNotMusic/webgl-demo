@@ -265,8 +265,11 @@ float capIntersect( in vec3 ro, in vec3 rd, in vec3 pa, in vec3 pb, in float ra 
 vec3 pattern( in vec2 uv )
 {
     vec3 col = vec3(0.6);
+    // col += 0.4*smoothstep(-0.01,0.01,cos(uv.x*0.5)*cos(uv.y*0.5)); 
+    // col *= smoothstep(-1.0,-0.98,cos(uv.x))*smoothstep(-1.0,-0.98,cos(uv.y));
     col += 0.4*smoothstep(-0.01,0.01,cos(uv.x*0.5)*cos(uv.y*0.5)); 
     col *= smoothstep(-1.0,-0.98,cos(uv.x))*smoothstep(-1.0,-0.98,cos(uv.y));
+    
     return col;
 }
 
@@ -359,8 +362,8 @@ void main(){
         if (t > 0.0) {
             vec3 pos = ro + t*rd;
             vec3 nor = tnor.yzw;
-            vec3 lig = SUN;
-            // vec3 lig = normalize(vec3(0.7,0.6,0.3));
+            // vec3 lig = SUN;
+            vec3 lig = normalize(vec3(0.7,-0.6,0.3));
             vec3 hal = normalize(-rd+lig);
             float dif = clamp( dot(nor,lig), 0.0, 1.0 );
             float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
@@ -369,7 +372,7 @@ void main(){
             vec3 u = normalize(cross(w,vec3(0,0,1)));
             vec3 v = normalize(cross(u,w) );
             vec3 q = (pos-pa)*mat3(u,v,w);
-            col.rgb = pattern( vec2(16.0,16.0)*vec2(atan(q.y,q.x),q.z) );
+            col.rgb = pattern( vec2(32.0,64.0)*vec2(atan(q.y,q.x), q.z / radius) );
 
             col.rgb *= vec3(0.2,0.3,0.4)*amb + vec3(1.0,0.9,0.7)*dif;
             
@@ -382,22 +385,20 @@ void main(){
     }
 
 
-    vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
-    vec3  pb = center;
-    float crr = 100.0;
+    // vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
+    // vec3  pb = center;
+    // float crr = 100.0;
     
-    // cap 
-    for( int m=0; m<AA; m++ )
-    for( int n=0; n<AA; n++ )
-    {
-        // raytrace
-        float t = capIntersect( ro, rd, pa, pb, crr);
-        if (t > 0.0 ) {
-            float li = dot(rd, pa - pb) / length(pa - pb);
-            li = sqrt(1.0 - li * li);
-            col = vec4(vec3(1.0, 0.0, 0.0), li);
-        }
-    }
+    // // cap 
+    // for( int m=0; m<AA; m++ )
+    // for( int n=0; n<AA; n++ )
+    // {
+    //     // raytrace
+    //     float t = capIntersect( ro, rd, pa, pb, crr);
+    //     if (t > 0.0 ) {
+    //         col = vec4(vec3(1.0, 0.0, 0.0), 0.5);
+    //     }
+    // }
 
     color = col;
     
