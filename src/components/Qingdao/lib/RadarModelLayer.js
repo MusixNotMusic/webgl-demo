@@ -24,7 +24,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.radarList = radarList || radarInfoList.slice(0, 1);
+    this.radarList = radarList || radarInfoList.slice(0, 4);
 
     this.zoomBind = this.zoom.bind(this);
 
@@ -230,7 +230,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
             reflectivity: 0.2,
             refractionRatio: 0.985,
             ior: 0.9,
-            side: THREE.BackSide,
+            side: THREE.FrontSide,
         })
         
         const cone = new THREE.Mesh( geometry, material );

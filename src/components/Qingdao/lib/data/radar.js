@@ -22,14 +22,14 @@ export const radarInfoList = [
         name: 'radar-3',
         lngLat: randomQingdao(),
         alt: 0,
-        radius: 150
+        radius: 75
     },
     {
         id: 4,
         name: 'radar-4',
         lngLat: randomQingdao(),
         alt: 0,
-        radius: 150
+        radius: 75
     },
     {
         id: 5,
