@@ -191,7 +191,7 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
     return vec4(t, n);
 }
 
-vec4 iCappedCone2( in vec3  ro, in vec3  rd, 
+vec4 intersectCone2( in vec3  ro, in vec3  rd, 
                   in vec3  pa, in vec3  pb, 
                   in float ra, in float rb )
 {
@@ -351,7 +351,7 @@ void main(){
         // vec4 tnor = intersectCone(ro, rd, center, normalize(vec3(0.05, 0.2, 0.05)), len, cosa);
 
 
-        vec4 tnor = iCappedCone2( ro, rd, pa, pb, ra, rb );
+        vec4 tnor = intersectCone2( ro, rd, pa, pb, ra, rb );
 
 
         float t = tnor.x;
@@ -359,8 +359,8 @@ void main(){
         if (t > 0.0) {
             vec3 pos = ro + t*rd;
             vec3 nor = tnor.yzw;
-            // vec3 lig = SUN;
-            vec3 lig = normalize(vec3(0.7,0.6,0.3));
+            vec3 lig = SUN;
+            // vec3 lig = normalize(vec3(0.7,0.6,0.3));
             vec3 hal = normalize(-rd+lig);
             float dif = clamp( dot(nor,lig), 0.0, 1.0 );
             float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
@@ -369,7 +369,7 @@ void main(){
             vec3 u = normalize(cross(w,vec3(0,0,1)));
             vec3 v = normalize(cross(u,w) );
             vec3 q = (pos-pa)*mat3(u,v,w);
-            col.rgb = pattern( vec2(16.0,64.0)*vec2(atan(q.y,q.x),q.z) );
+            col.rgb = pattern( vec2(16.0,16.0)*vec2(atan(q.y,q.x),q.z) );
 
             col.rgb *= vec3(0.2,0.3,0.4)*amb + vec3(1.0,0.9,0.7)*dif;
             
