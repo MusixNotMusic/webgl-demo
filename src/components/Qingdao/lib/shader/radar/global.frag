@@ -11,7 +11,7 @@ uniform vec2 pitchRange;
 
 uniform float radius;
 
-#define SUN normalize(vec3(0.0, 0.5, -0.5))
+#define SUN normalize(vec3(1.0, 0.5, -0.5))
 
 /**
  * 球体相交
@@ -30,133 +30,6 @@ vec2 iSphere( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
 
 float dot2( in vec3 v ) { return dot(v,v); }
 
-vec4 iCappedCone( in vec3  ro, in vec3  rd, 
-                  in vec3  pa, in vec3  pb, 
-                  in float ra, in float rb )
-{
-    vec3  ba = pb - pa;
-    vec3  oa = ro - pa;
-    vec3  ob = ro - pb;
-    
-    float m0 = dot(ba,ba);
-    float m1 = dot(oa,ba);
-    float m2 = dot(ob,ba); 
-    float m3 = dot(rd,ba);
-
-    //caps
-         if( m1<0.0 ) { if( dot2(oa*m3-rd*m1)<(ra*ra*m3*m3) ) return vec4(-m1/m3,-ba*inversesqrt(m0)); }
-    else if( m2>0.0 ) { if( dot2(ob*m3-rd*m2)<(rb*rb*m3*m3) ) return vec4(-m2/m3, ba*inversesqrt(m0)); }
-    
-    // body
-    float m4 = dot(rd,oa);
-    float m5 = dot(oa,oa);
-    float rr = ra - rb;
-    float hy = m0 + rr*rr;
-    
-    float k2 = m0*m0    - m3*m3*hy;
-    float k1 = m0*m0*m4 - m1*m3*hy + m0*ra*(rr*m3*1.0        );
-    float k0 = m0*m0*m5 - m1*m1*hy + m0*ra*(rr*m1*2.0 - m0*ra);
-    
-    float h = k1*k1 - k2*k0;
-    if( h<0.0 ) return vec4(-1.0);
-
-    float t = (-k1-sqrt(h))/k2;
-
-    float y = m1 + t*m3;
-    if( y>0.0 && y<m0 ) 
-    {
-        return vec4(t, normalize(m0*(m0*(oa+t*rd)+rr*ba*ra)-ba*hy*y));
-    }
-    
-    return vec4(-1.0);
-}
-
-vec4 coneIntersect( in vec3 ro, in vec3 rd, in vec3 pa, in vec3 pb, in float ra, in float rb )
-{
-    vec3  ba = pb - pa;
-    vec3  oa = ro - pa;
-    vec3  ob = ro - pb;
-    float m0 = dot(ba,ba);
-    float m1 = dot(oa,ba);
-    float m2 = dot(rd,ba);
-    float m3 = dot(rd,oa);
-    float m5 = dot(oa,oa);
-    float m9 = dot(ob,ba); 
-    
-    // caps
-    if( m1<0.0 )
-    {
-        if( dot2(oa*m2-rd*m1)<(ra*ra*m2*m2) ) // delayed division
-            return vec4(-m1/m2,-ba*inversesqrt(m0));
-    }
-    else if( m9>0.0 )
-    {
-    	float t = -m9/m2;                     // NOT delayed division
-        if( dot2(ob+rd*t)<(rb*rb) )
-            return vec4(t,ba*inversesqrt(m0));
-    }
-    
-    // body
-    float rr = ra - rb;
-    float hy = (rr * rr) / ( m0 + rr*rr );
-    float k2 = m0*m0    - m2*m2*hy;
-    float k1 = m0*m0*m3 - m1*m2*hy + m0*ra*(rr*m2*1.0        );
-    float k0 = m0*m0*m5 - m1*m1*hy + m0*ra*(rr*m1*2.0 - m0*ra);
-    float h = k1*k1 - k2*k0;
-    if( h<0.0 ) return vec4(-1.0); //no intersection
-    float t = (-k1-sqrt(h))/k2;
-    float y = m1 + t*m2;
-    if( y<0.0 || y>m0 ) return vec4(-1.0); //no intersection
-    return vec4(t, normalize(m0*(m0*(oa+t*rd)+rr*ba*ra)-ba*hy*y));
-}
-
-
-
-// cone defined by extremes pa and pb, and radious ra and rb.
-vec4 iRoundedCone( in vec3 ro, in vec3 rd, in vec3 pa, in vec3 pb, in float ra, in float rb )
-{
-    vec3  ba = pb - pa;
-    vec3  oa = ro - pa;
-    vec3  ob = ro - pb;
-    float rr = ra - rb;
-    float m0 = dot(ba,ba);
-    float m1 = dot(ba,oa);
-    float m2 = dot(ba,rd);
-    float m3 = dot(rd,oa);
-    float m5 = dot(oa,oa);
-    float m6 = dot(ob,rd);
-    float m7 = dot(ob,ob);
-    
-    // body
-    float d2 = m0-rr*rr;
-    float k2 = d2    - m2*m2;
-    float k1 = d2*m3 - m1*m2 + m2*rr*ra;
-    float k0 = d2*m5 - m1*m1 + m1*rr*ra*2.0 - m0*ra*ra;
-    float h = k1*k1 - k0*k2;
-    if( h<0.0) return vec4(-1.0);
-    float t = (-sqrt(h)-k1)/k2;
-  //if( t<0.0 ) return vec4(-1.0);
-    float y = m1 - ra*rr + t*m2;
-    if( y>0.0 && y<d2 ) return vec4(t, normalize(d2*(oa+t*rd)-ba*y));
-
-    // caps
-    float h1 = m3*m3 - m5 + ra*ra;
-    float h2 = m6*m6 - m7 + rb*rb;
-    if( max(h1,h2)<0.0 ) return vec4(-1.0);
-    vec4 r = vec4(1e20);
-    if( h1>0.0 )
-    {        
-    	t = -m3 - sqrt( h1 );
-        r = vec4( t, (oa+t*rd)/ra );
-    }
-    if( h2>0.0 )
-    {
-    	t = -m6 - sqrt( h2 );
-        if( t<r.x )
-        r = vec4( t, (ob+t*rd)/rb );
-    }
-    return r;
-}
 
 
 vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float cosa)
@@ -273,6 +146,7 @@ vec3 pattern( in vec2 uv )
     return col;
 }
 
+
 #define AA 3
 
 void main(){
@@ -298,18 +172,15 @@ void main(){
         vec3 pc = (p - center);
 
         float pitch =  pc.z / length(pc.xy);
+        vec3 nor = normalize(pc);
 
         if (pitch > pitchRange.x && pitch <= pitchRange.y) {
 
-            vec3 left = cross(pc, p);
-            vec3 normal = normalize(cross(pc, left));
 
-            vec3 ref = reflect(SUN, normal);
+            vec3 ref = reflect(SUN, nor);
             float light = abs(dot(ref, rd));
             
-
             col = vec4(vec3(0.7), 0.8 - light);
-            // col = vec4(light);
 
             if (length(pc) < radius * 0.9999) {
                 if (abs(mod(pc.x, rr * 0.1)) < rr * 0.003)
@@ -329,33 +200,73 @@ void main(){
         p = p + step * rd;
     }
 
+    // sphere intersection
+    // for( int m=0; m<AA; m++ )
+    // for( int n=0; n<AA; n++ )
+    // {
+    //     vec2 NF = iSphere(ro, rd, center, radius);
+    //     vec3 pos = ro + NF.x * rd;
+    //     vec3 pc = (pos - center);
+
+    //     vec3 nor = normalize(pc);
+
+    //     float pitch =  pc.z / length(pc.xy);
+
+    //     if (pitch >= pitchRange.x && pitch <= pitchRange.y && length(pc) <= radius * 1.001) {
+
+    //         // vec3 left = cross(pc, pos);
+    //         // vec3 normal = normalize(cross(pc, left));
+
+    //         vec3 ref = reflect(SUN, nor);
+    //         float light = abs(dot(ref, rd));
+
+    //         col = vec4(vec3(0.7), 0.8 - light);
+
+    //         if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
+    //             col = vec4(1.0, 1.0, 1.0, 0.5);
+    //         }
+    //     }
+
+    //     float H = radius * sin(pitchRange.y - 0.05);
+    //     float beta = H / radius;
+    //     vec4 tnor = intersectCone(ro, rd, center, vec3(0, 0, 1), H, beta);
+    //     float t = tnor.x;
+
+    //     if (t > 0.0) {
+    //         vec3 pos = ro + t * rd;
+    //         vec3 nor = tnor.yzw;
+
+    //         vec3 ref = reflect(SUN, nor);
+    //         float light = abs(dot(ref, rd));
+
+    //         col = vec4(vec3(0.7), 0.8 - light);
+
+    //         vec3 pc = pos - center;
+
+    //         if (length(pc) < radius * 0.9999) {
+    //             if (abs(mod(pc.x, rr * 0.1)) < rr * 0.003)
+    //             col = vec4(1.0, 1.0, 1.0, 0.8);
+
+    //             if (abs(mod(pc.y, rr * 0.1)) < rr * 0.003)
+    //                 col = vec4(1.0, 1.0, 1.0, 0.8);
+    //         }
+    //     }
+    // }
+
     float azimuth = 0.5;
     float elevation = 0.3;
-    float r = radius;
 
-    // render
-    vec3 tot = vec3(0.0);
-
+    // cone intersect
     for( int m=0; m<AA; m++ )
     for( int n=0; n<AA; n++ )
     {
 
-        vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
+        vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
         vec3  pb = center;
         float ra = 1000.0;
         float rb = 0.0;
 
-        // vec4 tnor = coneIntersect( ro, rd, pa, pb, ra, rb );
-        // vec4 tnor = iRoundedCone( ro, rd, pa, pb, ra, rb );
-        
-        // vec3 axis = normalize(vec3(cos(azimuth) * cos(elevation), sin(azimuth)* cos(elevation), sin(elevation)));
-        // float len = radius;
-        // float cosa = 0.9995;
-        // vec4 tnor = intersectCone(ro, rd, center, normalize(vec3(0.05, 0.2, 0.05)), len, cosa);
-
-
         vec4 tnor = intersectCone2( ro, rd, pa, pb, ra, rb );
-
 
         float t = tnor.x;
 
@@ -384,21 +295,21 @@ void main(){
         }
     }
 
-
-    // vec3  pa = vec3(r * cos(azimuth) * cos(elevation), r * sin(azimuth)* cos(elevation), r * sin(elevation) - radius);
-    // vec3  pb = center;
-    // float crr = 100.0;
+    // cap intersect
+    vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
+    vec3  pb = center;
+    float crr = 100.0;
     
-    // // cap 
-    // for( int m=0; m<AA; m++ )
-    // for( int n=0; n<AA; n++ )
-    // {
-    //     // raytrace
-    //     float t = capIntersect( ro, rd, pa, pb, crr);
-    //     if (t > 0.0 ) {
-    //         col = vec4(vec3(1.0, 0.0, 0.0), 0.5);
-    //     }
-    // }
+    // cap 
+    for( int m=0; m<AA; m++ )
+    for( int n=0; n<AA; n++ )
+    {
+        // raytrace
+        float t = capIntersect( ro, rd, pa, pb, crr);
+        if (t > 0.0 ) {
+            col = vec4(vec3(1.0, 0.0, 0.0), 0.5);
+        }
+    }
 
     color = col;
     
