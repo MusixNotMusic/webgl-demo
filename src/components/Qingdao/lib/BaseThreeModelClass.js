@@ -6,9 +6,6 @@ import * as THREE from 'three';
 export default class BaseThreeModelClass {
     constructor() {
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        this.renderer.shadowMap.enabled = true;
-        
-        // this.renderer.shadowMap.type = THREE.VSMShadowMap;
 
         this.scene = new THREE.Scene();
 

@@ -13,8 +13,10 @@ import { radarInfoList } from './data/radar'
 import vertexShader from './shader/radar/global.vert'
 import fragmentShader from './shader/radar/global.frag'
 
-import { addCSS2Object } from './tool/utils';
+import { addCSS2Object, setMeshUniform } from './tool/utils';
 
+
+const isNumber = (number) => typeof number === 'number';
 /***
  * 单部雷达
  */
@@ -33,7 +35,11 @@ export default class RadarModel{
       depthSampleCount: { value: 128 },
       pitchRange:       { value: new THREE.Vector2(0.0, 0.6) },
       radius:           { value: radarInfo.radius * 1e3 },
+      azimuth:          { value: Math.PI * 0.5 },
+      elevation:        { value: Math.random() * 0.6}
     };
+
+    this.azimuth = Math.random() * Math.PI * 2;
 
     window.StationModel = this;
   }
@@ -44,6 +50,7 @@ export default class RadarModel{
       this.initRadarModel(model);
       this.initRadarDetectionZone();
       this.initDirectionalLightHelper();
+
       return null;
     })
   }
@@ -83,7 +90,7 @@ export default class RadarModel{
 
     object.name = radarInfo.name;
 
-    addCSS2Object(object, radarInfo.name, [0, 500, 0], null);
+    addCSS2Object(object, radarInfo.name, [0, 5000, 0], null);
 
     this.scene.add(object)
   }
@@ -106,7 +113,7 @@ export default class RadarModel{
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.BackSide,
+          side: THREE.DoubleSide,
       });
 
       const mesh = new THREE.Mesh( geometry, material );
@@ -132,9 +139,10 @@ export default class RadarModel{
 
     const name = 'radar-detection-zone-' + radarInfo.id;
     const object = this.scene.getObjectByName(name);
-    if (object && object.material.uniforms && object.material.uniforms.cameraPosition) {
-      object.material.uniforms.cameraPosition.value.copy( { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z } );
-    }
+ 
+    setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
+
+    this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
 
     renderer.render(scene, camera);
   }
@@ -148,17 +156,17 @@ export default class RadarModel{
 
     light.target = this.radarModel;
 
-    const helper = new THREE.DirectionalLightHelper( light, 5000, 0x0f0fcc );
+    // const helper = new THREE.DirectionalLightHelper( light, 5000, 0x0f0fcc );
 
     const _light = light.clone();
 
     const object = new WGS84Object3D(_light);
   
-    object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], 50000);
+    // object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], 50000);
 
-    object.add(new THREE.AxesHelper(10000));
+    // object.add(new THREE.AxesHelper(10000));
 
-    object.add(helper);
+    // object.add(helper);
 
     this.scene.add( object );
 
@@ -182,6 +190,24 @@ export default class RadarModel{
     const helper = new WGS84Object3D(pointLightHelper);
     helper.WGS84Position = new THREE.Vector3(120.5, 35, 44000);
     this.scene.add( helper );
+  }
+
+  setScanAngle(azimuth, elevation) {
+    if(isNumber(azimuth)) {
+      const object = this.radarModel.getObjectByName('head');
+      if (object) {
+        object.rotation.z = azimuth;
+      }
+      setMeshUniform(this.mesh, 'azimuth', azimuth + Math.PI * 0.5)
+    }
+
+    if(isNumber(elevation)) {
+      const object = this.radarModel.getObjectByName('elevation');
+      if (object) {
+        object.rotation.x = elevation;
+      }
+      setMeshUniform(this.mesh, 'elevation', elevation)
+    }
   }
 
 

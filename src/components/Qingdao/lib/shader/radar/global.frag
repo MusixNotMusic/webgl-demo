@@ -11,7 +11,12 @@ uniform vec2 pitchRange;
 
 uniform float radius;
 
+uniform float azimuth; // 方位角
+uniform float elevation; // 仰角
+
 #define SUN normalize(vec3(1.0, 0.5, -0.5))
+
+#define PI 3.141592653589793
 
 /**
  * 球体相交
@@ -44,7 +49,7 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
     float c = dot(co,axis)*dot(co,axis) - dot(co,co)*cosa2;
 
     float det = b*b - 4.*a*c;
-    if (det < 0.) return vec4(-1.0);
+    if (det < 0.0) return vec4(-1.0);
 
     det = sqrt(det);
     float t1 = (-b - det) / (2. * a);
@@ -52,8 +57,9 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
 
     // This is a bit messy; there ought to be a more elegant solution.
     float t = t1;
-    if (t < 0. || t2 > 0. && t2 < t) t = t2;
-    if (t < 0.) return vec4(-1.0);
+    // if (t < 0. || t2 > 0. && t2 < t) t = t2;
+    if (t < 0. && t2 < t) t = t2;
+    // if (t < 0.) return vec4(-1.0);
 
     vec3 cp = ro + t*rd - center;
     float h = dot(cp, axis);
@@ -156,105 +162,120 @@ void main(){
     vec3 p = vec3(0.0);
 
     vec3 center = vec3(0.0, 0.0, -radius);
-
-    float rr = radius;
+    // float azimuth = 0.5;
+    // float elevation = 0.3;
     
-    vec2 NF = iSphere(ro, rd, center, rr);
-
     vec4 col = vec4(0.0);
 
 
-    float step = (NF.y - NF.x) / depthSampleCount;
+    // vec2 NF = iSphere(ro, rd, center, radius);
+    // p = ro + NF.x * rd;
+    // float step = (NF.y - NF.x) / depthSampleCount;
 
-    p = ro + NF.x * rd;
-
-    for (float t = NF.x; t < NF.y; t += step) {
-        vec3 pc = (p - center);
-
-        float pitch =  pc.z / length(pc.xy);
-        vec3 nor = normalize(pc);
-
-        if (pitch > pitchRange.x && pitch <= pitchRange.y) {
-
-
-            vec3 ref = reflect(SUN, nor);
-            float light = abs(dot(ref, rd));
-            
-            col = vec4(vec3(0.7), 0.8 - light);
-
-            if (length(pc) < radius * 0.9999) {
-                if (abs(mod(pc.x, rr * 0.1)) < rr * 0.003)
-                col = vec4(1.0, 1.0, 1.0, 0.5);
-
-                if (abs(mod(pc.y, rr * 0.1)) < rr * 0.003)
-                    col = vec4(1.0, 1.0, 1.0, 0.5);
-            }
-
-            if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
-                col = vec4(1.0, 1.0, 1.0, 0.5);
-            }
-
-            break;
-        }
-        
-        p = p + step * rd;
-    }
-
-    // sphere intersection
-    // for( int m=0; m<AA; m++ )
-    // for( int n=0; n<AA; n++ )
-    // {
-    //     vec2 NF = iSphere(ro, rd, center, radius);
-    //     vec3 pos = ro + NF.x * rd;
-    //     vec3 pc = (pos - center);
-
-    //     vec3 nor = normalize(pc);
+    // for (float t = NF.x; t < NF.y; t += step) {
+    //     vec3 pc = (p - center);
 
     //     float pitch =  pc.z / length(pc.xy);
+    //     vec3 nor = normalize(pc);
 
-    //     if (pitch >= pitchRange.x && pitch <= pitchRange.y && length(pc) <= radius * 1.001) {
+    //     if (pitch > pitchRange.x && pitch <= pitchRange.y) {
 
-    //         // vec3 left = cross(pc, pos);
-    //         // vec3 normal = normalize(cross(pc, left));
 
     //         vec3 ref = reflect(SUN, nor);
     //         float light = abs(dot(ref, rd));
-
+            
     //         col = vec4(vec3(0.7), 0.8 - light);
+
+    //         if (length(pc) < radius * 0.9999) {
+    //             if (abs(mod(pc.x, radius * 0.1)) < radius * 0.003)
+    //             col = vec4(1.0, 1.0, 1.0, 0.5);
+
+    //             if (abs(mod(pc.y, radius * 0.1)) < radius * 0.003)
+    //                 col = vec4(1.0, 1.0, 1.0, 0.5);
+    //         }
 
     //         if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
     //             col = vec4(1.0, 1.0, 1.0, 0.5);
     //         }
+
+    //         break;
     //     }
-
-    //     float H = radius * sin(pitchRange.y - 0.05);
-    //     float beta = H / radius;
-    //     vec4 tnor = intersectCone(ro, rd, center, vec3(0, 0, 1), H, beta);
-    //     float t = tnor.x;
-
-    //     if (t > 0.0) {
-    //         vec3 pos = ro + t * rd;
-    //         vec3 nor = tnor.yzw;
-
-    //         vec3 ref = reflect(SUN, nor);
-    //         float light = abs(dot(ref, rd));
-
-    //         col = vec4(vec3(0.7), 0.8 - light);
-
-    //         vec3 pc = pos - center;
-
-    //         if (length(pc) < radius * 0.9999) {
-    //             if (abs(mod(pc.x, rr * 0.1)) < rr * 0.003)
-    //             col = vec4(1.0, 1.0, 1.0, 0.8);
-
-    //             if (abs(mod(pc.y, rr * 0.1)) < rr * 0.003)
-    //                 col = vec4(1.0, 1.0, 1.0, 0.8);
-    //         }
-    //     }
+        
+    //     p = p + step * rd;
     // }
 
-    float azimuth = 0.5;
-    float elevation = 0.3;
+    // sphere intersection
+    for( int m=0; m<AA; m++ )
+    for( int n=0; n<AA; n++ )
+    {
+        vec2 NF = iSphere(ro, rd, center, radius);
+        vec3 pos = ro + NF.x * rd;
+        vec3 pc = (pos - center);
+
+        vec3 nor = normalize(pc);
+
+        float pitch =  pc.z / length(pc.xy);
+
+        if (pitch >= pitchRange.x && pitch <= pitchRange.y && length(pc) <= radius * 1.001) {
+
+            vec3 ref = reflect(SUN, nor);
+            float light = abs(dot(ref, rd));
+
+            col = vec4(vec3(0.8), 0.8 - light);
+
+
+            if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
+                col = vec4(1.0, 1.0, 1.0, 1.0);
+            }
+        }
+
+        // vec3 pos1 = ro + NF.y * rd;
+        // vec3 pc1 = (pos1 - center);
+
+        // vec3 nor1 = normalize(pc1);
+
+        // float pitch1 =  pc1.z / length(pc1.xy);
+
+        // if (pitch1 >= pitchRange.x && pitch1 <= pitchRange.y && length(pc1) <= radius * 1.001) {
+
+        //     vec3 ref = reflect(SUN, nor1);
+        //     float light = abs(dot(ref, rd));
+
+        //     col = vec4(vec3(0.8), 0.7 - light);
+
+        //     if (length(pc1) > radius * 0.9999 && abs(pitch1 - pitchRange.y) < 0.01) { 
+        //         col = vec4(1.0, 1.0, 1.0, 0.5);
+        //     }
+        // }
+
+        float H = radius * sin(atan(pitchRange.y));
+        float beta = H / radius;
+        vec4 tnor = intersectCone(ro, rd, center, vec3(0, 0, 1), H, beta);
+        float t = tnor.x;
+
+        if (t > 0.0) {
+            vec3 pos = ro + t * rd;
+            vec3 nor = tnor.yzw;
+
+            vec3 ref = reflect(SUN, nor);
+            float light = abs(dot(ref, rd));
+
+            col = vec4(vec3(0.7), light);
+
+            vec3 pc = pos - center;
+
+            if (length(pc) < radius * 0.9999) {
+                if (abs(mod(pc.x, radius * 0.1)) < radius * 0.003)
+                    col = vec4(1.0, 1.0, 1.0, 0.8);
+
+                if (abs(mod(pc.y, radius * 0.1)) < radius * 0.003)
+                    col = vec4(1.0, 1.0, 1.0, 0.8);
+            }
+        }
+    }
+
+    // float azimuth = 0.5;
+    // float elevation = 0.3;
 
     // cone intersect
     for( int m=0; m<AA; m++ )
@@ -262,7 +283,7 @@ void main(){
     {
 
         vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
-        vec3  pb = center;
+        vec3  pb = center + vec3(0.0, 0.0, 2000.0);
         float ra = 1000.0;
         float rb = 0.0;
 
@@ -297,7 +318,7 @@ void main(){
 
     // cap intersect
     vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
-    vec3  pb = center;
+    vec3  pb = center + vec3(0.0, 0.0, 2000.0);;
     float crr = 100.0;
     
     // cap 

@@ -26,7 +26,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.radarList = radarList || radarInfoList.slice(0, 1);
+    this.radarList = radarList || radarInfoList;
 
     this.radarModelList = [];
 
@@ -81,12 +81,12 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     const loader = new FBXLoader();
 
     return new Promise((resolve) => {
-      loader.load( '/model/fbx/radar2.fbx',  ( _model ) => {
+      loader.load( '/model/fbx/radar3.fbx',  ( _model ) => {
         const model = new WGS84Object3D(_model);
         this.radarList.forEach(radarInfo => {
 
           const object = model.clone();
-          radarInfo.radarModel = object;
+          radarInfo.model = object;
           const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo);
 
           radarModelInstance.render();
