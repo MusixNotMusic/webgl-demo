@@ -92,6 +92,8 @@ export default class RadarModel{
 
     addCSS2Object(object, radarInfo.name, [0, 5000, 0], null);
 
+    this.radar = object;
+
     this.scene.add(object)
   }
 
@@ -113,7 +115,7 @@ export default class RadarModel{
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide,
       });
 
       const mesh = new THREE.Mesh( geometry, material );
@@ -128,23 +130,27 @@ export default class RadarModel{
 
       object.WGS84Position = new THREE.Vector3(radarInfo.lngLat[0], radarInfo.lngLat[1], radarInfo.alt);
 
+      this.zone = object;
+
       this.scene.add(object);
   }
  
 
   updateCameraPosition() {
-    const { renderer, scene, camera } = this;
-    const radarInfo = this.radarInfo;
-    const cameraPosition = this.camera.position;
+    if (!this.isDispose) {
+      const { renderer, scene, camera } = this;
+      const radarInfo = this.radarInfo;
+      const cameraPosition = this.camera.position;
 
-    const name = 'radar-detection-zone-' + radarInfo.id;
-    const object = this.scene.getObjectByName(name);
- 
-    setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
+      const name = 'radar-detection-zone-' + radarInfo.id;
+      const object = this.scene.getObjectByName(name);
+  
+      setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
 
-    this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
+      this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
 
-    renderer.render(scene, camera);
+      renderer.render(scene, camera);
+    }
   }
 
 
@@ -167,6 +173,7 @@ export default class RadarModel{
     // object.add(new THREE.AxesHelper(10000));
 
     // object.add(helper);
+    this.light = object;
 
     this.scene.add( object );
 
@@ -210,12 +217,22 @@ export default class RadarModel{
     }
   }
 
+  removeItem (object) {
+    if (object) {
+      this.scene.remove(object);
+      object.clear();
+    }
+  }
+
 
   destroy () {
     this.radarInfo = null;
     // 删除 radarModel
-    // this.scene.remove(this.radarModel);
-    // this.radarModel.clean();
+    this.removeItem(this.radar);
+    this.removeItem(this.zone);
+    this.removeItem(this.light);
+
+    this.isDispose = true;
   }
 
   dispose () {

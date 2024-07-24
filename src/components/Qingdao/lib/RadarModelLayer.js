@@ -26,7 +26,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
     
     this.map = map;
 
-    this.radarList = radarList || radarInfoList;
+    this.radarList = radarList || radarInfoList.slice(0, 2);
 
     this.radarModelList = [];
 
@@ -102,6 +102,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   destroy () {
     super.destroy();
     this.radarModelList.forEach(radar => radar && radar.destroy());
+    this.radarModelList = [];
   }
 
   dispose () {

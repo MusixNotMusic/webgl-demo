@@ -10,19 +10,17 @@ import vertexShader from './shader/cloud/cloud.vert';
 import fragmentShader from './shader/cloud/noise.frag';
 
 export default class HorizonClouds {
-    constructor(container, dataInstance) {
+    constructor(renderer, camera, scene) {
         this.container = container;
-        
-        this.dataInstance = dataInstance;
 
         this.stats = null;
         this.gui = null;
         this.guiStatsEl = null;
         this.controls = null;
 
-        this.camera = null;
-        this.scene = null;
-        this.renderer = null;
+        this.camera = camera;
+        this.scene = scene;
+        this.renderer = renderer;
         this.material = null;
 
         // clock
