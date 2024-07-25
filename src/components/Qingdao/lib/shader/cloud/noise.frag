@@ -281,7 +281,7 @@ void main(){
 	
 	float alpha = 0.0;
 
-    for ( float t = bounds.x; t < bounds.y; t += delta ) {
+  for ( float t = bounds.x; t < bounds.y; t += delta ) {
 		vec3 pos = (p + 0.5 + wind) * vec3(float(OFFSET));
 		// float li = dot(pos, SUN_DIR)/ length(pos) * length(SUN_DIR);
 		float dens = density(pos);
@@ -295,11 +295,12 @@ void main(){
 		col -= T * (exp(h) / 1.75) * dens * march_step;
 		alpha += (1. - T_i) * (1. - alpha);
 
-        p += rayDir * delta ;
-    }
+    p += rayDir * delta ;
+  }
 	
-	vec3 cloud = col.rgb/(0.000001+alpha);
+	// vec3 cloud = col.rgb/(0.000001+alpha);
+	vec3 cloud = 1.0 - col.rgb/(0.000001+alpha);
 	color = vec4(cloud, alpha);
     
-    if (color.a == 0.0) discard;
+  if (color.a == 0.0) discard;
 }

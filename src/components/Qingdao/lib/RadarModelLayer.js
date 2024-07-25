@@ -15,6 +15,8 @@ import fragmentShader from './shader/radar/global.frag'
 
 import RadarModel from './RadarModel';
 
+import HorizonClouds from './HorizonClouds';
+
 /***
  * 矩形立方体的 等值面结构
  */
@@ -42,6 +44,10 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
         radarModel.updateCameraPosition();
       }
     })
+
+    if (this.horizonClouds) {
+      this.horizonClouds.updateCameraPosition();
+    }
   }
 
   zoom() {
@@ -79,6 +85,8 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
   initRadarModel () {
     const loader = new FBXLoader();
+
+    this.horizonClouds = new HorizonClouds(this.renderer, this.camera, this.scene);
 
     return new Promise((resolve) => {
       loader.load( '/model/fbx/radar3.fbx',  ( _model ) => {

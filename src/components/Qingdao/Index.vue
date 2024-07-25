@@ -14,7 +14,7 @@ export default {
   setup() {
     let instance;
     const center = ref([120.5, 36]);
-    const zoom = ref(8);
+    const zoom = ref(6);
 
 
     window.mapboxgl = mapboxgl;

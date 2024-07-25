@@ -3,20 +3,19 @@ import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-
 import vertexShader from './shader/cloud/cloud.vert';
-// import fragmentShader from './shader/cloud/cloud.frag';
 import fragmentShader from './shader/cloud/noise.frag';
+
+import { WGS84Object3D } from './WGS84Object3D';
+
+import { addCSS2Object, setMeshUniform } from './tool/utils';
 
 export default class HorizonClouds {
     constructor(renderer, camera, scene) {
-        this.container = container;
 
         this.stats = null;
         this.gui = null;
         this.guiStatsEl = null;
-        this.controls = null;
 
         this.camera = camera;
         this.scene = scene;
@@ -38,67 +37,32 @@ export default class HorizonClouds {
         };
 
         this.values = {
-            STEPS: 30,
-            COVERAGE: 0.3,
+            STEPS: 2,
+            COVERAGE: 0.34,
             THICKNESS: 5,
             FBM_FREQ: 2.76434,
             OFFSET: 2.3,
-            windU: 0.1,
-            windV: 0.1,
+            windU: 0.02,
+            windV: 0.01,
         }
 
         this.uniforms = {};
 
-        this.onWindowResizeBind = this.onWindowResize.bind(this);
-
-        this.animateBind = this.animate.bind(this);
-        
         this.updateUniformsBind = this.updateUniforms.bind(this);
 
         this.init();
 		this.initMesh();
-		this.animate();
 
         window.FlowFeildWind = this;
     }
         
     init() {
-        const width = this.container.innerWidth || this.container.clientWidth;
-        const height = this.container.innerHeight || this.container.clientHeight;
-
-        // camera
-        this.camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
-        this.camera.position.set(50, 50, 50);
-        // renderer
-
-        this.renderer = new THREE.WebGLRenderer( { antialias: true } );
-        this.renderer.setPixelRatio( window.devicePixelRatio );
-        this.renderer.clearColor = 'blue'
-        this.renderer.setSize( width, height );
-        this.container.appendChild( this.renderer.domElement );
-
-        // scene
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color( 0x000 );
-
-        // controls
-
-        this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-
         // stats
-
         this.stats = new Stats();
-        this.container.appendChild( this.stats.dom );
+        document.body.appendChild( this.stats.dom );
 
         // gui
-
         this.gui = new GUI();
-        // this.gui.add( this.params, 'STEPS', 0, 256 ).step( 2 ).onChange( this.updateUniformsBind );
-        // this.gui.add( this.params, 'COVERAGE', 0, 5.0 ).step( 0.01 ).onChange( this.updateUniformsBind );
-        // this.gui.add( this.params, 'THICKNESS', 0, 100.0 ).step( 1.0).onChange( this.updateUniformsBind );
-        // this.gui.add( this.params, 'FBM_FREQ', 1.0, 4.0).step( 0.01).onChange( this.updateUniformsBind );
-        // this.gui.add( this.params, 'OFFSET', 0.0, 4.0).step( 0.1).onChange( this.updateUniformsBind );
-
 
         Object.entries(this.params).forEach(([key, obj]) => {
             this.gui.add(this.values, key, obj.min, obj.max).step( obj.step ).onChange( this.updateUniformsBind );
@@ -107,27 +71,11 @@ export default class HorizonClouds {
         this.guiStatsEl = document.createElement( 'div' );
         this.guiStatsEl.classList.add( 'gui-stats' );
 
-        // listeners
-        window.addEventListener( 'resize', this.onWindowResizeBind );
-
     }
-
-    addLight () {
-        const ambientLight = new THREE.AmbientLight(0xffffff);
-    
-        this.scene.add(ambientLight);
-    }
-
 
 
     updateUniforms() {
         if (this.material) {
-            // this.material.uniforms.STEPS.value = this.params.STEPS;
-            // this.material.uniforms.COVERAGE.value = this.params.COVERAGE;
-            // this.material.uniforms.THICKNESS.value = this.params.THICKNESS;
-            // this.material.uniforms.FBM_FREQ.value = this.params.FBM_FREQ;
-            // this.material.uniforms.OFFSET.value = this.params.OFFSET;
-
             Object.entries(this.params).forEach(([key, obj]) => {
                 this.material.uniforms[key].value = this.values[key];
             })
@@ -135,14 +83,9 @@ export default class HorizonClouds {
     }
 
     initMesh() {
-        this.clean();
-
         const geometry = new THREE.BoxGeometry(1, 1, 1);
         
         this.time =  this.clock.getElapsedTime();
-
-        const texture = new THREE.TextureLoader().load( '/texture/noise256.png' );
-        texture.flipY = false;
 
         const uniforms =  {
             STEPS: { value: this.values.STEPS },
@@ -153,7 +96,7 @@ export default class HorizonClouds {
             windU: { value: this.values.windU },
             windV: { value: this.values.windV },
             iTime: { value: this.time },
-            iChannel0: { value: texture }
+            cameraPosition: { value: new THREE.Vector3() },
 		}
 
 
@@ -164,53 +107,52 @@ export default class HorizonClouds {
             fragmentShader: fragmentShader,
             side: THREE.DoubleSide
         } );
-        
-        // const material = new THREE.MeshNormalMaterial();
+
+        // const material = new THREE.MeshNormalMaterial( {
+        //     side: THREE.DoubleSide
+        // });
 
         this.material = material;
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        const scale = 50.0;
+        mesh.scale.set(1e6, 1e6, 10);
 
-        mesh.scale.set(scale, 10, scale)
+        mesh.name = 'cloud';
 
-        this.scene.add(mesh);
+        const object = new WGS84Object3D(mesh);
 
-        this.scene.add(new THREE.AxesHelper(100));
-        this.scene.add(new THREE.GridHelper(100, 10));
-    }
+        const lngLat = [120.42233192979313, 36.43421482671216];
+
+        const alt =  1e5 * 2;
+
+        object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], alt);
 
 
-    onWindowResize() {
-        const { container, camera, renderer } = this;
+        this.cloud = object;
 
-        const width = container.innerWidth || container.clientWidth;;
-        const height = container.innerHeight || container.clientHeight;
-
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-
-        renderer.setSize( width, height );
+        this.scene.add(object)
 
     }
+    
+    updateCameraPosition() {
+        if (!this.isDispose) {
+          const { renderer, scene, camera } = this;
+          const cameraPosition = this.camera.position;
+    
+          const name = 'cloud';
+          const object = this.scene.getObjectByName(name);
+      
+          setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
 
-    animate() {
-        this.frameId = requestAnimationFrame( this.animateBind );
+          setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
 
-        this.controls.update();
-        this.stats.update();
+          this.stats.update();
 
-        this.render();
+          this.renderer.render( this.scene, this.camera );
+        }
     }
 
-    render() {
-        this.camera.updateProjectionMatrix();
-        this.time =  this.clock.getElapsedTime();
-        this.material.uniforms.iTime.value = this.time;
-        this.renderer.render( this.scene, this.camera );
-
-    }
 
     clean() {
         const { scene } = this;
@@ -235,16 +177,23 @@ export default class HorizonClouds {
 
     }
 
+    removeItem (object) {
+        if (object) {
+          this.scene.remove(object);
+          object.clear();
+        }
+      }
+    
+    
+    destroy () {
+        this.removeItem(this.cloud);
+
+        this.isDispose = true;
+
+        this.stats.dom.remove();
+    }
+
     dispose () {
-        this.clean();
-
-        this.camera = null;
-        this.scene = null;
-        this.renderer = null;
-        this.material = null;
-
-        cancelAnimationFrame(this.frameId);
-
-        this.onWindowResizeBind = null;
+        this.destroy();
     }
 }
