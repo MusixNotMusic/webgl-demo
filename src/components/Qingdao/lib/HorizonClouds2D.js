@@ -11,7 +11,7 @@ import { WGS84Object3D } from './WGS84Object3D';
 import { addCSS2Object, setMeshUniform } from './tool/utils';
 
 export default class HorizonClouds2D {
-    constructor(renderer, camera, scene) {
+    constructor(renderer, camera, scene, cloudInfo, value) {
 
         this.stats = null;
         this.gui = null;
@@ -27,23 +27,27 @@ export default class HorizonClouds2D {
         this.time = 0;
 
         this.params = {
-            STEPS: { min: 0, max: 512, step: 1 },
             COVERAGE: { min: 0, max: 2, step: 0.01 },
-            THICKNESS: { min: 0, max: 100, step: 1 },
             FBM_FREQ: { min: 0, max: 5, step: 0.1 },
             OFFSET: { min: 0, max: 4, step: 0.1 },
             windU: { min: -0.2, max: 0.2, step: 0.01 },
             windV: { min: -0.2, max: 0.2, step: 0.01 },
         };
 
-        this.values = {
-            STEPS: 2,
+        this.values = cloudInfo.value || {
             COVERAGE: 0.34,
-            THICKNESS: 5,
             FBM_FREQ: 2.76434,
             OFFSET: 2.3,
             windU: 0.02,
             windV: 0.01,
+        }
+
+        this.cloudInfo = cloudInfo || {
+            name: 'cloud',
+            lngLat: [120.42233192979313, 36.43421482671216],
+            alt: 1e5 * 2,
+            width: 1e6,
+            height: 1e6
         }
 
         this.uniforms = {};
@@ -51,7 +55,7 @@ export default class HorizonClouds2D {
         this.updateUniformsBind = this.updateUniforms.bind(this);
 
         this.init();
-		this.initMesh();
+		this.initCloudMesh();
     }
         
     init() {
@@ -80,7 +84,9 @@ export default class HorizonClouds2D {
         }
     }
 
-    initMesh() {
+    initCloudMesh() {
+        const { lngLat, alt, width, height } = this.cloudInfo;
+
         const geometry = new THREE.PlaneGeometry(1, 1);
         
         this.time =  this.clock.getElapsedTime();
@@ -93,8 +99,7 @@ export default class HorizonClouds2D {
             OFFSET: { value: this.values.OFFSET},
             windU: { value: this.values.windU },
             windV: { value: this.values.windV },
-            iTime: { value: this.time },
-            cameraPosition: { value: new THREE.Vector3() },
+            iTime: { value: this.time }
 		}
 
 
@@ -106,42 +111,27 @@ export default class HorizonClouds2D {
             side: THREE.DoubleSide
         } );
 
-        // const material = new THREE.MeshNormalMaterial( {
-        //     side: THREE.DoubleSide
-        // });
 
         this.material = material;
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.scale.set(1e6, 1e6, 10);
+        mesh.scale.set(width, height, 1);
 
-        mesh.name = 'cloud';
+        mesh.name = this.cloudInfo.name;
 
         const object = new WGS84Object3D(mesh);
 
-        const lngLat = [120.42233192979313, 36.43421482671216];
-
-        const alt =  1e5 * 2;
-
         object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], alt);
 
-
-        this.cloud = object;
-
         this.scene.add(object)
-
     }
+
     
-    updateCameraPosition() {
+    render() {
         if (!this.isDispose) {
-          const { renderer, scene, camera } = this;
-          const cameraPosition = this.camera.position;
-    
-          const name = 'cloud';
+          const name = this.cloudInfo.name;
           const object = this.scene.getObjectByName(name);
-      
-          setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
 
           setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
 

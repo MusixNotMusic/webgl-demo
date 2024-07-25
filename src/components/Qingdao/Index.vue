@@ -6,7 +6,7 @@
 import mapboxgl from 'mapbox-gl';
 import { onMounted, onUnmounted, ref } from 'vue';
 import MapboxGLInit from '../Map/MapboxGLInit.vue';
-import RadarModelLayer from './lib/RadarModelLayer';
+import QingdaoScene from './lib/QingdaoScene';
 
 export default {
   name: '',
@@ -27,7 +27,7 @@ export default {
 
     const addRadarLayer = (map) => {
       if (!instance) {
-          instance = new RadarModelLayer('radar', map);
+          instance = new QingdaoScene('qingdao', map);
       }
       return instance.render()
     }
