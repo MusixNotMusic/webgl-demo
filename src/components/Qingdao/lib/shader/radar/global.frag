@@ -218,11 +218,19 @@ void main(){
 
         if (pitch >= pitchRange.x && pitch <= pitchRange.y && length(pc) <= radius * 1.001) {
 
-            vec3 ref = reflect(SUN, nor);
-            float light = abs(dot(ref, rd));
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
 
-            col = vec4(vec3(0.8), 0.8 - light);
+            // col = vec4(vec3(0.8), 0.8 - light);
+            vec3  lig = normalize(vec3(0.7,0.6,0.3));
+            vec3  hal = normalize(-rd+lig);
+            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
+            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
+            float occ = 0.5 + 0.5*nor.y;
 
+            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
+            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
+            col.a = 0.1;
 
             if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
                 col = vec4(1.0, 1.0, 1.0, 1.0);
@@ -257,10 +265,20 @@ void main(){
             vec3 pos = ro + t * rd;
             vec3 nor = tnor.yzw;
 
-            vec3 ref = reflect(SUN, nor);
-            float light = abs(dot(ref, rd));
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
 
-            col = vec4(vec3(0.7), light);
+            // col = vec4(vec3(0.7), light);
+
+            vec3  lig = normalize(vec3(0.7,0.6,0.3));
+            vec3  hal = normalize(-rd+lig);
+            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
+            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
+            float occ = 0.5 + 0.5*nor.y;
+
+            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
+            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
+            col.a = 0.1;
 
             vec3 pc = pos - center;
 

@@ -16,7 +16,7 @@ uniform float elevation; // 仰角
 
 uniform float iTime; // 仰角
 
-#define SUN normalize(vec3(1.0, 0.5, -0.5))
+#define SUN normalize(vec3(0.7,0.6,0.3))
 
 #define PI 3.141592653589793
 #define HPI 1.5707963267948966
@@ -145,10 +145,20 @@ void main(){
             vec3 pos = ro + t * rd;
             vec3 nor = tnor.yzw;
 
-            vec3 ref = reflect(SUN, nor);
-            float light = abs(dot(ref, rd));
+            vec3  lig = SUN;
+            vec3  hal = normalize(-rd+lig);
+            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
+            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
+            float occ = 0.5 + 0.5*nor.y;
 
-            col = vec4(vec3(0.8), 1.0 - light);
+            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
+            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
+            col.a = 0.1;
+
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
+
+            // col = vec4(vec3(0.8), 1.0 - light);
         }
 
 
@@ -163,10 +173,19 @@ void main(){
 
         if (pitch >= pitchRange.x && length(pc) <= radius * 1.00001) {
 
-            vec3 ref = reflect(SUN, nor);
-            float light = abs(dot(ref, rd));
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
+            // col = vec4(vec3(0.5), 1.0 - light);
 
-            col = vec4(vec3(0.5), 1.0 - light);
+            vec3  lig = SUN;
+            vec3  hal = normalize(-rd+lig);
+            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
+            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
+            float occ = 0.5 + 0.5*nor.y;
+
+            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
+            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
+            col.a = 0.1;
 
 
             if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.x) < 0.01) { 
@@ -200,6 +219,8 @@ void main(){
     }
 
     color = col;
+
+    color.rgb = sqrt( color.rgb );
     
     if ( color.a == 0.0 ) discard;
 }
