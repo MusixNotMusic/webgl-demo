@@ -117,7 +117,7 @@ export default class KaModel{
 
       const mesh = new THREE.Mesh( geometry, material );
 
-      mesh.name = 'radar-detection-zone-'+ kaInfo.id
+      mesh.name = 'ka-detection-zone-'+ kaInfo.id
 
       mesh.translateZ(radius);
 
@@ -139,7 +139,7 @@ export default class KaModel{
       const kaInfo = this.kaInfo;
       const cameraPosition = this.camera.position;
 
-      const name = 'radar-detection-zone-' + kaInfo.id;
+      const name = 'ka-detection-zone-' + kaInfo.id;
       const object = this.scene.getObjectByName(name);
   
       setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
@@ -196,6 +196,8 @@ export default class KaModel{
     this.removeItem(this.ka);
     this.removeItem(this.zone);
     this.removeItem(this.light);
+
+    this.removeItem(this.kaModel);
 
     this.isDispose = true;
   }

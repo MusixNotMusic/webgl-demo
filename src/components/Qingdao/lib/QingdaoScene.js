@@ -43,6 +43,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     this.kaModelList = [];
 
     this.zoomBind = this.zoom.bind(this);
+
+    window.QingdaoScene = this;
   }
 
 
@@ -100,8 +102,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
   render () {
     this.drawLayer();
     this.initKaModel();
-    // this.initRadarModel();
-    // this.initCloud();
+    this.initRadarModel();
+    this.initCloud();
   }
 
   initCloud() {

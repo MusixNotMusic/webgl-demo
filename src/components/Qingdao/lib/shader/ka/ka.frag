@@ -148,8 +148,7 @@ void main(){
             vec3 ref = reflect(SUN, nor);
             float light = abs(dot(ref, rd));
 
-            col = vec4(vec3(0.7), light);
-
+            col = vec4(vec3(0.8), 1.0 - light);
         }
 
 
@@ -167,7 +166,7 @@ void main(){
             vec3 ref = reflect(SUN, nor);
             float light = abs(dot(ref, rd));
 
-            col = vec4(vec3(0.8), 1.0 - light);
+            col = vec4(vec3(0.5), 1.0 - light);
 
 
             if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.x) < 0.01) { 

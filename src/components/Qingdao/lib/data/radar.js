@@ -2,6 +2,8 @@ import { randomPosition } from '@turf/turf'
 // 青岛随机坐标
 const randomQingdao = () => randomPosition([119, 35, 121, 37]);
 
+const randomQingdao2 = () => randomPosition([118, 34, 122, 38]);
+
 export const radarInfoList = [
     {
         id: 1,
@@ -57,21 +59,21 @@ export const cloudInfoList = [
             windV: 0.01,
         }
     },
-    {
-        id: 2,
-        name: 'cloud-2',
-        lngLat: [120.5, 36],
-        alt: 1e5 * 1.5,
-        width: 1e6,
-        height: 1e6,
-        value: {
-            COVERAGE: 0.43,
-            FBM_FREQ: 2.76434,
-            OFFSET: 3.0,
-            windU: 0.03,
-            windV: 0.02,
-        }
-    },
+    // {
+    //     id: 2,
+    //     name: 'cloud-2',
+    //     lngLat: [120.5, 36],
+    //     alt: 1e5 * 1.5,
+    //     width: 1e6,
+    //     height: 1e6,
+    //     value: {
+    //         COVERAGE: 0.43,
+    //         FBM_FREQ: 2.76434,
+    //         OFFSET: 3.0,
+    //         windU: 0.03,
+    //         windV: 0.02,
+    //     }
+    // },
 ]
 
 
@@ -79,21 +81,21 @@ export const kaInfoList = [
     {
         id: 1,
         name: 'ka-1',
-        lngLat: randomQingdao(),
+        lngLat: randomQingdao2(),
         alt: 0,
         radius: 75
     },
     {
         id: 2,
         name: 'ka-2',
-        lngLat: randomQingdao(),
+        lngLat: randomQingdao2(),
         alt: 0,
         radius: 75
     },
     {
         id: 3,
         name: 'ka-3',
-        lngLat: randomQingdao(),
+        lngLat: randomQingdao2(),
         alt: 0,
         radius: 75
     }
