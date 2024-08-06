@@ -70,6 +70,69 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
     return vec4(t, n);
 }
 
+vec2 intersectCone3(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float cosa, out vec3 normal1, out vec3 normal2)
+{
+    vec3 co = ro - center;
+
+    float cos2 = cosa*cosa;
+
+    float p1 = dot(rd, axis);
+    float p2 = dot(co, axis);
+    float p3 = dot(rd, co);
+    float p4 = dot(co, co);
+
+    float a = p1 * p1 - cos2;
+    float b = (p1 * p2 - p3 * cos2) * 2.0;
+    float c = p2 * p2 - p4 * cos2;
+
+    float det = b*b - a*c;
+
+    float det1 = sqrt(det);
+    float t1 = (-b - det1) / a;
+    float t2 = (-b + det1) / a;
+
+    if (det < 0.0) return vec2(-1.0);
+
+    if (det == 0.0) {
+        vec3 cp = ro + t1*rd - center;
+         if (cp.y >= center.y) {
+            float h = dot(cp, axis);
+            if (h < 0. || h > dis) return vec2(-1.0);
+
+            normal1 = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
+            normal2 = normal1;
+         } else {
+            t1 = -1.0;
+         }
+
+        return vec2(t1, t2);
+    }
+
+    if (det > 0.0) {
+         vec3 cp = ro + t1*rd - center;
+         if (cp.y >= center.y) {
+            float h = dot(cp, axis);
+            if (h < 0. || h > dis) return vec2(-1.0);
+
+            normal1 = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
+         } else {
+            t1 = -1.0;
+         }
+
+         cp = ro + t2*rd - center;
+         if (cp.y >= center.y) {
+            float h = dot(cp, axis);
+            if (h < 0. || h > dis) return vec2(-1.0);
+
+            normal2 = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
+         } else {
+            t2 = -1.0;
+         }
+
+         return vec2(t1, t2);
+    }
+}
+
 vec4 intersectCone2( in vec3  ro, in vec3  rd, 
                   in vec3  pa, in vec3  pb, 
                   in float ra, in float rb )
