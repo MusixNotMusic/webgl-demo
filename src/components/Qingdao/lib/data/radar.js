@@ -11,7 +11,7 @@ export const radarInfoList = [
         type: 'S',
         lngLat: [120.230278, 35.988611],
         alt: 0,
-        radius: 220
+        radius: 200
     },
     {
         id: 2,
@@ -22,8 +22,16 @@ export const radarInfoList = [
         radius: 75
     },
     {
-        id: 3,
+        id: 7,
         name: '青岛市-即墨区-X波段',
+        type: 'X',
+        lngLat: [120.587222, 36.411667],
+        alt: 0,
+        radius: 75
+    },
+    {
+        id: 3,
+        name: '青岛市-平度市-X波段',
         type: 'X',
         lngLat: [119.884444, 36.796389],
         alt: 0,
@@ -91,12 +99,12 @@ export const cloudInfoList = [
 
 
 export const kaInfoList = [
-    //{
-    //     id: 1,
-    //     name: '青岛市-市南区-ka',
-    //     lngLat: [120.335556, 36.063889],
-    //     alt: 0,
-    // },
+    {
+        id: 1,
+        name: '青岛市-市南区-ka',
+        lngLat: [120.335556, 36.063889],
+        alt: 0,
+    },
     {
         id: 2,
         name: '青岛国家基本气象站毫米波测云仪',
@@ -113,6 +121,13 @@ export const kaInfoList = [
     },
     {
         id: 4,
+        name: '平度国家基本气象站毫米波测云仪',
+        lngLat: [119.993333, 36.790278],
+        alt: 0,
+        radius: 75
+    },
+    {
+        id: 5,
         name: '平度国家基本气象站毫米波测云仪',
         lngLat: [119.993333, 36.790278],
         alt: 0,

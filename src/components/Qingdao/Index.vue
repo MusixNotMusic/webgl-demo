@@ -29,7 +29,10 @@ export default {
       if (!instance) {
           instance = new QingdaoScene('qingdao', map);
       }
-      return instance.render()
+      
+      setTimeout(() => {
+        instance.render()
+      }, 1000)
     }
 
     onMounted(() => {

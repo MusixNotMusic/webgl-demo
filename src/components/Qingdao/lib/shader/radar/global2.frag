@@ -22,6 +22,8 @@ uniform float elevation; // 仰角
 
 #define PI 3.141592653589793
 
+#define ECHO
+
 /**
  * 球体相交
  */
@@ -151,6 +153,34 @@ vec3 pattern( in vec2 uv )
     return col;
 }
 
+// https://iquilezles.org/articles/normalsSDF/
+// vec3 calcNormal( in vec3 pos ) // for function f(p)
+// {
+//     const float h = 0.01;      // replace by an appropriate value
+//     vec3 n = vec3(0.0);
+//     for( int i=0; i<4; i++ )
+//     {
+//         vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
+//         n += e*texture(tex, pos+e*h).x;
+//     }
+//     return normalize(n);
+// }
+
+float f(vec3 pos) {
+    return texture(tex, pos).x;
+}
+
+vec3 calcNormal( in vec3 p ) // for function f(p)
+{
+    const float h = 0.05; // replace by an appropriate value
+    const vec2 k = vec2(1,-1);
+    return normalize( k.xyy*f( p + k.xyy*h ) + 
+                      k.yyx*f( p + k.yyx*h ) + 
+                      k.yxy*f( p + k.yxy*h ) + 
+                      k.xxx*f( p + k.xxx*h ) );
+}
+
+
 
 #define AA 3
 
@@ -170,12 +200,14 @@ void main(){
 
     if (step < 0.01) discard;
 
+#ifdef ECHO
     // 回波体
     float val = 0.0;
     float maxVal = 0.0;
-    vec4 sumColor = vec4(1.0);
+    vec3 sumColor = vec3(1.0);
     float sumA = 0.0;
     float n = 0.0;
+#endif
 
     // 边界
     bool once = true;
@@ -193,20 +225,33 @@ void main(){
             //     nor = normalize(cross(uu, nor));
             // }
 
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
+
             // vec3 lig = normalize(vec3(0.7,-0.6,0.3));
             // vec3 hal = normalize(-rd+lig);
             // float dif = clamp( dot(nor,lig), 0.0, 1.0 );
             // float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
             
+#ifdef ECHO
+            vec3 pos = pc / radius * 0.5 + 0.5;
+            val = texture(tex, pos).r;
 
-            val = texture(tex, pc / radius * 0.5 + 0.5).r;
+            // vec3 ref = reflect(SUN, nor);
+            // float light = abs(dot(ref, rd));
 
             if (val > 0.2 && val < 1.0) {
+                 nor = calcNormal(pos);
+
+                vec3 ref = reflect(SUN, nor);
+                float light = max(abs(dot(ref, rd)), 0.1);
+
                 maxVal = max(maxVal, val);
-                sumA += val;
-                sumColor = sumColor + val * texture(colorTex, vec2(val, 0.0));
+                sumA += light;
+                sumColor = sumColor + val * (texture(colorTex, vec2(val, 0.0)).rgb);
                 n = n + 1.0;
             }
+#endif
 
             if (once) {
                 once = false;
@@ -230,6 +275,7 @@ void main(){
         p = p + step * rd;
     }
 
+#ifdef ECHO
     vec4 colorMax = texture(colorTex, vec2(maxVal , 0.0));
     vec3 colorW = sumColor.rgb / sumA;
     float avgA = sumA / n;
@@ -243,7 +289,10 @@ void main(){
         col.rgb  = (1.0 - u) * colorW + u * colorMax.rgb;
         col.a = pow(maxVal, 1.0/ 3.3);
     }
-    col.rgb = mix(col.rgb, colorB.rgb, 0.3);
+    col.rgb = mix(colorB.rgb, col.rgb, 0.5);
+#else
+    col.rgb = colorB.rgb;
+#endif
 
     // cone intersect
     // for( int m=0; m<AA; m++ )

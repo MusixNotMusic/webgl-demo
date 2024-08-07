@@ -33,7 +33,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     
     this.map = map;
 
-    this.radarInfoList = radarInfoList_ || radarInfoList.slice(1, 4);
+    this.radarInfoList = radarInfoList_ || radarInfoList.slice(0, 1);
 
     this.cloudInfoList = cloudInfoList;
 
@@ -138,7 +138,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     this.loadTextureData().then((texture) => {
       console.log('texture ==>', texture);
       this.drawLayer();
-      // this.initKaModel();
+      this.initKaModel();
       this.initRadarModel(texture);
       // this.initCloud();
     })

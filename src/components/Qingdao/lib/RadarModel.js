@@ -42,6 +42,10 @@ export default class RadarModel{
       colorTex:         { value: __YW__.colorSystem.colorMapTexture['Z'] }
     };
 
+    this.defines = {
+      // ECHO: !!texture
+    }
+
     this.azimuth = Math.random() * Math.PI * 2;
 
     window.StationModel = this;
@@ -108,12 +112,14 @@ export default class RadarModel{
       const radius = radarInfo.radius * 1e3;
 
       const uniforms = this.uniforms;
+      const defines = this.defines;
       
       const geometry = new THREE.BoxGeometry( radius * 2.0, radius * 2.0, radius * 2.0 );
 
       const material = new THREE.RawShaderMaterial( {
           glslVersion: THREE.GLSL3,
           uniforms: uniforms,
+          defines: defines,
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
