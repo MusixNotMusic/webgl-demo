@@ -13,7 +13,6 @@ import { addCSS2Object, setMeshUniform } from './tool/utils';
 export default class HorizonClouds2D {
     constructor(renderer, camera, scene, cloudInfo, value) {
 
-        this.stats = null;
         this.gui = null;
         this.guiStatsEl = null;
 
@@ -59,10 +58,6 @@ export default class HorizonClouds2D {
     }
         
     init() {
-        // stats
-        this.stats = new Stats();
-        document.body.appendChild( this.stats.dom );
-
         // gui
         this.gui = new GUI();
 
@@ -135,8 +130,6 @@ export default class HorizonClouds2D {
 
           setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
 
-          this.stats.update();
-
           this.renderer.render( this.scene, this.camera );
         }
     }
@@ -177,8 +170,6 @@ export default class HorizonClouds2D {
         this.removeItem(this.cloud);
 
         this.isDispose = true;
-
-        this.stats.dom.remove();
     }
 
     dispose () {

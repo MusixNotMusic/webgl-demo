@@ -35,10 +35,10 @@ export default class KaModel{
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
       depthSampleCount: { value: 128 },
-      pitchRange:       { value: new THREE.Vector2(Math.PI * 0.5 * 0.8, Math.PI * 0.5) },
+      pitchRange:       { value: new THREE.Vector2(Math.PI * 0.5 * 0.9, Math.PI * 0.5) },
       radius:           { value: kaInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
-      elevation:        { value: Math.PI * 0.5 * 0.9},
+      elevation:        { value: Math.PI * 0.5 * 0.96},
       iTime:            { value: this.clock.getElapsedTime() }
     };
 

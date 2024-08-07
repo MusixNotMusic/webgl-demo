@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-
+import Stats from 'three/examples/jsm/libs/stats.module';
 import BaseMercatorMeterProjectionModelClass from "./BaseMercatorMeterProjectionModelClass";
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
@@ -19,6 +19,9 @@ import KaModel from './KaModel';
 // import HorizonClouds from './HorizonClouds';
 import HorizonClouds2D from './HorizonClouds2D';
 
+import { decompress } from "../../utils/decompress/ZstdDecompress";
+import { VoxelFormat } from "../../parseFile/VoxelFormat";
+
 /***
  * 矩形立方体的 等值面结构
  */
@@ -30,7 +33,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     
     this.map = map;
 
-    this.radarInfoList = radarInfoList_ || radarInfoList.slice(0, 2);
+    this.radarInfoList = radarInfoList_ || radarInfoList.slice(1, 4);
 
     this.cloudInfoList = cloudInfoList;
 
@@ -43,6 +46,9 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     this.kaModelList = [];
 
     this.zoomBind = this.zoom.bind(this);
+
+    this.stats = new Stats();
+    document.body.appendChild( this.stats.dom );
 
     window.QingdaoScene = this;
   }
@@ -73,6 +79,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
         cloudModel.render();
       }
     })
+
+    this.stats.update();
   }
 
   zoom() {
@@ -99,16 +107,44 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     }
   }
 
+  loadTextureData () {
+    return fetch('/resource/layerMoc_100.z').then(resqust => resqust.arrayBuffer()).then(decompress).then((data) => {
+      const instance = VoxelFormat.parser(data);
+      const volume = {
+          minLongitude: instance.header.leftLongitude / 10000,
+          minLatitude: instance.header.bottomLatitude / 10000,
+          maxLongitude: instance.header.rightLongitude / 10000,
+          maxLatitude: instance.header.topLatitude / 10000,
+          data: instance.voxelData.slice(0, instance.voxelData.length),
+          width:  instance.header.horDataCnt,
+          height: instance.header.verDataCnt,
+          depth:  instance.header.levelCnt,
+          cutHeight: 500,
+          altitudeList: Array.from(instance.evelationList)
+      }
+
+      const texture = new THREE.Data3DTexture( volume.data, volume.width, volume.height, volume.depth );
+      texture.format = THREE.RedFormat;
+      texture.type = THREE.UnsignedByteType;
+      texture.minFilter = texture.magFilter = THREE.LinearFilter;
+      texture.unpackAlignment = 1;
+      texture.needsUpdate = true;
+
+      return texture;
+    })
+  }
+
   render () {
-    this.drawLayer();
-    this.initKaModel();
-    this.initRadarModel();
-    this.initCloud();
+    this.loadTextureData().then((texture) => {
+      console.log('texture ==>', texture);
+      this.drawLayer();
+      // this.initKaModel();
+      this.initRadarModel(texture);
+      // this.initCloud();
+    })
   }
 
   initCloud() {
-    // this.horizonClouds = new HorizonClouds(this.renderer, this.camera, this.scene);
-    // this.horizonClouds = new HorizonClouds2D(this.renderer, this.camera, this.scene);
     this.cloudInfoList.forEach(cloud => {
       const horizonClouds = new HorizonClouds2D(this.renderer, this.camera, this.scene, cloud);
       this.cloudModelList.push(horizonClouds);
@@ -139,7 +175,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
 
 
-  initRadarModel () {
+  initRadarModel (texture) {
     const loader = new FBXLoader();
 
     return new Promise((resolve) => {
@@ -149,7 +185,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
           const object = model.clone();
           radarInfo.model = object;
-          const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo);
+          const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo, texture);
 
           radarModelInstance.render();
           this.radarModelList.push(radarModelInstance);
@@ -172,6 +208,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
     this.cloudModelList.forEach(cloud => cloud && cloud.destroy());
     this.cloudModelList = null;
+
+    this.stats.dom.remove();
   }
 
   dispose () {

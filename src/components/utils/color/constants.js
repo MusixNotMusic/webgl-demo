@@ -1,5 +1,5 @@
 export const colors = [
-    { name: 'Z', path: '/color/Z1.png' },
+    { name: 'Z', path: '/color/Z.png' },
     { name: 'colors1', path: '/color/colors1.png' },
     { name: 'blue', path: '/color/blue.png'},
     // { name: 'rainbow1', path: '/color/rainbow1.png'},

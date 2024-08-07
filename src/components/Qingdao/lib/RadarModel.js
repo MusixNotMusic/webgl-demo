@@ -11,7 +11,8 @@ import { WGS84Object3D } from './WGS84Object3D';
 import { radarInfoList } from './data/radar'
 
 import vertexShader from './shader/radar/global.vert'
-import fragmentShader from './shader/radar/global.frag'
+// import fragmentShader from './shader/radar/global.frag'
+import fragmentShader from './shader/radar/global2.frag'
 
 import { addCSS2Object, setMeshUniform } from './tool/utils';
 
@@ -21,7 +22,7 @@ const isNumber = (number) => typeof number === 'number';
  * 单部雷达
  */
 export default class RadarModel{
-  constructor (renderer, camera, scene, radarInfo) {
+  constructor (renderer, camera, scene, radarInfo, texture) {
     this.renderer = renderer;
     this.camera = camera;
     this.scene = scene;
@@ -32,11 +33,13 @@ export default class RadarModel{
 
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 128 },
-      pitchRange:       { value: new THREE.Vector2(0.0, 0.6) },
+      depthSampleCount: { value: 64 },
+      pitchRange:       { value: new THREE.Vector2(0.05, 0.6) },
       radius:           { value: radarInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
-      elevation:        { value: Math.random() * 0.6}
+      elevation:        { value: Math.random() * 0.6},
+      tex:              { value: texture },
+      colorTex:         { value: __YW__.colorSystem.colorMapTexture['Z'] }
     };
 
     this.azimuth = Math.random() * Math.PI * 2;
@@ -46,7 +49,6 @@ export default class RadarModel{
 
   render () {
     return this.loadFBXModel().then((model) => {
-      // this.initPointLightHelper();
       this.initRadarModel(model);
       this.initRadarDetectionZone();
       this.initDirectionalLightHelper();
@@ -115,7 +117,9 @@ export default class RadarModel{
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.FrontSide,
+          side: THREE.DoubleSide,
+          // alphaToCoverage: true,
+          // clippingPlanes: false
       });
 
       const mesh = new THREE.Mesh( geometry, material );
