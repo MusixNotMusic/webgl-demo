@@ -31,19 +31,22 @@ export default class RadarModel{
     // 雷达模型文件
     this.radarModel = radarInfo.model;
 
+    const { clientWidth, clientHeight } = renderer.domElement;
+
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 64 },
+      depthSampleCount: { value: 32 },
       pitchRange:       { value: new THREE.Vector2(0.05, 0.6) },
       radius:           { value: radarInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
       elevation:        { value: Math.random() * 0.6},
       tex:              { value: texture },
-      colorTex:         { value: __YW__.colorSystem.colorMapTexture['Z'] }
+      colorTex:         { value: __YW__.colorSystem.colorMapTexture['Z'] },
+      iResolution:      { value: [clientWidth, clientHeight ]},
     };
 
     this.defines = {
-      // ECHO: !!texture
+      ECHO: !!texture
     }
 
     this.azimuth = Math.random() * Math.PI * 2;
@@ -90,13 +93,15 @@ export default class RadarModel{
 
     object.rotation.x = Math.PI / 2;
 
-    object.scale.set(10, 10, 10);
+    const scale = 40;
 
-    object.add(new THREE.AxesHelper(1000))
+    object.scale.set(scale, scale, scale);
+
+    object.add(new THREE.AxesHelper(100))
 
     object.name = radarInfo.name;
 
-    addCSS2Object(object, radarInfo.name, [0, 5000, 0], null);
+    addCSS2Object(object, radarInfo.name, [0, 75 * 1e3 * 1.5 / scale, 0], null);
 
     this.radar = object;
 
@@ -124,8 +129,8 @@ export default class RadarModel{
           fragmentShader: fragmentShader,
           transparent: true,
           side: THREE.DoubleSide,
-          // alphaToCoverage: true,
-          // clippingPlanes: false
+          depthTest: false,
+          depthWrite: false,
       });
 
       const mesh = new THREE.Mesh( geometry, material );
@@ -229,6 +234,8 @@ export default class RadarModel{
 
   removeItem (object) {
     if (object) {
+      setMeshUniform(object, 'tex', null);
+      setMeshUniform(object, 'colorTex', null);
       this.scene.remove(object);
       object.clear();
     }

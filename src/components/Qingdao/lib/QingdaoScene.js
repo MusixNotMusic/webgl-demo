@@ -16,8 +16,8 @@ import fragmentShader from './shader/radar/global.frag'
 import RadarModel from './RadarModel';
 import KaModel from './KaModel';
 
-// import HorizonClouds from './HorizonClouds';
-import HorizonClouds2D from './HorizonClouds2D';
+import HorizonClouds from './HorizonClouds';
+// import HorizonClouds2D from './HorizonClouds2D';
 
 import { decompress } from "../../utils/decompress/ZstdDecompress";
 import { VoxelFormat } from "../../parseFile/VoxelFormat";
@@ -33,7 +33,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     
     this.map = map;
 
-    this.radarInfoList = radarInfoList_ || radarInfoList.slice(0, 1);
+    this.radarInfoList = radarInfoList_ || radarInfoList.slice(0, 7);
 
     this.cloudInfoList = cloudInfoList;
 
@@ -45,11 +45,15 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
     this.kaModelList = [];
 
+    // create LOD
+    // this.lod = new THREE.LOD();
+    // this.scene.add(this.lod);
+
     this.zoomBind = this.zoom.bind(this);
 
     this.stats = new Stats();
     document.body.appendChild( this.stats.dom );
-
+    
     window.QingdaoScene = this;
   }
 
@@ -69,16 +73,16 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       }
     })
 
-    // if (this.horizonClouds) {
-    //   this.horizonClouds.render();
-    // }
+    if (this.horizonClouds) {
+      this.horizonClouds.updateCameraPosition();
+    }
 
     // 云层天气
-    this.cloudModelList.forEach(cloudModel => {
-      if (cloudModel) {
-        cloudModel.render();
-      }
-    })
+    // this.cloudModelList.forEach(cloudModel => {
+    //   if (cloudModel) {
+    //     cloudModel.render();
+    //   }
+    // })
 
     this.stats.update();
   }
@@ -145,6 +149,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
   }
 
   initCloud() {
+    // this.horizonClouds = new HorizonClouds(this.renderer, this.camera, this.scene);
     this.cloudInfoList.forEach(cloud => {
       const horizonClouds = new HorizonClouds2D(this.renderer, this.camera, this.scene, cloud);
       this.cloudModelList.push(horizonClouds);
@@ -153,13 +158,15 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
   initKaModel () {
     const loader = new FBXLoader();
-
     return new Promise((resolve) => {
-      loader.load( '/model/fbx/ka.fbx',  ( _model ) => {
+      loader.load( '/model/fbx/ka2.fbx',  ( _model ) => {
         const model = new WGS84Object3D(_model);
         this.kaInfoList.forEach(kaInfo => {
 
           const object = model.clone();
+
+          // this.lod.addLevel(object, kaInfo.radius * 1e3); 
+
           kaInfo.model = object;
           const kaModel = new KaModel(this.renderer, this.camera, this.scene, kaInfo);
 
@@ -177,19 +184,29 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
   initRadarModel (texture) {
     const loader = new FBXLoader();
-
     return new Promise((resolve) => {
-      loader.load( '/model/fbx/radar3.fbx',  ( _model ) => {
+      loader.load( '/model/fbx/radar5.fbx',  ( _model ) => {
         const model = new WGS84Object3D(_model);
-        this.radarInfoList.forEach(radarInfo => {
+        //  add LOD
+        this.radarInfoList.forEach((radarInfo, index) => {
+          let object = model.clone();
 
-          const object = model.clone();
+          // const lod = new THREE.LOD();
+          // lod.addLevel(object, radarInfo.radius * 1000); 
+          // lod.updateMatrix();
+          // lod.matrixAutoUpdate = false;
+
+          // this.scene.add(lod);
+
           radarInfo.model = object;
-          const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo, texture);
+          const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo,  null)
+            // index % 2 == 0 ? null : texture);
 
           radarModelInstance.render();
           this.radarModelList.push(radarModelInstance);
         })
+
+
 
         resolve(model);
       });

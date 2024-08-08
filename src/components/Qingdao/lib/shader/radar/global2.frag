@@ -1,6 +1,6 @@
 precision highp float;
 precision highp sampler3D;
-precision highp sampler2D;
+// precision highp sampler2D;
 in vec3 vOrigin;
 in vec3 vDirection;
 
@@ -18,11 +18,28 @@ uniform float radius;
 uniform float azimuth; // 方位角
 uniform float elevation; // 仰角
 
-#define SUN normalize(vec3(1.0, 1.0, 1.0))
+uniform vec2 iResolution;
+
+#define SUN normalize(vec3(0.0, 1.0, -1.0))
 
 #define PI 3.141592653589793
 
-#define ECHO
+// #define ECHO
+
+const float N = 10.0; // grid ratio
+float gridTextureGradBox( in vec2 p, in vec2 ddx, in vec2 ddy )
+{
+	// filter kernel
+    vec2 w = max(abs(ddx), abs(ddy)) + 0.01;
+
+	// analytic (box) filtering
+    vec2 a = p + 0.5*w;                        
+    vec2 b = p - 0.5*w;           
+    vec2 i = (floor(a)+min(fract(a)*N,1.0)-
+              floor(b)-min(fract(b)*N,1.0))/(N*w);
+    //pattern
+    return (1.0-i.x)*(1.0-i.y);
+}
 
 /**
  * 球体相交
@@ -37,80 +54,6 @@ vec2 iSphere( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
     h = sqrt( h );
     return vec2( -b-h, -b+h );
 }
-
-float dot2( in vec3 v ) { return dot(v,v); }
-
-vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float cosa)
-{
-
-    vec3 co = ro - center;
-
-    float cosa2 = cosa*cosa;
-
-    float a = dot(rd, axis)*dot(rd, axis) - cosa2;
-    float b = 2. * (dot(rd, axis)*dot(co, axis) - dot(rd,co)*cosa2);
-    float c = dot(co,axis)*dot(co,axis) - dot(co,co)*cosa2;
-
-    float det = b*b - 4.*a*c;
-    if (det < 0.0) return vec4(-1.0);
-
-    det = sqrt(det);
-    float t1 = (-b - det) / (2. * a);
-    float t2 = (-b + det) / (2. * a);
-
-    // This is a bit messy; there ought to be a more elegant solution.
-    float t = t1;
-    // if (t < 0. || t2 > 0. && t2 < t) t = t2;
-    if (t < 0. && t2 < t) t = t2;
-    // if (t < 0.) return vec4(-1.0);
-
-    vec3 cp = ro + t*rd - center;
-    float h = dot(cp, axis);
-    if (h < 0. || h > dis) return vec4(-1.0);
-
-    vec3 n = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
-
-    return vec4(t, n);
-}
-
-vec4 intersectCone2( in vec3  ro, in vec3  rd, 
-                  in vec3  pa, in vec3  pb, 
-                  in float ra, in float rb )
-{
-
-
-    vec3  ba = pb - pa;
-    vec3  oa = ro - pa;
-    vec3  ob = ro - pb;
-    
-    float m0 = dot(ba,ba);
-    float m1 = dot(oa,ba);
-    float m2 = dot(ob,ba); 
-    float m3 = dot(rd,ba);
-
-    //caps
-         if( m1<0.0 ) { if( dot2(oa*m3-rd*m1)<(ra*ra*m3*m3) ) return vec4(-m1/m3,-ba*inversesqrt(m0)); }
-    else if( m2>0.0 ) { if( dot2(ob*m3-rd*m2)<(rb*rb*m3*m3) ) return vec4(-m2/m3, ba*inversesqrt(m0)); }
-    
-    vec3 O = vec3(0.0);
-    vec3 axis = vec3(0.0);
-    float H = length(pa - pb);
-    float R = max(ra, rb);
-    float alpha = H / sqrt(H * H + R * R);
-
-    if (rb > ra) {
-        O = pa;
-        axis = normalize(pb - pa);
-    } else {
-        O = pb;
-        axis = normalize(pa - pb);
-    }
-
-
-    vec4 tnor = intersectCone(ro, rd, O, axis, H, alpha);
-    return tnor;
-}
-
 
 // capsule defined by extremes pa and pb, and radious ra
 // Note that only ONE of the two spherical caps is checked for intersections,
@@ -153,18 +96,7 @@ vec3 pattern( in vec2 uv )
     return col;
 }
 
-// https://iquilezles.org/articles/normalsSDF/
-// vec3 calcNormal( in vec3 pos ) // for function f(p)
-// {
-//     const float h = 0.01;      // replace by an appropriate value
-//     vec3 n = vec3(0.0);
-//     for( int i=0; i<4; i++ )
-//     {
-//         vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
-//         n += e*texture(tex, pos+e*h).x;
-//     }
-//     return normalize(n);
-// }
+
 
 float f(vec3 pos) {
     return texture(tex, pos).x;
@@ -180,9 +112,40 @@ vec3 calcNormal( in vec3 p ) // for function f(p)
                       k.xxx*f( p + k.xxx*h ) );
 }
 
+void calcRayForPixel( in vec2 pix, out vec3 resRo, out vec3 resRd )
+{
+	vec2 p = (2.0*pix-iResolution.xy) / iResolution.y;
+	
+	vec3 ro, ta;
+    // camera matrix
+    vec3 ww = normalize( ta - ro );
+    vec3 uu = normalize( cross(ww,vec3(0.0,1.0,0.0) ) );
+    vec3 vv = normalize( cross(uu,ww));
+	// create view ray
+	vec3 rd = normalize( p.x*uu + p.y*vv + 2.0*ww );
+	
+	resRo = ro;
+	resRd = rd;
+}
 
+vec2 texCoords( in vec3 pos, vec3 center, float R )
+{
+    vec2 matuv;
 
-#define AA 3
+    vec3 pc = pos - center;
+    vec3 nor = normalize(pc);
+
+    if (length(pc) < R * 0.9999) {
+        vec3 uu = cross(nor, vec3(0.0, 0.0, 1.0));
+        nor = normalize(cross(uu, nor));
+    }
+
+    matuv = vec2( atan(nor.x,nor.z), acos(nor.y ) );
+
+	return 8.0*matuv;
+}
+
+#define AA 1
 
 void main(){
     vec3 ro = vOrigin;
@@ -220,34 +183,19 @@ void main(){
         vec3 nor = normalize(pc);
 
         if (pitch > pitchRange.x && pitch <= pitchRange.y && pc.z >= 0.0) {
-            // if (length(pc) < radius * 0.9999) {
-            //     vec3 uu = cross(nor, vec3(0.0, 0.0, 1.0));
-            //     nor = normalize(cross(uu, nor));
-            // }
-
-            // vec3 ref = reflect(SUN, nor);
-            // float light = abs(dot(ref, rd));
-
-            // vec3 lig = normalize(vec3(0.7,-0.6,0.3));
-            // vec3 hal = normalize(-rd+lig);
-            // float dif = clamp( dot(nor,lig), 0.0, 1.0 );
-            // float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
-            
 #ifdef ECHO
             vec3 pos = pc / radius * 0.5 + 0.5;
             val = texture(tex, pos).r;
 
-            // vec3 ref = reflect(SUN, nor);
-            // float light = abs(dot(ref, rd));
-
             if (val > 0.2 && val < 1.0) {
-                 nor = calcNormal(pos);
+                //  nor = calcNormal(pos);
 
-                vec3 ref = reflect(SUN, nor);
-                float light = max(abs(dot(ref, rd)), 0.1);
+                // vec3 ref = reflect(SUN, nor);
+                // float light = max(abs(dot(ref, rd)), 0.1);
 
                 maxVal = max(maxVal, val);
-                sumA += light;
+                sumA += val;
+                // sumA += light;
                 sumColor = sumColor + val * (texture(colorTex, vec2(val, 0.0)).rgb);
                 n = n + 1.0;
             }
@@ -256,17 +204,45 @@ void main(){
             if (once) {
                 once = false;
 
-                colorB = vec4(vec3(0.7), 0.8);
-
+#ifndef ECHO
                 if (length(pc) < radius * 0.9999) {
-                    if (abs(mod(pc.x, radius * 0.1)) < radius * 0.003)
-                        colorB = vec4(1.0, 1.0, 1.0, 0.5);
-
-                    if (abs(mod(pc.y, radius * 0.1)) < radius * 0.003)
-                        colorB = vec4(1.0, 1.0, 1.0, 0.5);
+                    vec3 uu = cross(nor, vec3(0.0, 0.0, 1.0));
+                    nor = normalize(cross(uu, nor));
                 }
 
-                if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
+                vec3 ref = reflect(SUN, nor);
+                float light = abs(dot(ref, rd));
+                colorB = vec4(vec3(0.7), light * 0.25);
+#else
+                colorB = vec4(vec3(0.7), 0.8);
+#endif
+                // vec3 pos = p;
+                // vec3 ro, rd, ddx_ro, ddx_rd, ddy_ro, ddy_rd;
+                // calcRayForPixel( gl_FragCoord.xy + vec2(0.0, 0.0), ro, rd );
+                // calcRayForPixel( gl_FragCoord.xy + vec2(1.0, 0.0), ddx_ro, ddx_rd );
+                // calcRayForPixel( gl_FragCoord.xy + vec2(0.0, 1.0), ddy_ro, ddy_rd );
+
+                // vec3 ddx_pos = ddx_ro - ddx_rd*dot(ddx_ro-pos,nor)/dot(ddx_rd,nor);
+                // vec3 ddy_pos = ddy_ro - ddy_rd*dot(ddy_ro-pos,nor)/dot(ddy_rd,nor);
+
+                // // calc texture sampling footprint		
+                // vec2     uv = texCoords(     pos, center, radius );
+                // vec2 ddx_uv = texCoords( ddx_pos, center, radius ) - uv;
+                // vec2 ddy_uv = texCoords( ddy_pos, center, radius ) - uv;
+
+                // vec3 mate = vec3(0.4)*gridTextureGradBox( uv, ddx_uv, ddy_uv );
+
+                // colorB = vec4(mate, 1.0);
+
+                // if (length(pc) < radius * 0.99) {
+                //     if (abs(mod(pc.x, radius * 0.1)) < radius * 0.003)
+                //         colorB = vec4(1.0, 1.0, 1.0, 0.5);
+
+                //     if (abs(mod(pc.y, radius * 0.1)) < radius * 0.003)
+                //         colorB = vec4(1.0, 1.0, 1.0, 0.5);
+                // }
+
+                if (length(pc) > radius * 0.99 && abs(pitch - pitchRange.y) < 0.01) { 
                     colorB = vec4(1.0, 1.0, 1.0, 0.5);
                 }
             }
@@ -291,51 +267,12 @@ void main(){
     }
     col.rgb = mix(colorB.rgb, col.rgb, 0.5);
 #else
-    col.rgb = colorB.rgb;
+    col = colorB;
 #endif
-
-    // cone intersect
-    // for( int m=0; m<AA; m++ )
-    // for( int n=0; n<AA; n++ )
-    // {
-
-    //     vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
-    //     vec3  pb = center + vec3(0.0, 0.0, 2000.0);
-    //     float ra = 1000.0;
-    //     float rb = 0.0;
-
-    //     vec4 tnor = intersectCone2( ro, rd, pa, pb, ra, rb );
-
-    //     float t = tnor.x;
-
-    //     if (t > 0.0) {
-    //         vec3 pos = ro + t*rd;
-    //         vec3 nor = tnor.yzw;
-    //         // vec3 lig = SUN;
-    //         vec3 lig = normalize(vec3(0.7,-0.6,0.3));
-    //         vec3 hal = normalize(-rd+lig);
-    //         float dif = clamp( dot(nor,lig), 0.0, 1.0 );
-    //         float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
-            
-    //         vec3 w = normalize(pb-pa);
-    //         vec3 u = normalize(cross(w,vec3(0,0,1)));
-    //         vec3 v = normalize(cross(u,w) );
-    //         vec3 q = (pos-pa)*mat3(u,v,w);
-    //         col.rgb = pattern( vec2(32.0,64.0)*vec2(atan(q.y,q.x), q.z / radius) );
-
-    //         col.rgb *= vec3(0.2,0.3,0.4)*amb + vec3(1.0,0.9,0.7)*dif;
-            
-    //         col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
-    //         col.a = 1.0;
-
-    //         // col = vec4(0.28, 0.64, 0.91, 1.0);
-    //         // col = vec4(nor, 1.0);
-    //     }
-    // }
 
     // cap intersect
     vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
-    vec3  pb = center + vec3(0.0, 0.0, 2000.0);;
+    vec3  pb = center + vec3(0.0, 0.0, 2000.0 * 4.0);;
     float crr = 400.0;
     
     // cap 

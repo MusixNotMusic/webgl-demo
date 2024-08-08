@@ -49,7 +49,8 @@ export default {
             const map = new mapboxgl.Map({
                 container: props.id,
                 // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-                style: 'mapbox://styles/mapbox/streets-v12',
+                // style: 'mapbox://styles/mapbox/streets-v12',
+                style: 'mapbox://styles/mapbox/satellite-streets-v12',
                 zoom: props.zoom,
                 center: props.center,
                 pitch: 45,

@@ -38,7 +38,7 @@ export default class KaModel{
       pitchRange:       { value: new THREE.Vector2(Math.PI * 0.5 * 0.9, Math.PI * 0.5) },
       radius:           { value: kaInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
-      elevation:        { value: Math.PI * 0.5 * 0.96},
+      elevation:        { value: Math.PI * 0.5 },
       iTime:            { value: this.clock.getElapsedTime() }
     };
 
@@ -62,7 +62,7 @@ export default class KaModel{
 
     if(!this.radarModel) {
       return new Promise((resolve) => {
-        loader.load( url || '/model/fbx/ka.fbx',  ( model ) => {
+        loader.load( url || '/model/fbx/ka3.fbx',  ( model ) => {
           this.radarModel = model;
           resolve(model);
         });
@@ -81,13 +81,15 @@ export default class KaModel{
 
     object.rotation.x = Math.PI / 2;
 
-    // object.scale.set(10, 10, 10);
+    const scale = 5;
+
+    object.scale.set(scale, scale, scale);
 
     object.add(new THREE.AxesHelper(1000))
 
     object.name = kaInfo.name;
 
-    addCSS2Object(object, kaInfo.name, [0, this.kaInfo.radius * 1e3 * 1.2, 0], null);
+    addCSS2Object(object, kaInfo.name, [0, this.kaInfo.radius * 1e3 * 1.5/ scale, 0], null);
 
     this.ka = object;
 
@@ -112,7 +114,9 @@ export default class KaModel{
           vertexShader: vertexShader,
           fragmentShader: fragmentShader,
           transparent: true,
-          side: THREE.FrontSide,
+          side: THREE.DoubleSide,
+          depthTest: false,
+          depthWrite: false
       });
 
       const mesh = new THREE.Mesh( geometry, material );

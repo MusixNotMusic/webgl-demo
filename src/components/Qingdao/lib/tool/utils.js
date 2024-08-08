@@ -39,7 +39,7 @@ export function addCSS2Object (mesh, text, translate, customStyle) {
 }
 
 export function setMeshUniform(mesh, key, value) {
-    if (mesh && mesh.material.uniforms && mesh.material.uniforms[key]) {
+    if (mesh && mesh.material && mesh.material.uniforms && mesh.material.uniforms[key]) {
         mesh.material.uniforms[key].value = value;
     }
 }

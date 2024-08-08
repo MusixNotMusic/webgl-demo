@@ -99,12 +99,13 @@ export const cloudInfoList = [
 
 
 export const kaInfoList = [
-    {
-        id: 1,
-        name: '青岛市-市南区-ka',
-        lngLat: [120.335556, 36.063889],
-        alt: 0,
-    },
+    // {
+    //     id: 1,
+    //     name: '青岛市-市南区-ka',
+    //     lngLat: [120.335556, 36.063889],
+    //     alt: 0,
+    //     radius: 75
+    // },
     {
         id: 2,
         name: '青岛国家基本气象站毫米波测云仪',
@@ -128,8 +129,8 @@ export const kaInfoList = [
     },
     {
         id: 5,
-        name: '平度国家基本气象站毫米波测云仪',
-        lngLat: [119.993333, 36.790278],
+        name: '董家口毫米波测云仪',
+        lngLat: [119.779444, 35.624722],
         alt: 0,
         radius: 75
     }

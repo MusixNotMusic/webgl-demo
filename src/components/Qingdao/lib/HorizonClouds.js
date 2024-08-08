@@ -116,7 +116,7 @@ export default class HorizonClouds {
 
         const mesh = new THREE.Mesh(geometry, material);
 
-        mesh.scale.set(1e6, 1e6, 10);
+        mesh.scale.set(1e6, 1e6, 1e5);
 
         mesh.name = 'cloud';
 
