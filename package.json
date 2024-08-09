@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cdyw/asd-2d": "^1.0.7",
     "@mapbox/geojson-normalize": "^0.0.1",
     "@tmcw/togeojson": "^5.8.1",
     "@turf/projection": "^6.5.0",
@@ -17,6 +18,7 @@
     "csv2geojson": "^5.1.2",
     "d3": "^7.8.5",
     "d3-dsv": "^3.0.1",
+    "d3-geo": "^3.1.1",
     "fflate": "^0.7.3",
     "gl-matrix": "^3.4.3",
     "lodash": "^4.17.21",

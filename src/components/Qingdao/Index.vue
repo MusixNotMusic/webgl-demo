@@ -36,7 +36,6 @@ export default {
     }
 
     onMounted(() => {
-
     })
 
     onUnmounted(() => {

@@ -15,9 +15,10 @@ import fragmentShader from './shader/radar/global.frag'
 
 import RadarModel from './RadarModel';
 import KaModel from './KaModel';
+import IsoPlaneModel from './IsoPlaneModel';
 
-import HorizonClouds from './HorizonClouds';
-// import HorizonClouds2D from './HorizonClouds2D';
+// import HorizonClouds from './HorizonClouds';
+import HorizonClouds2D from './HorizonClouds2D';
 
 import { decompress } from "../../utils/decompress/ZstdDecompress";
 import { VoxelFormat } from "../../parseFile/VoxelFormat";
@@ -73,16 +74,16 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       }
     })
 
-    if (this.horizonClouds) {
-      this.horizonClouds.updateCameraPosition();
-    }
+    // if (this.horizonClouds) {
+    //   this.horizonClouds.updateCameraPosition();
+    // }
 
     // 云层天气
-    // this.cloudModelList.forEach(cloudModel => {
-    //   if (cloudModel) {
-    //     cloudModel.render();
-    //   }
-    // })
+    this.cloudModelList.forEach(cloudModel => {
+      if (cloudModel) {
+        cloudModel.render();
+      }
+    })
 
     this.stats.update();
   }
@@ -144,8 +145,15 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       this.drawLayer();
       this.initKaModel();
       this.initRadarModel(texture);
-      // this.initCloud();
+      this.initCloud();
+      // this.isoInstance = initIsoPlane(this.map);
+      this.initIsoPlane();
     })
+  }
+
+  initIsoPlane() {
+    this.isoPlane = new IsoPlaneModel(this.renderer, this.camera, this.scene);
+    this.isoPlane.render();
   }
 
   initCloud() {
@@ -179,7 +187,6 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     
     })
   }
-
 
 
   initRadarModel (texture) {
@@ -226,6 +233,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     this.cloudModelList.forEach(cloud => cloud && cloud.destroy());
     this.cloudModelList = null;
 
+    if (this.isoInstance) this.isoInstance.dispose();
+    
     this.stats.dom.remove();
   }
 
