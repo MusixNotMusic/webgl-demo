@@ -37,7 +37,7 @@ export function initIsoPlaneCanvas (map, cb, debug) {
     }
 
     const demo = (geojson, bbox) => {
-        const height = 300;
+        const height = 1000;
 
         const widthDis = turf.distance(turf.point([bbox[0], bbox[3]]), turf.point([bbox[2], bbox[3]]));
         const heightDis = turf.distance(turf.point([bbox[2], bbox[1]]), turf.point([bbox[2], bbox[3]]));
@@ -47,6 +47,11 @@ export function initIsoPlaneCanvas (map, cb, debug) {
         const scale = heightDis / height * 1000;
 
         let result = geojson2Canvas2(geojson.data, points, height * apest, height)
+
+        result.width = widthDis;
+        result.height = heightDis;
+        result.center = [(bbox[2] + bbox[0]) * 0.5, (bbox[3] + bbox[1]) * 0.5];
+        
         if (debug) {
             result.domElement.style.position = 'fixed'
             result.domElement.style.zIndex = 10

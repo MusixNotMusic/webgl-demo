@@ -26,7 +26,7 @@ function parsePolygon(coordinates) {
     const group = [];
     if (coordinates.length > 0) {
         coordinates.forEach(one => {
-                group.push(one)
+            group.push(one)
         })
     }
 

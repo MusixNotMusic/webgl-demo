@@ -35,7 +35,7 @@ export default class RadarModel{
 
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 32 },
+      depthSampleCount: { value: 64 },
       pitchRange:       { value: new THREE.Vector2(0.05, 0.6) },
       radius:           { value: radarInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
@@ -56,7 +56,7 @@ export default class RadarModel{
 
   render () {
     return this.loadFBXModel().then((model) => {
-      this.initRadarModel(model);
+      // this.initRadarModel(model);
       this.initRadarDetectionZone();
       this.initDirectionalLightHelper();
 

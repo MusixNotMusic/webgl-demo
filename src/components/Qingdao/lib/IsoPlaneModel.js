@@ -23,17 +23,17 @@ export default class IsoPlaneModel{
     this.planeInfo = planeInfo || {
       type: 'S',
       lngLat: [120.230278, 35.988611],
-      alt: 50000,
-      width: 220,
-      height: 220 * 3 / 13
+      alt: 10000,
+      width: 600,
+      height: 600
     }
 
     window.IsoPlaneModel = this;
   }
 
   render () {
-    return this.loadTextureData().then((texture) => {
-      this.initIsoPlane(texture);
+    return this.loadTextureData().then((result) => {
+      this.initIsoPlane(result);
 
       const { renderer, scene, camera } = this;
       renderer.render(scene, camera);
@@ -45,7 +45,8 @@ export default class IsoPlaneModel{
     return new Promise((resolve, reject) => {
       this.isoIsoPlaneCanvas = initIsoPlaneCanvas(this.map, (result) => {
         const texture = new THREE.CanvasTexture(result.domElement);
-        resolve(texture)
+        result.texture = texture;
+        resolve(result)
       }, false)
     })
   }
@@ -53,10 +54,11 @@ export default class IsoPlaneModel{
   /**
    * 雷达探测区域
    */
-  initIsoPlane (texture) {
+  initIsoPlane (result) {
+      const { texture, center, width, height } = result;
       const planeInfo = this.planeInfo; 
 
-      const { width, height, high } = planeInfo;
+      // const { width, height, high } = planeInfo;
 
       const uniforms = this.uniforms;
       
@@ -89,7 +91,8 @@ export default class IsoPlaneModel{
 
       const object = new WGS84Object3D(mesh);
 
-      object.WGS84Position = new THREE.Vector3(planeInfo.lngLat[0], planeInfo.lngLat[1], planeInfo.alt);
+      // object.WGS84Position = new THREE.Vector3(planeInfo.lngLat[0], planeInfo.lngLat[1], planeInfo.alt);
+      object.WGS84Position = new THREE.Vector3(center[0], center[1], planeInfo.alt);
 
       this.plane = object;
 

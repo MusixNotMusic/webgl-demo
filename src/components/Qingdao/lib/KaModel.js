@@ -34,7 +34,7 @@ export default class KaModel{
 
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 128 },
+      depthSampleCount: { value: 32 },
       pitchRange:       { value: new THREE.Vector2(Math.PI * 0.5 * 0.9, Math.PI * 0.5) },
       radius:           { value: kaInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
@@ -49,7 +49,7 @@ export default class KaModel{
 
   render () {
     return this.loadFBXModel().then((model) => {
-      this.initKaModel(model);
+      // this.initKaModel(model);
       this.initRadarDetectionZone();
       this.initDirectionalLightHelper();
       return null;

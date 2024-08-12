@@ -145,7 +145,7 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       this.drawLayer();
       this.initKaModel();
       this.initRadarModel(texture);
-      this.initCloud();
+      // this.initCloud();
       // this.isoInstance = initIsoPlane(this.map);
       this.initIsoPlane();
     })
