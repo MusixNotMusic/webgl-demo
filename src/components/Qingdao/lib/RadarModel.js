@@ -35,8 +35,8 @@ export default class RadarModel{
 
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 64 },
-      pitchRange:       { value: new THREE.Vector2(0.05, 0.6) },
+      depthSampleCount: { value: 128 },
+      pitchRange:       { value: new THREE.Vector2(0.0, 0.6) },
       radius:           { value: radarInfo.radius * 1e3 },
       azimuth:          { value: Math.PI * 0.5 },
       elevation:        { value: Math.random() * 0.6},

@@ -33,10 +33,12 @@ export default class IsoPlaneModel{
 
   render () {
     return this.loadTextureData().then((result) => {
-      this.initIsoPlane(result);
-
+      if (!this.mesh) {
+        this.initIsoPlane(result);
+      }
       const { renderer, scene, camera } = this;
       renderer.render(scene, camera);
+      return result;
     })
   }
 
@@ -64,17 +66,6 @@ export default class IsoPlaneModel{
       
       const geometry = new THREE.PlaneGeometry( width * 1e3, height * 1e3 );
 
-      // const material = new THREE.RawShaderMaterial( {
-      //     glslVersion: THREE.GLSL3,
-      //     uniforms: uniforms,
-      //     vertexShader: vertexShader,
-      //     fragmentShader: fragmentShader,
-      //     transparent: true,
-      //     side: THREE.DoubleSide,
-      //     depthTest: false,
-      //     depthWrite: false
-      // });
-
       const material = new THREE.MeshBasicMaterial( {
         transparent: true,
         side: THREE.DoubleSide,
@@ -97,6 +88,19 @@ export default class IsoPlaneModel{
       this.plane = object;
 
       this.scene.add(object);
+  }
+
+  setAltitude(alt){
+    return this.render().then(result => {
+      const { texture, center } = result;
+      if(this.mesh) {
+        setTimeout(() => {
+          this.mesh.material.map = texture;
+        })
+      }
+      this.plane.WGS84Position = new THREE.Vector3(center[0], center[1], alt);
+      return result;
+    })
   }
  
  

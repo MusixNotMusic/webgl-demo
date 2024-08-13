@@ -203,15 +203,24 @@ void main(){
     vec3 ro = vOrigin;
     vec3 rd = normalize( vDirection );
     
-    vec3 p = vec3(0.0);
-
     vec3 center = vec3(0.0, 0.0, -radius);
     
     vec4 col = vec4(0.0);
 
     vec2 NF = iSphere(ro, rd, center, radius);
-    p = ro + NF.x * rd;
+    
+    vec3 p = ro + NF.x * rd;
+    vec3 p2 = ro + NF.y * rd;
+
+    if (p.z < 0.0) {
+        NF.x = length(p - ro);
+    }
+
+    if (p2.z < 0.0) {
+        NF.y = length(p2 - ro);
+    }
     float step = (NF.y - NF.x) / depthSampleCount;
+    // step = step * exp(abs(rd.x / rd.y) * 0.01);
 
     if (step < 0.1) discard;
 
@@ -415,7 +424,7 @@ void main(){
             float light = abs(dot(ref, rd));
             col = vec4(vec3(0.7), light * 0.25);
 
-            if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.01) { 
+            if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.y) < 0.005) { 
                 col = vec4(1.0, 1.0, 1.0, light * 0.25);
             }
         }
@@ -441,6 +450,10 @@ void main(){
 
                 if (abs(mod(pc.y, radius * 0.2)) < radius * 0.005)
                     col = vec4(1.0, 1.0, 1.0, light * 0.25);
+            }
+
+            if (length(pc) >= radius * 0.995) { 
+                col = vec4(1.0, 1.0, 1.0, light * 0.25);
             }
         }
     }

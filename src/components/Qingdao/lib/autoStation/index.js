@@ -1,5 +1,5 @@
 import {  getIsolineGeoJson, getIsobandsGeoJson } from '@cdyw/asd-2d';
-import { autoStationData, autoStationOption, colorsStep } from './autoStationData';
+import { autoStationData, autoStationOption, colorsStep, getData } from './autoStationData';
 import { geojson2Canvas2 } from './Geojson2Canvas';
 import * as turf from '@turf/turf'
 
@@ -8,7 +8,7 @@ export function initIsoPlaneCanvas (map, cb, debug) {
     const colors = colorsStep.map(item => item.color);
     const breaks = colorsStep.map(item => item.value);
     const option = {
-        data: autoStationData,
+        data: getData(),
         key: options.type,
         textColor: options.textColor,
         breaks: breaks,

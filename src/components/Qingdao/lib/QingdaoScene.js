@@ -16,6 +16,7 @@ import fragmentShader from './shader/radar/global.frag'
 import RadarModel from './RadarModel';
 import KaModel from './KaModel';
 import IsoPlaneModel from './IsoPlaneModel';
+import EchoCube from './EchoCube';
 
 // import HorizonClouds from './HorizonClouds';
 import HorizonClouds2D from './HorizonClouds2D';
@@ -85,6 +86,10 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       }
     })
 
+    if (this.echoCube) {
+      this.echoCube.updateCameraPosition();
+    }
+
     this.stats.update();
   }
 
@@ -144,11 +149,17 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       console.log('texture ==>', texture);
       this.drawLayer();
       this.initKaModel();
-      this.initRadarModel(texture);
+      // this.initRadarModel(texture);
       // this.initCloud();
-      // this.isoInstance = initIsoPlane(this.map);
       this.initIsoPlane();
+
+      // this.initEchoCube(texture);
     })
+  }
+
+  initEchoCube(texture) {
+    this.echoCube = new EchoCube(this.renderer, this.camera, this.scene, null, texture);
+    this.echoCube.render();
   }
 
   initIsoPlane() {
@@ -173,8 +184,6 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
           const object = model.clone();
 
-          // this.lod.addLevel(object, kaInfo.radius * 1e3); 
-
           kaInfo.model = object;
           const kaModel = new KaModel(this.renderer, this.camera, this.scene, kaInfo);
 
@@ -198,16 +207,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
         this.radarInfoList.forEach((radarInfo, index) => {
           let object = model.clone();
 
-          // const lod = new THREE.LOD();
-          // lod.addLevel(object, radarInfo.radius * 1000); 
-          // lod.updateMatrix();
-          // lod.matrixAutoUpdate = false;
-
-          // this.scene.add(lod);
-
           radarInfo.model = object;
           const radarModelInstance = new RadarModel(this.renderer, this.camera, this.scene, radarInfo,  null)
-            // index % 2 == 0 ? null : texture);
 
           radarModelInstance.render();
           this.radarModelList.push(radarModelInstance);
@@ -234,6 +235,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     this.cloudModelList = null;
 
     if (this.isoInstance) this.isoInstance.dispose();
+
+    if (this.echoCube) this.echoCube.dispose();
     
     this.stats.dom.remove();
   }
