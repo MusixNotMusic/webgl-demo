@@ -81,6 +81,9 @@ export default {
       // instance.render()
       map.once('idle', (e) => {
         instance.render()
+        setTimeout(() => {
+          instance.zoom();
+        }, 1000)
       });
     }
 

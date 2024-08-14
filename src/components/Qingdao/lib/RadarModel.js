@@ -59,7 +59,6 @@ export default class RadarModel{
       this.initRadarModel(model);
       this.initRadarDetectionZone();
       // this.initDirectionalLightHelper();
-
       return null;
     })
   }

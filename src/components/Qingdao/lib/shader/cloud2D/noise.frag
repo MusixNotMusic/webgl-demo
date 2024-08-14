@@ -252,7 +252,7 @@ vec2 hitBox( vec3 orig, vec3 dir ) {
 void main(){
   vec3 uvz = vec3(vUv, 0.0);
 
-	vec3 wind = vec3(float(windU), 0.0, float(windV)) * iTime;
+	vec3 wind = vec3(float(windU), float(windV), 0.0) * iTime;
 
 	vec3 d = vec3(10.05);
 

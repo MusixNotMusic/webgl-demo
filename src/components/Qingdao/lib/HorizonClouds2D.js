@@ -133,8 +133,6 @@ export default class HorizonClouds2D {
           const object = this.scene.getObjectByName(name);
 
           setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
-
-        //   this.renderer.render( this.scene, this.camera );
         }
     }
 

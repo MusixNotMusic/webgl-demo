@@ -8,7 +8,8 @@ export function addCSS2Object (mesh, text, translate, customStyle) {
             borderRadius: '2px',
             padding: '5px 10px',
             width: 'content-max',
-            fontSize: '12px'
+            fontSize: '12px',
+            visibility: 'hidden'
         };
 
         const element = document.createElement('div');

@@ -98,10 +98,10 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       const list = this.css2DRenderer.domElement.querySelectorAll('.name')
       list.forEach(dom => {
         dom.style.transform = `scale(${zoom / 10})`;
+        dom.style.visibility = null;
       })
     }
   }
-
 
   addEventListener() {
     if (this.map) {
