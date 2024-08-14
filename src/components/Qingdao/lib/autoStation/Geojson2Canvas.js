@@ -86,9 +86,9 @@ export function geojson2Canvas2(geojson, points, width, height) {
 
         context.beginPath();
         context.fillStyle = 'red';
-        context.font  = (Math.random() * 4 + 5) + 'px serif';
-        const { width } = context.measureText(item.value);
-        context.fillText(item.value, pos[0] - width * 0.5, pos[1] + 10);
+        context.font  = '30px serif';
+        const { width } = context.measureText(item.value.toFixed(2));
+        context.fillText(item.value.toFixed(2), pos[0] - width * 0.5, pos[1] + 30);
     })
 
     console.timeEnd('geojson2canvas')

@@ -56,9 +56,9 @@ export default class RadarModel{
 
   render () {
     return this.loadFBXModel().then((model) => {
-      // this.initRadarModel(model);
+      this.initRadarModel(model);
       this.initRadarDetectionZone();
-      this.initDirectionalLightHelper();
+      // this.initDirectionalLightHelper();
 
       return null;
     })
@@ -147,13 +147,16 @@ export default class RadarModel{
 
       this.zone = object;
 
+      this.degree = 0;
+
       this.scene.add(object);
   }
  
 
   updateCameraPosition() {
     if (!this.isDispose) {
-      const { renderer, scene, camera } = this;
+      // const { renderer, scene, camera } = this;
+      const { scene } = this;
       const radarInfo = this.radarInfo;
       const cameraPosition = this.camera.position;
 
@@ -161,10 +164,10 @@ export default class RadarModel{
       const object = this.scene.getObjectByName(name);
   
       setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
+      this.degree = this.degree + (radarInfo.type === 'S' ? 0.5 : 1);
+      this.setScanAngle(-(this.degree / 360) * Math.PI * 2 + this.azimuth);
 
-      this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
-
-      renderer.render(scene, camera);
+      // renderer.render(scene, camera);
     }
   }
 
@@ -192,26 +195,6 @@ export default class RadarModel{
 
     this.scene.add( object );
 
-  }
-
-  initPointLightHelper () {
-    const pointLight = new THREE.PointLight( 0xff0000, 1, 10000 );
-
-    const lightObject = new WGS84Object3D(pointLight);
-    
-    lightObject.WGS84Position = new THREE.Vector3(120.5, 35, 44000);
-    
-    lightObject.add(new THREE.AxesHelper(10000));
-
-    this.scene.add( lightObject );
-
-    window.PointLight = lightObject;
-
-    const sphereSize = 10000;
-    const pointLightHelper = new THREE.PointLightHelper( pointLight.clone(), sphereSize );
-    const helper = new WGS84Object3D(pointLightHelper);
-    helper.WGS84Position = new THREE.Vector3(120.5, 35, 44000);
-    this.scene.add( helper );
   }
 
   setScanAngle(azimuth, elevation) {

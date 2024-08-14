@@ -47,10 +47,6 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
 
     this.kaModelList = [];
 
-    // create LOD
-    // this.lod = new THREE.LOD();
-    // this.scene.add(this.lod);
-
     this.zoomBind = this.zoom.bind(this);
 
     this.stats = new Stats();
@@ -75,9 +71,9 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       }
     })
 
-    // if (this.horizonClouds) {
-    //   this.horizonClouds.updateCameraPosition();
-    // }
+    if (this.horizonClouds) {
+      this.horizonClouds.updateCameraPosition();
+    }
 
     // 云层天气
     this.cloudModelList.forEach(cloudModel => {
@@ -91,6 +87,9 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     }
 
     this.stats.update();
+
+    const { renderer, scene, camera } = this;
+    renderer.render(scene, camera);
   }
 
   zoom() {
@@ -198,9 +197,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
   initRadarModel (texture) {
     const loader = new FBXLoader();
     return new Promise((resolve) => {
-      loader.load( '/model/fbx/radar5.fbx',  ( _model ) => {
+      loader.load( '/model/fbx/radar3.fbx',  ( _model ) => {
         const model = new WGS84Object3D(_model);
-        //  add LOD
         this.radarInfoList.forEach((radarInfo, index) => {
           let object = model.clone();
 
@@ -210,8 +208,6 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
           radarModelInstance.render();
           this.radarModelList.push(radarModelInstance);
         })
-
-
 
         resolve(model);
       });

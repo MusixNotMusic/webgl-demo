@@ -49,7 +49,7 @@ export default class KaModel{
 
   render () {
     return this.loadFBXModel().then((model) => {
-      // this.initKaModel(model);
+      this.initKaModel(model);
       this.initRadarDetectionZone();
       this.initDirectionalLightHelper();
       return null;
@@ -139,7 +139,8 @@ export default class KaModel{
 
   updateCameraPosition() {
     if (!this.isDispose) {
-      const { renderer, scene, camera } = this;
+      // const { renderer, scene, camera } = this;
+      const { scene } = this;
       const kaInfo = this.kaInfo;
       const cameraPosition = this.camera.position;
 
@@ -152,7 +153,7 @@ export default class KaModel{
 
       this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
 
-      renderer.render(scene, camera);
+      // renderer.render(scene, camera);
     }
   }
 

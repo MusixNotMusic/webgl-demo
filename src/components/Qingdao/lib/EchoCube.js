@@ -102,7 +102,8 @@ export default class EchoCube{
 
   updateCameraPosition() {
     if (!this.isDispose) {
-      const { renderer, scene, camera } = this;
+      // const { renderer, scene, camera } = this;
+      const { scene } = this;
       const echoInfo = this.echoInfo;
       const cameraPosition = this.camera.position;
 
@@ -114,7 +115,7 @@ export default class EchoCube{
       let t = Math.abs(Math.cos(performance.now() / 20000));
       this.updateDeltaTime(t)
 
-      renderer.render(scene, camera);
+      // renderer.render(scene, camera);
     }
   }
 

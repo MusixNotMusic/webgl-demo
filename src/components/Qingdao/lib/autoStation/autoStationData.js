@@ -138,28 +138,28 @@ export function getData () {
             name: '青岛国家基本气象站毫米波测云仪',
             lon: 120.328611,
             lat: 36.072222,
-            tem: Math.random() * 20 - 5,
+            tem: Math.random() * 30 - 15,
         },
         {
             id: 3,
             name: '莱西国家基本气象站毫米波测云仪',
             lon: 120.56,
             lat: 36.903056,
-            tem: Math.random() * 20 - 5,
+            tem: Math.random() * 30 - 15,
         },
         {
             id: 4,
             name: '平度国家基本气象站毫米波测云仪',
             lon: 119.993333,
             lat: 36.790278,
-            tem: Math.random() * 20 - 5,
+            tem: Math.random() * 30 - 15,
         },
         {
             id: 5,
             name: '董家口毫米波测云仪',
             lon: 119.779444,
             lat: 35.624722,
-            tem: Math.random() * 20 - 5,
+            tem: Math.random() * 30 - 15,
         }
     ]
 }

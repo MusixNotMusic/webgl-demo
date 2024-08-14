@@ -5,7 +5,7 @@
       <div class="dot" v-for="(item, index) in altList" 
           :class="{active: index === activceIndex}" 
           :key="index" 
-          @click="altItemClick(item); activceIndex = index">{{item.value / 1000}}K
+          @click="altItemClick(item); activceIndex = index">{{item.name}}
       </div>
   </div>
 
@@ -42,11 +42,11 @@ export default {
     const activceViewIndex = ref(-1);
     const zoom = ref(6);
     const altList = ref([
-      { name: '10K', value: 1 * 1e4 },
-      { name: '20K', value: 2 * 1e4 },
-      { name: '30K', value: 3 * 1e4 },
-      { name: '40K', value: 4 * 1e4 },
-      { name: '50K', value: 5 * 1e4 },
+      { name: '1km', value: 1 * 1e4 },
+      { name: '2km', value: 2 * 1e4 },
+      { name: '3km', value: 3 * 1e4 },
+      { name: '4km', value: 4 * 1e4 },
+      { name: '5km', value: 5 * 1e4 },
     ].reverse());
 
 
@@ -62,6 +62,7 @@ export default {
       { name: '视角2', value: 1, config: { center: [120.230278, 35.988611], zoom: 6.1, pitch: 42, bearing: -25.6, duration: 1000 } },
       { name: '视角3', value: 2, config: { center: [120.230278, 35.988611], zoom: 7.2, pitch: 85, bearing: +58.2, duration: 1000 } },
       { name: '视角4', value: 3, config: { center: [120.230278, 35.988611], zoom: 6.7, pitch: 37, bearing: +20.3, duration: 1000 } },
+      { name: '视角5', value: 3, config: { center: [120.230278, 35.988611], zoom: 7.2, pitch: 60, bearing: +37.4, duration: 1000 } },
     ]);
 
     let mapIns = null;
@@ -141,6 +142,10 @@ export default {
 </script>
 
 <style scoped lang="scss">
+  $main-bg: rgb(217, 221, 230);
+  $active-bg: rgb(52, 112, 241);
+  $main-color: rgb(9, 64, 87);
+  $active-color: rgb(255, 255, 255);
   .alt-slider{
     position: fixed;
     right: 30px;
@@ -155,7 +160,7 @@ export default {
       position: absolute;
       height: 100%;
       width: 2px;
-      background: rgb(104, 147, 240);
+      background: $main-bg;
       left: calc(50% - 1px);
     }
     .dot {
@@ -164,16 +169,18 @@ export default {
       border-radius: 50%;
       line-height: 25px;
       text-align: center;
-      background: rgb(104, 147, 240);
-      color: #fff;
+      background: $main-bg;
+      color: $main-color;
       z-index: 1;
       cursor: pointer;
     }
     .dot:hover {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
     .active {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
   }
 
@@ -190,16 +197,18 @@ export default {
       line-height: 30px;
       padding: 0px 5px ;
       text-align: center;
-      background: rgb(104, 147, 240);
-      color: #fff;
+      background: $main-bg;
+      color: $main-color;
       cursor: pointer;
     }
 
     .item:hover {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
     .active {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
   }
 
@@ -216,16 +225,18 @@ export default {
       line-height: 30px;
       padding: 0px 6px ;
       text-align: center;
-      background: rgb(104, 147, 240);
-      color: #fff;
+      background: $main-bg;
+      color: $main-color;;
       cursor: pointer;
     }
 
     .item:hover {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
     .active {
-      background: salmon;
+      background: $active-bg;
+      color: $active-color;
     }
   }
 

@@ -128,7 +128,6 @@ export default class HorizonClouds {
 
         object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], alt);
 
-
         this.cloud = object;
 
         this.scene.add(object)
@@ -137,7 +136,7 @@ export default class HorizonClouds {
     
     updateCameraPosition() {
         if (!this.isDispose) {
-          const { renderer, scene, camera } = this;
+          const {  scene } = this;
           const cameraPosition = this.camera.position;
     
           const name = 'cloud';
@@ -148,8 +147,6 @@ export default class HorizonClouds {
           setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
 
           this.stats.update();
-
-          this.renderer.render( this.scene, this.camera );
         }
     }
 
@@ -189,6 +186,9 @@ export default class HorizonClouds {
         this.removeItem(this.cloud);
 
         this.isDispose = true;
+
+        this.gui.domElement.remove();
+        this.gui.destroy();
 
         this.stats.dom.remove();
     }
