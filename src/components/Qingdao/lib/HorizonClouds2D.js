@@ -34,7 +34,7 @@ export default class HorizonClouds2D {
         };
 
         this.values = cloudInfo.value || {
-            COVERAGE: 0.34,
+            COVERAGE: 0.5,
             FBM_FREQ: 2.76434,
             OFFSET: 2.3,
             windU: 0.02,

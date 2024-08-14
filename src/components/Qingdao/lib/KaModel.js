@@ -139,7 +139,6 @@ export default class KaModel{
 
   updateCameraPosition() {
     if (!this.isDispose) {
-      // const { renderer, scene, camera } = this;
       const { scene } = this;
       const kaInfo = this.kaInfo;
       const cameraPosition = this.camera.position;
@@ -152,8 +151,6 @@ export default class KaModel{
       setMeshUniform(object, 'iTime', this.clock.getElapsedTime())
 
       this.setScanAngle(Math.cos(performance.now() / 5000) * Math.PI * 2 + this.azimuth);
-
-      // renderer.render(scene, camera);
     }
   }
 

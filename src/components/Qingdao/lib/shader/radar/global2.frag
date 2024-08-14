@@ -146,39 +146,45 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
     return vec4(-1.0);
 }
 
+float dot2( in vec3 v ) { return dot(v,v); }
 
-// vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float cosa)
-// {
+vec4 intersectCone2( in vec3  ro, in vec3  rd, 
+                  in vec3  pa, in vec3  pb, 
+                  in float ra, in float rb )
+{
 
-//     vec3 co = ro - center;
 
-//     float cosa2 = cosa*cosa;
+    vec3  ba = pb - pa;
+    vec3  oa = ro - pa;
+    vec3  ob = ro - pb;
+    
+    float m0 = dot(ba,ba);
+    float m1 = dot(oa,ba);
+    float m2 = dot(ob,ba); 
+    float m3 = dot(rd,ba);
 
-//     float a = dot(rd, axis)*dot(rd, axis) - cosa2;
-//     float b = 2. * (dot(rd, axis)*dot(co, axis) - dot(rd,co)*cosa2);
-//     float c = dot(co,axis)*dot(co,axis) - dot(co,co)*cosa2;
+    //caps
+         if( m1<0.0 ) { if( dot2(oa*m3-rd*m1)<(ra*ra*m3*m3) ) return vec4(-m1/m3,-ba*inversesqrt(m0)); }
+    else if( m2>0.0 ) { if( dot2(ob*m3-rd*m2)<(rb*rb*m3*m3) ) return vec4(-m2/m3, ba*inversesqrt(m0)); }
+    
+    vec3 O = vec3(0.0);
+    vec3 axis = vec3(0.0);
+    float H = length(pa - pb);
+    float R = max(ra, rb);
+    float alpha = H / sqrt(H * H + R * R);
 
-//     float det = b*b - 4.*a*c;
-//     if (det < 0.0) return vec4(-1.0);
+    if (rb > ra) {
+        O = pa;
+        axis = normalize(pb - pa);
+    } else {
+        O = pb;
+        axis = normalize(pa - pb);
+    }
 
-//     det = sqrt(det);
-//     float t1 = (-b - det) / (2. * a);
-//     float t2 = (-b + det) / (2. * a);
 
-//     // This is a bit messy; there ought to be a more elegant solution.
-//     float t = t1;
-//     // if (t < 0. || t2 > 0. && t2 < t) t = t2;
-//     if (t < 0. && t2 < t) t = t2;
-//     // if (t < 0.) return vec4(-1.0);
-
-//     vec3 cp = ro + t*rd - center;
-//     float h = dot(cp, axis);
-//     if (h < 0. || h > dis) return vec4(-1.0);
-
-//     vec3 n = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
-
-//     return vec4(t, n);
-// }
+    vec4 tnor = intersectCone(ro, rd, O, axis, H, alpha);
+    return tnor;
+}
 
 
 
@@ -195,6 +201,17 @@ vec3 calcNormal( in vec3 p ) // for function f(p)
                       k.yyx*f( p + k.yyx*h ) + 
                       k.yxy*f( p + k.yxy*h ) + 
                       k.xxx*f( p + k.xxx*h ) );
+}
+
+vec3 pattern( in vec2 uv )
+{
+    vec3 col = vec3(0.6);
+    // col += 0.4*smoothstep(-0.01,0.01,cos(uv.x*0.5)*cos(uv.y*0.5)); 
+    // col *= smoothstep(-1.0,-0.98,cos(uv.x))*smoothstep(-1.0,-0.98,cos(uv.y));
+    col += 0.4*smoothstep(-0.01,0.01,cos(uv.x*0.5)*cos(uv.y*0.5)); 
+    col *= smoothstep(-1.0,-0.98,cos(uv.x))*smoothstep(-1.0,-0.98,cos(uv.y));
+    
+    return col;
 }
 
 #define AA 3
@@ -458,11 +475,35 @@ void main(){
         }
     }
  #endif
+
+    // cone intersect
+    for( int m=0; m<AA; m++ )
+    for( int n=0; n<AA; n++ )
+    {
+
+        vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
+        vec3  pb = center + vec3(0.0, 0.0, 2000.0 * 4.0);
+        float ra = 0.0174 * radius; // sin(1) = 0.0174 
+        float rb = 200.0;
+
+        vec4 tnor = intersectCone2( ro, rd, pa, pb, ra, rb );
+
+        float t = tnor.x;
+
+        if (t > 0.0) {
+           vec3 pos = ro + t * rd;
+            vec3 nor = tnor.yzw;
+
+            vec3 ref = reflect(SUN, nor);
+            float light = abs(dot(ref, rd));
+            col = vec4(vec3(0.0, 1.0, 0.0), light * 0.8);
+        }
+    }
  
     // cap intersect
     vec3  pa = vec3(radius * cos(azimuth) * cos(elevation), radius * sin(azimuth)* cos(elevation), radius * sin(elevation) - radius);
-    vec3  pb = center + vec3(0.0, 0.0, 2000.0 * 4.0);;
-    float crr = 400.0;
+    vec3  pb = center + vec3(0.0, 0.0, 2000.0 * 4.0);
+    float crr = 200.0;
     
     // cap 
     for( int m=0; m<AA; m++ )

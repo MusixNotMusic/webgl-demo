@@ -155,7 +155,6 @@ export default class RadarModel{
 
   updateCameraPosition() {
     if (!this.isDispose) {
-      // const { renderer, scene, camera } = this;
       const { scene } = this;
       const radarInfo = this.radarInfo;
       const cameraPosition = this.camera.position;
@@ -166,8 +165,6 @@ export default class RadarModel{
       setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
       this.degree = this.degree + (radarInfo.type === 'S' ? 0.5 : 1);
       this.setScanAngle(-(this.degree / 360) * Math.PI * 2 + this.azimuth);
-
-      // renderer.render(scene, camera);
     }
   }
 
