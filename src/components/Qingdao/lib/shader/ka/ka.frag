@@ -39,6 +39,13 @@ vec2 iSphere( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
 float dot2( in vec3 v ) { return dot(v,v); }
 
 
+/**
+ *  https://github.com/GreatAttractor/gpuart/blob/master/shaders/cone.glsl
+ *  
+ */
+#define VISIBILITY_OFFSET 1.0e-4
+#define CONE_TOLERANCE    1.0e-7
+
 vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float cosa)
 {
 
@@ -50,26 +57,62 @@ vec4 intersectCone(vec3 ro, vec3 rd, vec3 center, vec3 axis, float dis, float co
     float b = 2. * (dot(rd, axis)*dot(co, axis) - dot(rd,co)*cosa2);
     float c = dot(co,axis)*dot(co,axis) - dot(co,co)*cosa2;
 
-    float det = b*b - 4.*a*c;
+    float det = b*b - 4.0*a*c;
     if (det < 0.0) return vec4(-1.0);
 
     det = sqrt(det);
-    float t1 = (-b - det) / (2. * a);
-    float t2 = (-b + det) / (2. * a);
+    float k1 = (-b - det) / (2. * a);
+    float k2 = (-b + det) / (2. * a);
 
-    // This is a bit messy; there ought to be a more elegant solution.
-    float t = t1;
-    // if (t < 0. || t2 > 0. && t2 < t) t = t2;
-    if (t < 0. && t2 < t) t = t2;
-    // if (t < 0.) return vec4(-1.0);
+    float t = -1.0;
 
-    vec3 cp = ro + t*rd - center;
-    float h = dot(cp, axis);
-    if (h < 0. || h > dis) return vec4(-1.0);
+    vec3 p1 = ro + k1*rd;
+    vec3 p2 = ro + k2*rd;
 
-    vec3 n = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
+    float t1 = dot(axis, p1 - center.xyz);
+    float t2 = dot(axis, p2 - center.xyz);
 
-    return vec4(t, n);
+    bool onaxis1 = t1 >= 0.0 && t1 <= dis;
+    bool onaxis2 = t2 >= 0.0 && t2 <= dis;
+
+    if (k1 < VISIBILITY_OFFSET && onaxis2)
+    {
+        t = k2;
+    }
+    else if (k2 < VISIBILITY_OFFSET && onaxis1)
+    {
+        t = k1;
+    }
+    else
+    {
+        if (k1 < k2 && onaxis1 && onaxis2
+            || onaxis1 && !onaxis2)
+        {
+            t = k1;
+        }
+        else if (k2 < k1 && onaxis1 && onaxis2
+            || !onaxis1 && onaxis2)
+        {
+            t = k2;
+        }
+        else
+        {
+            t = -1.0;
+            return vec4(-1.0);
+        }
+    }
+
+    if (t > 0.0)
+    {
+        vec3 cp = ro + t*rd - center;
+        vec3 normal = normalize(cp * dot(axis, cp) / dot(cp, cp) - axis);
+        if (dot(normal, rd) > 0.0)
+            normal = -normal;
+
+        return vec4(t, normal);
+    }
+
+    return vec4(-1.0);
 }
 
 
@@ -145,20 +188,9 @@ void main(){
             vec3 pos = ro + t * rd;
             vec3 nor = tnor.yzw;
 
-            vec3  lig = SUN;
-            vec3  hal = normalize(-rd+lig);
-            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
-            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
-            float occ = 0.5 + 0.5*nor.y;
-
-            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
-            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
-            col.a = 0.1;
-
-            // vec3 ref = reflect(SUN, nor);
-            // float light = abs(dot(ref, rd));
-
-            // col = vec4(vec3(0.8), 1.0 - light);
+            vec3 ref = reflect(SUN, nor);
+            float light = abs(dot(ref, rd));
+            col = vec4(vec3(0.7), light * 0.5);
         }
 
 
@@ -177,19 +209,13 @@ void main(){
             // float light = abs(dot(ref, rd));
             // col = vec4(vec3(0.5), 1.0 - light);
 
-            vec3  lig = SUN;
-            vec3  hal = normalize(-rd+lig);
-            float dif = clamp( dot(nor,lig), 0.0, 1.0 );
-            float amb = clamp( 0.5 + 0.5*dot(nor,vec3(0.0,1.0,0.0)), 0.0, 1.0 );
-            float occ = 0.5 + 0.5*nor.y;
-
-            col.rgb *= vec3(0.2,0.3,0.4)*amb*occ + vec3(1.0,0.9,0.7)*dif;
-            col.rgb += 0.4*pow(clamp(dot(hal,nor),0.0,1.0),12.0)*dif;
-            col.a = 0.1;
+            vec3 ref = reflect(SUN, nor);
+            float light = abs(dot(ref, rd));
+            col = vec4(vec3(0.7), light * 0.5);
 
 
             if (length(pc) > radius * 0.9999 && abs(pitch - pitchRange.x) < 0.01) { 
-                col = vec4(1.0, 1.0, 1.0, 1.0);
+                col = vec4(1.0, 1.0, 1.0, light);
             }
         }
     }

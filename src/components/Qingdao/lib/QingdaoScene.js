@@ -117,8 +117,8 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     }
   }
 
-  loadTextureData () {
-    return fetch('/resource/layerMoc_100.z').then(resqust => resqust.arrayBuffer()).then(decompress).then((data) => {
+  loadTextureData (url) {
+    return fetch(url || '/resource/layerMoc_100.z').then(resqust => resqust.arrayBuffer()).then(decompress).then((data) => {
       const instance = VoxelFormat.parser(data);
       const volume = {
           minLongitude: instance.header.leftLongitude / 10000,
@@ -145,20 +145,17 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
   }
 
   render () {
-    this.loadTextureData().then((texture) => {
-      console.log('texture ==>', texture);
       this.drawLayer();
       this.initKaModel();
-      // this.initRadarModel(texture);
-      // this.initCloud();
+      this.initRadarModel();
       this.initIsoPlane();
-
-      // this.initEchoCube(texture);
-    })
+      
+      // this.initCloud();
+      // this.initEchoCube(textures);
   }
 
-  initEchoCube(texture) {
-    this.echoCube = new EchoCube(this.renderer, this.camera, this.scene, null, texture);
+  initEchoCube(textures) {
+    this.echoCube = new EchoCube(this.renderer, this.camera, this.scene, null, textures);
     this.echoCube.render();
   }
 
@@ -220,6 +217,36 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
       });
     
     })
+  }
+
+  setCloudRadarMode () {
+    this.cleanMode();
+
+    this.initCloud();
+  }
+
+  setEchoMode() {
+    this.cleanMode();
+
+    const urls = [
+      '/resource/layerMoc_100.z',
+      '/resource/layerMoc3.z',
+    ]
+    Promise.allSettled([
+      this.loadTextureData(urls[0]),
+      this.loadTextureData(urls[1]),
+    ]).then((result) => {
+      console.log('values ==>', result);
+      const textures = result.map(item => item.value);
+      this.initEchoCube(textures);
+    })
+  }
+
+  cleanMode() {
+    if (this.echoCube) this.echoCube.dispose();
+
+    this.cloudModelList.forEach(cloud => cloud && cloud.destroy());
+    this.cloudModelList = [];
   }
 
   destroy () {

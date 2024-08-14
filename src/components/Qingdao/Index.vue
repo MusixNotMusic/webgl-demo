@@ -8,10 +8,25 @@
           @click="altItemClick(item); activceIndex = index">{{item.value / 1000}}K
       </div>
   </div>
+
+  <div class="mode-box">
+      <div class="item" v-for="(mode, index) in modeList" 
+          :class="{active: index === activceModeIndex}" 
+          :key="index" 
+          @click="modeItemClick(mode); activceModeIndex = index">{{mode.name}}
+      </div>
+  </div>
+
+  <div class="view-box">
+      <div class="item" v-for="(view, index) in viewList" 
+          :class="{active: index === activceViewIndex}" 
+          :key="index" 
+          @click="viewItemClick(view); activceViewIndex = index">{{view.name}}
+      </div>
+  </div>
 </template>
 
 <script>
-import mapboxgl from 'mapbox-gl';
 import { onMounted, onUnmounted, ref } from 'vue';
 import MapboxGLInit from '../Map/MapboxGLInit.vue';
 import QingdaoScene from './lib/QingdaoScene';
@@ -23,6 +38,8 @@ export default {
     let instance;
     const center = ref([120.5, 36]);
     const activceIndex = ref(-1);
+    const activceModeIndex = ref(-1);
+    const activceViewIndex = ref(-1);
     const zoom = ref(6);
     const altList = ref([
       { name: '10K', value: 1 * 1e4 },
@@ -33,10 +50,24 @@ export default {
     ].reverse());
 
 
-    window.mapboxgl = mapboxgl;
+    const modeList = ref([
+      { name: '云雷达模式', value: 1 },
+      { name: '回波模式', value: 2 },
+      { name: '清空模式', value: 0 },
+    ]);
 
+
+    const viewList = ref([
+      { name: '视角1', value: 0, config: { center: [120.230278, 35.988611], zoom: 7.2, pitch: 85, bearing: -43.0, duration: 1000 } },
+      { name: '视角2', value: 1, config: { center: [120.230278, 35.988611], zoom: 6.1, pitch: 42, bearing: -25.6, duration: 1000 } },
+      { name: '视角3', value: 2, config: { center: [120.230278, 35.988611], zoom: 7.2, pitch: 85, bearing: +58.2, duration: 1000 } },
+      { name: '视角4', value: 3, config: { center: [120.230278, 35.988611], zoom: 6.7, pitch: 37, bearing: +20.3, duration: 1000 } },
+    ]);
+
+    let mapIns = null;
     const mapboxGLLoadedFunc = (map) => {
       window.mapIns = map;
+      mapIns = map;
       addRadarLayer(map);
     }
 
@@ -46,15 +77,41 @@ export default {
           instance = new QingdaoScene('qingdao', map);
       }
       
-      instance.render()
-      // map.once('idle', (e) => {
-      // });
+      // instance.render()
+      map.once('idle', (e) => {
+        instance.render()
+      });
     }
 
     const altItemClick = (item) => {
       if(instance) {
         instance.isoPlane.setAltitude(item.value);
       }
+    }
+
+    const modeItemClick = (item) => {
+      if(instance) {
+        if (item.value === 1) {
+          instance.setCloudRadarMode();
+        }
+
+        if (item.value === 2) {
+          instance.setEchoMode();
+        }
+
+        if (item.value === 0) {
+          instance.cleanMode();
+        }
+      }
+    }
+
+    const viewConfigList = [
+      { center: [120.230278, 35.988611], zoom: 7.2, pitch: 85, bearing: -43.0, duration: 1000 },
+      { center: [120.230278, 35.988611], zoom: 6.1, pitch: 42, bearing: -25.6, duration: 1000 },
+      { center: [120.230278, 35.988611], zoom: 7.2, pitch: 85, bearing: +58.2, duration: 1000 }
+    ]
+    const viewItemClick = (item) => {
+        mapIns.flyTo(item.config);
     }
 
     onMounted(() => {
@@ -67,10 +124,16 @@ export default {
     return {
       center,
       altList,
+      modeList,
+      viewList,
       activceIndex,
+      activceModeIndex,
+      activceViewIndex,
       zoom,
       mapboxGLLoadedFunc,
-      altItemClick
+      altItemClick,
+      modeItemClick,
+      viewItemClick
     }
   }
 }
@@ -81,7 +144,7 @@ export default {
   .alt-slider{
     position: fixed;
     right: 30px;
-    bottom: 60px;
+    bottom: 30px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -93,7 +156,7 @@ export default {
       height: 100%;
       width: 2px;
       background: rgb(104, 147, 240);
-      left: 50%;
+      left: calc(50% - 1px);
     }
     .dot {
       width: 25px;
@@ -112,5 +175,65 @@ export default {
     .active {
       background: salmon;
     }
+  }
+
+  .mode-box {
+    position: fixed;
+    display: flex;
+    column-gap: 20px;
+    bottom: 25px;
+    right: 80px;
+    font-size: 14px;
+    .item {
+      width: max-content;
+      height: 30px;
+      line-height: 30px;
+      padding: 0px 5px ;
+      text-align: center;
+      background: rgb(104, 147, 240);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .item:hover {
+      background: salmon;
+    }
+    .active {
+      background: salmon;
+    }
+  }
+
+  .view-box {
+    position: fixed;
+    display: flex;
+    column-gap: 20px;
+    bottom: 65px;
+    right: 80px;
+    font-size: 14px;
+    .item {
+      width: max-content;
+      height: 30px;
+      line-height: 30px;
+      padding: 0px 6px ;
+      text-align: center;
+      background: rgb(104, 147, 240);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .item:hover {
+      background: salmon;
+    }
+    .active {
+      background: salmon;
+    }
+  }
+
+  :deep(.mapboxgl-ctrl-bottom-left) {
+    display: none;
+  }
+
+  :deep(.mapboxgl-ctrl-bottom-right) {
+    display: none;
   }
 </style>

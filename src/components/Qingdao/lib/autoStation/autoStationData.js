@@ -143,8 +143,8 @@ export function getData () {
         {
             id: 3,
             name: '莱西国家基本气象站毫米波测云仪',
-            lon: 120.56 + 0.2,
-            lat: 36.903056 + 0.2,
+            lon: 120.56,
+            lat: 36.903056,
             tem: Math.random() * 20 - 5,
         },
         {
@@ -157,8 +157,8 @@ export function getData () {
         {
             id: 5,
             name: '董家口毫米波测云仪',
-            lon: 119.779444 - 0.2,
-            lat: 35.624722 - 0.2,
+            lon: 119.779444,
+            lat: 35.624722,
             tem: Math.random() * 20 - 5,
         }
     ]

@@ -50,6 +50,7 @@ export function initIsoPlaneCanvas (map, cb, debug) {
 
         result.width = widthDis;
         result.height = heightDis;
+        result.bbox = bbox;
         result.center = [(bbox[2] + bbox[0]) * 0.5, (bbox[3] + bbox[1]) * 0.5];
         
         if (debug) {
@@ -80,14 +81,6 @@ export function initIsoPlaneCanvas (map, cb, debug) {
     
     return {
         dispose: () => {
-
-            // if (isoline.worker) {
-            //     if (isoline.worker.target) {
-            //         isoline.worker.target.terminate();
-            //     } else {
-            //         isoline.worker.terminate();
-            //     }
-            // }
 
             if (isoband.worker) {
                 if (isoband.worker.target) {

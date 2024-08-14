@@ -55,6 +55,8 @@ export default class HorizonClouds2D {
 
         this.init();
 		this.initCloudMesh();
+
+        window.HorizonClouds2D = this;
     }
         
     init() {
@@ -119,6 +121,8 @@ export default class HorizonClouds2D {
 
         object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], alt);
 
+        this.cloud = object;
+
         this.scene.add(object)
     }
 
@@ -168,6 +172,10 @@ export default class HorizonClouds2D {
     
     destroy () {
         this.removeItem(this.cloud);
+        
+        this.gui.domElement.remove();
+        this.gui.destroy();
+
 
         this.isDispose = true;
     }

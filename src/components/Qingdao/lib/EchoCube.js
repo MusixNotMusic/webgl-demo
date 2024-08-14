@@ -20,15 +20,15 @@ const isNumber = (number) => typeof number === 'number';
  * 单部雷达
  */
 export default class EchoCube{
-  constructor (renderer, camera, scene, echoInfo, texture) {
+  constructor (renderer, camera, scene, echoInfo, textures) {
     this.renderer = renderer;
     this.camera = camera;
     this.scene = scene;
 
     this.echoInfo = echoInfo || {
       id: 'echo',
-      width: 420,
-      height: 420,
+      width: 400,
+      height: 400,
       depth: 100,
       lngLat: [120.230278, 35.988611],
       alt: 0
@@ -38,8 +38,10 @@ export default class EchoCube{
 
     this.uniforms = {
       cameraPosition:   { value: new THREE.Vector3() },
-      depthSampleCount: { value: 256 },
-      tex:              { value: texture },
+      depthSampleCount: { value: 128 },
+      tex1:             { value: textures[0] },
+      tex2:             { value: textures[1]},
+      delta:            { value: 0.0 },
       colorTex:         { value: __YW__.colorSystem.colorMapTexture['Z'] },
       boxSize:          { value: [this.echoInfo.width * 1e3, this.echoInfo.height * 1e3, this.echoInfo.depth * 1e3] },
       iResolution:      { value: [clientWidth, clientHeight]},
@@ -76,12 +78,10 @@ export default class EchoCube{
       });
 
       const mesh = new THREE.Mesh( geometry, material );
-      const edge = new THREE.LineSegments(new THREE.EdgesGeometry( geometry ), new THREE.LineBasicMaterial( { color: 0xffffff } ) );  
 
       mesh.name = 'echo-zone-'+ id
 
       mesh.translateZ(depth * 1e3 * 0.5);
-      edge.translateZ(depth * 1e3 * 0.5);
 
       this.mesh = mesh;
 
@@ -89,9 +89,12 @@ export default class EchoCube{
 
       object.WGS84Position = new THREE.Vector3(lngLat[0], lngLat[1], alt);
 
-      object.add(edge);
+      // edge
+      // const edge = new THREE.LineSegments(new THREE.EdgesGeometry( geometry ), new THREE.LineBasicMaterial( { color: 0xffffff } ) );  
+      // edge.translateZ(depth * 1e3 * 0.5);
+      // object.add(edge);
 
-      this.zone = object;
+      this.echo = object;
 
       this.scene.add(object);
   }
@@ -108,15 +111,26 @@ export default class EchoCube{
   
       setMeshUniform(object, 'cameraPosition', { x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z })
 
+      let t = Math.abs(Math.cos(performance.now() / 20000));
+      this.updateDeltaTime(t)
+
       renderer.render(scene, camera);
     }
+  }
+
+  updateDeltaTime(delta) {
+    const name = 'echo-zone-' + this.echoInfo.id;
+    const object = this.scene.getObjectByName(name);
+
+    setMeshUniform(object, 'delta', delta)
   }
 
 
 
   removeItem (object) {
     if (object) {
-      setMeshUniform(object, 'tex', null);
+      setMeshUniform(object, 'tex1', null);
+      setMeshUniform(object, 'tex2', null);
       setMeshUniform(object, 'colorTex', null);
       this.scene.remove(object);
       object.clear();
@@ -127,7 +141,7 @@ export default class EchoCube{
   destroy () {
     this.echoInfo = null;
     // 删除 radarModel
-    this.removeItem(this.mesh);
+    this.removeItem(this.echo);
 
     this.isDispose = true;
   }

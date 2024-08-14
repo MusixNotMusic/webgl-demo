@@ -57,14 +57,15 @@ export default class IsoPlaneModel{
    * 雷达探测区域
    */
   initIsoPlane (result) {
-      const { texture, center, width, height } = result;
+      const { texture, center, width, height, bbox } = result;
       const planeInfo = this.planeInfo; 
 
       // const { width, height, high } = planeInfo;
+      const cosa = 1 / Math.cos(center[1] / 180 * Math.PI);
 
       const uniforms = this.uniforms;
       
-      const geometry = new THREE.PlaneGeometry( width * 1e3, height * 1e3 );
+      const geometry = new THREE.PlaneGeometry( width * 1e3 * cosa, height * 1e3 * cosa);
 
       const material = new THREE.MeshBasicMaterial( {
         transparent: true,
