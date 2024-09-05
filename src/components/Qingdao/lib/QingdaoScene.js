@@ -87,9 +87,6 @@ export default class QingdaoScene extends BaseMercatorMeterProjectionModelClass{
     }
 
     this.stats.update();
-
-    const { renderer, scene, camera } = this;
-    renderer.render(scene, camera);
   }
 
   zoom() {

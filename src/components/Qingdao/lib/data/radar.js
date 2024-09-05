@@ -73,7 +73,7 @@ export const cloudInfoList = [
         width: 1e6,
         height: 1e6,
         value: {
-            COVERAGE: 0.34,
+            COVERAGE: 0.5,
             FBM_FREQ: 2.76434,
             OFFSET: 2.3,
             windU: 0.02,
@@ -84,17 +84,33 @@ export const cloudInfoList = [
     //     id: 2,
     //     name: 'cloud-2',
     //     lngLat: [120.5, 36],
-    //     alt: 1e5 * 1.5,
+    //     alt: 1e5 * 1.98,
     //     width: 1e6,
     //     height: 1e6,
     //     value: {
-    //         COVERAGE: 0.43,
+    //         COVERAGE: 0.5,
     //         FBM_FREQ: 2.76434,
-    //         OFFSET: 3.0,
-    //         windU: 0.03,
+    //         OFFSET: 1.0,
+    //         windU: 0.02,
     //         windV: 0.02,
     //     }
     // },
+
+    // {
+    //     id: 3,
+    //     name: 'cloud-3',
+    //     lngLat: [120.5, 36],
+    //     alt: 1e5 * 1.96,
+    //     width: 1e6,
+    //     height: 1e6,
+    //     value: {
+    //         COVERAGE: 0.5,
+    //         FBM_FREQ: 2.76434,
+    //         OFFSET: 2.0,
+    //         windU: 0.01,
+    //         windV: 0.02,
+    //     }
+    // }
 ]
 
 

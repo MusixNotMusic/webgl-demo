@@ -297,13 +297,13 @@ export default class BaseMercatorMeterProjectionModelClass extends BaseThreeMode
 
                 this.raycastCamera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).clone().multiply(translateScaleMatrix);
                 // ====================================================
+                if (this.renderHook) {
+                    this.renderHook()
+                }
+
                 if (renderer) {
                     renderer.resetState();
                     renderer.render(scene, camera);
-                }
-
-                if (this.renderHook) {
-                    this.renderHook()
                 }
 
                 if (this.css2DRenderer) {
