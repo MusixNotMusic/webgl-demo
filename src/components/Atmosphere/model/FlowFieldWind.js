@@ -9,7 +9,8 @@ import { colorMap  } from './colorMap';
 
 import vertexShader from './shader/volume.vert';
 // import fragmentShader from './shader/volumeV1.frag';
-import fragmentShader from './shader/volumePosition.frag';
+// import fragmentShader from './shader/volume.frag';
+import fragmentShader from './shader/particles.frag';
 // import fragmentShader from './shader/volumeV2.frag';
 
 import { getColorSystem } from '../../utils/color/constants';
@@ -49,6 +50,7 @@ export default class FlowFeildWind {
             u_U: { value: null },
             u_V: { value: null },
             u_W: { value: null },
+            resolution: { value: null}
         };
 
         this.textureColor =  getColorSystem().colorMapTexture['rainbows']
@@ -196,7 +198,7 @@ export default class FlowFeildWind {
         const { widthSize, heightSize, depthSize } = this.dataInstance.header;
         const { U, V, W } = this.dataInstance;
         
-        this.time =  this.clock.getElapsedTime();
+        this.time =  this.clock.getDelta();
 
         const uniforms =  {
             u_map: { value: this.textureColor },
@@ -212,6 +214,8 @@ export default class FlowFeildWind {
             threshold: { value: this.api.threshold},
             offset: { value: this.api.offset},
             iTime: { value: this.time },
+
+            resolution: { value: [widthSize, heightSize, depthSize]}
 		}
 
 

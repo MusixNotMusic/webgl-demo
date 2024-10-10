@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import glsl from 'vite-plugin-glsl';
+import requireTransform from 'vite-plugin-require-transform';
 
 export default defineConfig({
   plugins: [vue(), glsl(
@@ -10,7 +11,10 @@ export default defineConfig({
         '**/*.vert', '**/*.frag',
         '**/*.vs', '**/*.fs'
       ]
-    }
+    },
+    requireTransform({
+      fileRegex: /.js$|.jsx$/  // 使用正则表达式匹配需要作用的文件
+    }),
   )],
   build: {
     target: "esnext",

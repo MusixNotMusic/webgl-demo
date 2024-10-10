@@ -6,9 +6,9 @@
 import { onMounted, onUnmounted, ref } from "vue";
 // import InstancePerformance from "./model/InstancePerformance";
 import { WindField3DFormat } from "../parseFile/WindField3D/WindField3DFormat";
-import InstancePerformance from "./model/InstancePerformance";
 import FlowFeildWind from './model/FlowFieldWind';
 import { decompress } from "../utils/decompress/ZstdDecompress";
+import NoiseParticles from "./model/NoiseParticles";
 
 export default {
   name: 'WindFieldArrows',
@@ -27,8 +27,9 @@ export default {
         const bytes = new Uint8Array(buffer);
         const wf3d = WindField3DFormat.parser(bytes);
         console.log('instance =>', wf3d);
-        instance = new FlowFeildWind(containerRef.value, wf3d);
+        // instance = new FlowFeildWind(containerRef.value, wf3d);
         // instance = new InstancePerformance(containerRef.value, wf3d);
+        instance = new NoiseParticles(containerRef.value, wf3d);
       })
     }
 
