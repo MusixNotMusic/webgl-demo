@@ -126,7 +126,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
   }
 
   initSphere () {
-      const sphere = new THREE.SphereGeometry(500);
+      const sphere = new THREE.BoxGeometry(500, 500,  500);
       const material = new THREE.MeshNormalMaterial();
       sphere.computeVertexNormals();
 
@@ -137,7 +137,7 @@ export default class RadarModelLayer extends BaseMercatorMeterProjectionModelCla
 
       const sphereObject = new WGS84Object3D(mesh);
 
-      sphereObject.WGS84Position = new THREE.Vector3(103.8, 30, 2000);
+      sphereObject.WGS84Position = new THREE.Vector3(103.8, 30, 0);
 
       window.sphere = sphereObject;
 

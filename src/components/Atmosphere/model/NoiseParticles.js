@@ -164,7 +164,7 @@ class Particles{
           let velocity = new THREE.Vector3(vex, vey, vez);
           
           var flow = this.flowField.sample(vx, vy, vz);
-          let R = 50;
+          let R = 40;
           if (flow) {
             var steer = flow.clone().sub(velocity);
             

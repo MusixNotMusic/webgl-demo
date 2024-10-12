@@ -12,7 +12,7 @@ import MapboxGLInit from '../Map/MapboxGLInit.vue';
 import RadarModelLayer from './lib/RadarModelLayer';
 
 let instance;
-const center = ref([103.8, 30]);
+const center = ref([103.8, 30.029775]);
 const zoom = ref(12);
 const modeList = ref([
     { name: '选定', value: 'default' },
