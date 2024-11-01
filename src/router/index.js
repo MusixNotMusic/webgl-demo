@@ -135,6 +135,19 @@ const routes= [
         name: "Qingdao",
         component: () => import("../components/Qingdao/Index.vue"),
       },
+      {
+        path: "/Threejs",
+        name: "Threejs",
+        redirect: '/Threejs/WebGLRenderTarget',
+        component: () => import("../components/Threejs/Index.vue"),
+        children: [
+          {
+            path: "WebGLRenderTarget",
+            name: "WebGLRenderTarget",
+            component: () => import("../components/Threejs/WebGLRenderTarget/index.vue"),
+          },
+        ]
+      },
     ],
   }
 ];

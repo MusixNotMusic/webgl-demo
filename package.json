@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@cdyw/asd-2d": "^1.0.7",
+    "@cdyw/asd-2d": "^1.0.10",
     "@mapbox/geojson-normalize": "^0.0.1",
     "@tmcw/togeojson": "^5.8.1",
     "@turf/projection": "^6.5.0",
